@@ -1,0 +1,32 @@
+# Flask Core
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Flask-SocketIO==5.3.6
+Flask-CORS==4.0.0
+
+# Database Drivers
+pyodbc==5.0.1
+SQLAlchemy==2.0.23
+
+# Password Hashing & Security
+Werkzeug==3.0.1
+
+# PDF Generation
+reportlab==4.0.7
+
+# Image Processing & Computer Vision
+opencv-python==4.8.1.78
+numpy==1.26.2
+Pillow==10.1.0
+
+# WebSocket Support
+python-socketio==5.10.0
+python-engineio==4.8.0
+
+# Event-driven networking (for SocketIO)
+eventlet==0.33.3
+greenlet==3.0.1
+
+# Additional utilities
+python-dotenv==1.0.0

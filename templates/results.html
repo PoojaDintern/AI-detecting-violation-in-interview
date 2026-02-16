@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Results</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .score-section {
+            text-align: center;
+            padding: 40px;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+
+        .score-circle.passed {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .score-circle.failed {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .status-badge.passed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .info-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .info-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .violations-section {
+            margin-bottom: 30px;
+        }
+
+        .violations-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .violation-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .violation-type {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .violation-type.low { border-left-color: #28a745; }
+        .violation-type.medium { border-left-color: #ffc107; }
+        .violation-type.high { border-left-color: #dc3545; }
+
+        .violation-type .type-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .violation-type .type-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .violations-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .violation-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .violation-item.low { border-left-color: #28a745; }
+        .violation-item.medium { border-left-color: #ffc107; }
+        .violation-item.high { border-left-color: #dc3545; }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Exam Results</h1>
+            <p>{{ submission.user.full_name }} ({{ submission.user.username }})</p>
+        </div>
+
+        <div class="content">
+            <!-- Score Section -->
+            <div class="score-section">
+                <div class="score-circle {{ 'passed' if submission.passed else 'failed' }}">
+                    {{ submission.credibility_score }}
+                </div>
+                <h2>Credibility Score</h2>
+                <div class="status-badge {{ 'passed' if submission.passed else 'failed' }}">
+                    {{ 'PASSED ✓' if submission.passed else 'FAILED ✗' }}
+                </div>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>Total Violations</h3>
+                    <div class="value">{{ submission.total_violations }}</div>
+                </div>
+                <div class="info-card">
+                    <h3>Exam Duration</h3>
+                    <div class="value">{{ (submission.exam_duration_seconds // 60) }}m {{ (submission.exam_duration_seconds % 60) }}s</div>
+                </div>
+                <div class="info-card">
+                    <h3>Submitted</h3>
+                    <div class="value" style="font-size: 16px;">{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+            </div>
+
+            <!-- Violations Breakdown -->
+            {% if violations %}
+            <div class="violations-section">
+                <h2>Violation Breakdown</h2>
+                
+                <div class="violation-breakdown">
+                    {% for type, count in breakdown.items() %}
+                    <div class="violation-type {% if count <= 2 %}low{% elif count <= 5 %}medium{% else %}high{% endif %}">
+                        <div class="type-name">{{ type.replace('_', ' ').title() }}</div>
+                        <div class="type-count">{{ count }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h3 style="margin: 20px 0 10px 0;">Detailed Violation Log:</h3>
+                <div class="violations-list">
+                    {% for violation in violations %}
+                    <div class="violation-item {% if violation.severity == 1 %}low{% elif violation.severity == 2 %}medium{% else %}high{% endif %}">
+                        <div>
+                            <strong>{{ violation.violation_type.replace('_', ' ').title() }}</strong>
+                            <br>
+                            <small>{{ violation.description }}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <small>{{ violation.timestamp.strftime('%H:%M:%S') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="violations-section">
+                <h2>No Violations Detected! 🎉</h2>
+                <p>Excellent performance! No violations were recorded during your exam.</p>
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="window.location.href='/download-report/{{ submission.id }}'">
+                    📥 Download PDF Report
+                </button>
+                {% if current_user.is_admin %}
+                <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">
+                    ← Back to Dashboard
+                </button>
+                {% else %}
+                <button class="btn btn-secondary" onclick="window.location.href='/exam'">
+                    Take Another Exam
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
