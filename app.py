@@ -336,7 +336,7 @@ def login():
     if request.method == 'GET':
         if current_user.is_authenticated:
             return redirect(url_for('index'))
-        return render_template('login.html')
+        return render_template('index.html')
     
     # POST request - handle login
     try:
