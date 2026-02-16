@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Proctoring System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+        }
+
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .left-panel h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .left-panel p {
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        .left-panel .features {
+            margin-top: 30px;
+            list-style: none;
+        }
+
+        .left-panel .features li {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .left-panel .features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: 60px 40px;
+        }
+
+        .form-container {
+            max-width: 400px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #999;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .form {
+            display: none;
+        }
+
+        .form.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-10px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .demo-accounts {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .demo-accounts h4 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .demo-accounts p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .left-panel {
+                padding: 40px 20px;
+            }
+            
+            .right-panel {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h1>🎓 AI Proctoring System</h1>
+            <p>Secure, intelligent, and fair online examination monitoring powered by artificial intelligence.</p>
+            
+            <ul class="features">
+                <li>Real-time face detection and monitoring</li>
+                <li>Automatic violation detection</li>
+                <li>Credibility score system</li>
+                <li>Comprehensive admin dashboard</li>
+                <li>Detailed PDF reports</li>
+            </ul>
+        </div>
+
+        <div class="right-panel">
+            <div class="form-container">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('login')">Login</div>
+                    <div class="tab" onclick="switchTab('signup')">Sign Up</div>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form" class="form active">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="login-username" placeholder="Enter your username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required autocomplete="current-password">
+                    </div>
+                    <button class="btn" id="login-btn" type="button">Login</button>
+                    <div id="login-message" class="message"></div>
+                    
+                    <div class="demo-accounts">
+                        <h4>Demo Accounts:</h4>
+                        <p><strong>Admin:</strong> admin / admin123</p>
+                        <p><strong>Student:</strong> student / student123</p>
+                    </div>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signup-form" class="form">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="signup-fullname" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signup-email" placeholder="Enter your email" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="signup-username" placeholder="Choose a username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signup-password" placeholder="Choose a password" required autocomplete="new-password">
+                    </div>
+                    <button class="btn" id="signup-btn" type="button">Create Account</button>
+                    <div id="signup-message" class="message"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('✅ Login page JavaScript loaded');
+
+        // Tab switching function
+        function switchTab(tab) {
+            console.log('Switching to tab:', tab);
+            
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update forms
+            document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+            document.getElementById(tab + '-form').classList.add('active');
+
+            // Clear messages
+            document.querySelectorAll('.message').forEach(m => {
+                m.style.display = 'none';
+                m.textContent = '';
+            });
+        }
+
+        // Show message helper
+        function showMessage(formType, type, message) {
+            const messageEl = document.getElementById(formType + '-message');
+            messageEl.className = 'message ' + type;
+            messageEl.textContent = message;
+            messageEl.style.display = 'block';
+            console.log('Message shown:', type, message);
+        }
+
+        // Button state helper
+        function disableButton(btnId, disabled) {
+            const btn = document.getElementById(btnId);
+            btn.disabled = disabled;
+            btn.textContent = disabled ? 'Please wait...' : (btnId === 'login-btn' ? 'Login' : 'Create Account');
+        }
+
+        // Login handler
+        async function handleLogin(event) {
+            console.log('🔐 handleLogin called');
+            
+            // Prevent any default behavior
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            console.log('Username:', username);
+            console.log('Password length:', password.length);
+
+            // Validation
+            if (!username || !password) {
+                showMessage('login', 'error', 'Please fill in all fields');
+                return false;
+            }
+
+            // Disable button and show loading
+            disableButton('login-btn', true);
+            showMessage('login', 'success', 'Logging in...');
+
+            try {
+                console.log('📤 Sending login request...');
+                
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        username: username, 
+                        password: password 
+                    }),
+                    credentials: 'same-origin'
+                });
+
+                console.log('📥 Response received');
+                console.log('Status:', response.status);
+                console.log('Status Text:', response.statusText);
+
+                // Check content type
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+
+                if (!contentType || !contentType.includes('application/json')) {
+                    const textResponse = await response.text();
+                    console.error('❌ Non-JSON response:', textResponse.substring(0, 200));
+                    throw new Error('Server returned non-JSON response');
+                }
+
+                // Parse JSON
+                const data = await response.json();
+                console.log('📦 Response data:', data);
+
+                // Check if login was successful
+                if (response.ok && data.success) {
+                    console.log('✅ Login successful!');
+                    console.log('Redirect URL:', data.redirect);
+                    
+                    showMessage('login', 'success', 'Login successful! Redirecting...');
+                    
+                    // Wait a moment then redirect
+                    setTimeout(() => {
+                        console.log('🔀 Executing redirect to:', data.redirect);
+                        window.location.assign(data.redirect);
+                    }, 1000);
+                } else {
+                    console.error('❌ Login failed:', data.message);
+                    showMessage('login', 'error', data.message || 'Login failed. Please try again.');
+                    disableButton('login-btn', false);
+                }
+            } catch (error) {
+                console.error('❌ Login error:', error);
+                showMessage('login', 'error', 'Network error: ' + error.message);
+                disableButton('login-btn', false);
+            }
+
+            return false; // Prevent any form submission
+        }
+
+        // Signup handler
+        async function handleSignup(event) {
+            console.log('📝 handleSignup called');
+            
+            // Prevent any default behavior
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const fullName = document.getElementById('signup-fullname').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const username = document.getElementById('signup-username').value.trim();
+            const password = document.getElementById('signup-password').value;
+
+            // Validation
+            if (!fullName || !email || !username || !password) {
+                showMessage('signup', 'error', 'Please fill in all fields');
+                return false;
+            }
+
+            if (password.length < 6) {
+                showMessage('signup', 'error', 'Password must be at least 6 characters');
+                return false;
+            }
+
+            disableButton('signup-btn', true);
+
+            try {
+                const response = await fetch('/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        full_name: fullName,
+                        email: email,
+                        username: username,
+                        password: password
+                    }),
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+                console.log('Signup response:', data);
+
+                if (data.success) {
+                    showMessage('signup', 'success', data.message);
+                    
+                    // Switch to login tab after 2 seconds
+                    setTimeout(() => {
+                        // Switch tabs
+                        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                        document.querySelector('.tab:first-child').classList.add('active');
+                        document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                        document.getElementById('login-form').classList.add('active');
+                        
+                        // Pre-fill username
+                        document.getElementById('login-username').value = username;
+                        document.getElementById('login-password').value = '';
+                        document.getElementById('login-password').focus();
+                    }, 2000);
+                } else {
+                    showMessage('signup', 'error', data.message);
+                    disableButton('signup-btn', false);
+                }
+            } catch (error) {
+                console.error('Signup error:', error);
+                showMessage('signup', 'error', 'Network error. Please try again.');
+                disableButton('signup-btn', false);
+            }
+
+            return false;
+        }
+
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ DOM loaded - attaching event listeners');
+            
+            // Attach click handler to login button
+            const loginBtn = document.getElementById('login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleLogin(e);
+                });
+                console.log('✅ Login button listener attached');
+            }
+
+            // Attach click handler to signup button
+            const signupBtn = document.getElementById('signup-btn');
+            if (signupBtn) {
+                signupBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSignup(e);
+                });
+                console.log('✅ Signup button listener attached');
+            }
+
+            // Handle Enter key in login form
+            const loginInputs = document.querySelectorAll('#login-form input');
+            loginInputs.forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleLogin(e);
+                    }
+                });
+            });
+
+            // Handle Enter key in signup form
+            const signupInputs = document.querySelectorAll('#signup-form input');
+            signupInputs.forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSignup(e);
+                    }
+                });
+            });
+
+            console.log('✅ All event listeners attached successfully');
+        });
+
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+
+        // Log when script finishes loading
+        console.log('✅ Login page script fully loaded and ready');
+    </script>
+</body>
+</html>
