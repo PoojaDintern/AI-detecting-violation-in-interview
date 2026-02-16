@@ -1,5 +1,5 @@
-# app.py - Main Flask Application - FIXED VERSION
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file
+# app.py - Main Flask Application - NO TEMPLATES VERSION
+from flask import Flask, request, jsonify, session, redirect, url_for, send_from_directory, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -21,7 +21,7 @@ from io import BytesIO
 # ========================================
 # INITIALIZE FLASK APP (ONLY ONCE!)
 # ========================================
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.')
 app.config.from_object(Config)
 Config.init_app(app)
 
@@ -53,7 +53,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(512), nullable=False)  # Increased for scrypt
+    password_hash = db.Column(db.String(512), nullable=False)
     full_name = db.Column(db.String(150))
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -134,14 +134,14 @@ class TestSubmission(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))  # Updated for SQLAlchemy 2.0
+    return db.session.get(User, int(user_id))
 
 @login_manager.unauthorized_handler
 def unauthorized():
     """Handle unauthorized access"""
-    if request.is_json:
+    if request.is_json or request.path.startswith('/api/'):
         return jsonify({'success': False, 'message': 'Login required'}), 401
-    return redirect(url_for('login'))
+    return send_from_directory('.', 'index.html')
 
 # ========================================
 # DATABASE INITIALIZATION
@@ -317,28 +317,53 @@ def generate_pdf_report(submission):
         return None
 
 # ========================================
-# ROUTES - AUTHENTICATION
+# ROUTES - STATIC FILE SERVING
 # ========================================
 
 @app.route('/')
 def index():
-    """Home page"""
+    """Home page - serve index.html"""
     if current_user.is_authenticated:
         if current_user.is_admin:
-            return redirect(url_for('dashboard'))
+            return send_from_directory('.', 'dashboard.html')
         else:
-            return redirect(url_for('exam'))
-    return redirect(url_for('login'))
+            return send_from_directory('.', 'test.html')
+    return send_from_directory('.', 'index.html')
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/index.html')
+def serve_index():
+    """Serve index.html directly"""
+    return send_from_directory('.', 'index.html')
+
+@app.route('/test.html')
+@login_required
+def serve_test():
+    """Serve test.html"""
+    if current_user.is_admin:
+        return send_from_directory('.', 'dashboard.html')
+    return send_from_directory('.', 'test.html')
+
+@app.route('/dashboard.html')
+@login_required
+def serve_dashboard():
+    """Serve dashboard.html"""
+    if not current_user.is_admin:
+        return send_from_directory('.', 'test.html')
+    return send_from_directory('.', 'dashboard.html')
+
+@app.route('/results.html')
+@login_required
+def serve_results():
+    """Serve results.html"""
+    return send_from_directory('.', 'results.html')
+
+# ========================================
+# ROUTES - AUTHENTICATION
+# ========================================
+
+@app.route('/login', methods=['POST'])
 def login():
-    """Login page"""
-    if request.method == 'GET':
-        if current_user.is_authenticated:
-            return redirect(url_for('index'))
-        return render_template('index.html')
-    
-    # POST request - handle login
+    """Login endpoint"""
     try:
         if not request.is_json:
             return jsonify({
@@ -391,14 +416,15 @@ def login():
         login_user(user, remember=True)
         print(f"✅ Login successful for {user.username}")
         
-        redirect_url = url_for('dashboard' if user.is_admin else 'exam', _external=False)
-        print(f"🔀 Redirect URL: {redirect_url}")
+        # Return HTML file names for redirect
+        redirect_page = 'dashboard.html' if user.is_admin else 'test.html'
+        print(f"🔀 Redirect to: {redirect_page}")
         
         response = jsonify({
             'success': True,
             'message': 'Login successful',
             'is_admin': user.is_admin,
-            'redirect': redirect_url
+            'redirect': redirect_page
         })
         response.status_code = 200
         return response
@@ -485,7 +511,19 @@ def signup():
 def logout():
     """Logout"""
     logout_user()
-    return redirect(url_for('login'))
+    return redirect('/')
+
+@app.route('/api/check-auth')
+def check_auth():
+    """Check authentication status"""
+    if current_user.is_authenticated:
+        return jsonify({
+            'authenticated': True,
+            'username': current_user.username,
+            'is_admin': current_user.is_admin,
+            'full_name': current_user.full_name
+        })
+    return jsonify({'authenticated': False})
 
 # ========================================
 # ROUTES - EXAM
@@ -494,19 +532,10 @@ def logout():
 @app.route('/exam')
 @login_required
 def exam():
-    """Exam page"""
-    print("\n" + "="*60)
-    print("📝 EXAM PAGE REQUEST")
-    print("="*60)
-    print(f"User: {current_user.username}")
-    print(f"Is Admin: {current_user.is_admin}")
-    
+    """Exam page redirect"""
     if current_user.is_admin:
-        print("⚠️ Admin redirected to dashboard")
-        return redirect(url_for('dashboard'))
-    
-    print("✅ Rendering exam page")
-    return render_template('test.html', user=current_user)
+        return send_from_directory('.', 'dashboard.html')
+    return send_from_directory('.', 'test.html')
 
 @app.route('/detect-face', methods=['POST'])
 @login_required
@@ -580,7 +609,7 @@ def submit_test():
             'credibility_score': credibility_score,
             'total_violations': len(violations),
             'passed': passed,
-            'redirect': url_for('results', submission_id=submission.id)
+            'redirect': f'results.html?id={submission.id}'
         })
     except Exception as e:
         db.session.rollback()
@@ -602,14 +631,14 @@ def get_credibility_score():
 # ROUTES - RESULTS
 # ========================================
 
-@app.route('/results/<int:submission_id>')
+@app.route('/api/results/<int:submission_id>')
 @login_required
-def results(submission_id):
-    """Results page"""
+def get_results(submission_id):
+    """Get results data as JSON"""
     submission = TestSubmission.query.get_or_404(submission_id)
     
     if submission.user_id != current_user.id and not current_user.is_admin:
-        return "Unauthorized", 403
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
     violations = Violation.query.filter_by(user_id=submission.user_id).all()
     
@@ -617,10 +646,12 @@ def results(submission_id):
     for v in violations:
         breakdown[v.violation_type] = breakdown.get(v.violation_type, 0) + 1
     
-    return render_template('results.html', 
-                         submission=submission,
-                         violations=violations,
-                         breakdown=breakdown)
+    return jsonify({
+        'success': True,
+        'submission': submission.to_dict(),
+        'violations': [v.to_dict() for v in violations],
+        'breakdown': breakdown
+    })
 
 @app.route('/download-report/<int:submission_id>')
 @login_required
@@ -650,9 +681,17 @@ def download_report(submission_id):
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """Admin dashboard"""
+    """Admin dashboard redirect"""
     if not current_user.is_admin:
-        return redirect(url_for('exam'))
+        return send_from_directory('.', 'test.html')
+    return send_from_directory('.', 'dashboard.html')
+
+@app.route('/api/dashboard-stats')
+@login_required
+def dashboard_stats():
+    """Get dashboard statistics"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
     total_students = User.query.filter_by(is_admin=False).count()
     total_submissions = TestSubmission.query.count()
@@ -667,13 +706,17 @@ def dashboard():
         Violation.timestamp.desc()
     ).limit(20).all()
     
-    return render_template('dashboard.html',
-                         total_students=total_students,
-                         total_submissions=total_submissions,
-                         total_violations=total_violations,
-                         active_exams=active_exams,
-                         recent_submissions=recent_submissions,
-                         recent_violations=recent_violations)
+    return jsonify({
+        'success': True,
+        'stats': {
+            'total_students': total_students,
+            'total_submissions': total_submissions,
+            'total_violations': total_violations,
+            'active_exams': active_exams
+        },
+        'recent_submissions': [s.to_dict() for s in recent_submissions],
+        'recent_violations': [v.to_dict() for v in recent_violations]
+    })
 
 @app.route('/api/all-submissions')
 @login_required
