@@ -45,6 +45,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background 0.3s;
+            text-decoration: none;
         }
 
         .logout-btn:hover {
@@ -234,14 +235,26 @@
         .status-offline {
             background: #dc3545;
         }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🎛️ Admin Dashboard</h1>
         <div class="user-info">
-            <span>Welcome, <strong>{{ current_user.full_name }}</strong></span>
-            <button class="logout-btn" onclick="window.location.href='/logout'">Logout</button>
+            <span>Welcome, <strong id="admin-name">Loading...</strong></span>
+            <a href="/logout" class="logout-btn">Logout</a>
         </div>
     </div>
 
@@ -250,93 +263,35 @@
         <div class="stats-grid">
             <div class="stat-card blue">
                 <h3>Total Students</h3>
-                <div class="number">{{ total_students }}</div>
+                <div class="number" id="total-students">-</div>
             </div>
             <div class="stat-card green">
                 <h3>Total Submissions</h3>
-                <div class="number">{{ total_submissions }}</div>
+                <div class="number" id="total-submissions">-</div>
             </div>
             <div class="stat-card orange">
                 <h3>Total Violations</h3>
-                <div class="number">{{ total_violations }}</div>
+                <div class="number" id="total-violations">-</div>
             </div>
             <div class="stat-card red">
                 <h3>Active Exams</h3>
-                <div class="number" id="active-count">{{ active_exams }}</div>
+                <div class="number" id="active-exams">-</div>
             </div>
         </div>
 
         <!-- Recent Submissions -->
         <div class="section">
             <h2>📋 Recent Submissions</h2>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Score</th>
-                        <th>Violations</th>
-                        <th>Status</th>
-                        <th>Submitted</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for submission in recent_submissions %}
-                    <tr>
-                        <td><strong>{{ submission.user.full_name }}</strong></td>
-                        <td><strong>{{ submission.credibility_score }}/100</strong></td>
-                        <td>{{ submission.total_violations }}</td>
-                        <td>
-                            {% if submission.passed %}
-                                <span class="badge success">PASSED</span>
-                            {% else %}
-                                <span class="badge danger">FAILED</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>
-                            <button class="btn btn-primary" onclick="window.location.href='/results/{{ submission.id }}'">
-                                View Report
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div id="submissions-container" class="loading">
+                Loading submissions...
+            </div>
         </div>
 
         <!-- Recent Violations -->
         <div class="section">
             <h2>⚠️ Live Violations Monitor</h2>
-            <div id="live-violations">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Violation Type</th>
-                            <th>Severity</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="violations-tbody">
-                        {% for violation in recent_violations %}
-                        <tr>
-                            <td><strong>{{ violation.user.username }}</strong></td>
-                            <td>{{ violation.violation_type.replace('_', ' ').title() }}</td>
-                            <td>
-                                {% if violation.severity == 1 %}
-                                    <span class="severity-low">Low</span>
-                                {% elif violation.severity == 2 %}
-                                    <span class="severity-medium">Medium</span>
-                                {% else %}
-                                    <span class="severity-high">High</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ violation.timestamp.strftime('%H:%M:%S') }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div id="violations-container" class="loading">
+                Loading violations...
             </div>
         </div>
     </div>
@@ -348,22 +303,211 @@
     </div>
 
     <script>
-        // Initialize Socket.IO
-        const socket = io();
+        console.log('✅ Dashboard page loaded');
 
-        // Join dashboard room
-        socket.emit('join_dashboard');
+        let socket = null;
 
-        // Listen for real-time violation alerts
-        socket.on('violation_alert', function(data) {
-            console.log('Violation alert received:', data);
+        // Check authentication and load dashboard
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check-auth');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    console.log('Not authenticated, redirecting to login');
+                    window.location.href = 'index.html';
+                    return false;
+                }
+                
+                if (!data.is_admin) {
+                    console.log('Not admin, redirecting to exam');
+                    window.location.href = 'test.html';
+                    return false;
+                }
+                
+                console.log('Admin authenticated:', data);
+                document.getElementById('admin-name').textContent = data.full_name || data.username;
+                
+                // Load dashboard data
+                await loadDashboardData();
+                
+                // Initialize Socket.IO for real-time updates
+                initializeSocketIO();
+                
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = 'index.html';
+                return false;
+            }
+        }
+
+        // Load dashboard statistics and data
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard-stats');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load dashboard data');
+                }
+                
+                console.log('Dashboard data loaded:', data);
+                
+                // Update statistics
+                document.getElementById('total-students').textContent = data.stats.total_students;
+                document.getElementById('total-submissions').textContent = data.stats.total_submissions;
+                document.getElementById('total-violations').textContent = data.stats.total_violations;
+                document.getElementById('active-exams').textContent = data.stats.active_exams;
+                
+                // Render submissions table
+                renderSubmissions(data.recent_submissions);
+                
+                // Render violations table
+                renderViolations(data.recent_violations);
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                document.getElementById('submissions-container').innerHTML = 
+                    '<div class="empty-state">Error loading data. Please refresh the page.</div>';
+                document.getElementById('violations-container').innerHTML = 
+                    '<div class="empty-state">Error loading data. Please refresh the page.</div>';
+            }
+        }
+
+        // Render submissions table
+        function renderSubmissions(submissions) {
+            const container = document.getElementById('submissions-container');
             
-            // Show alert
+            if (!submissions || submissions.length === 0) {
+                container.innerHTML = '<div class="empty-state">No submissions yet</div>';
+                return;
+            }
+            
+            let html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Score</th>
+                            <th>Violations</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            submissions.forEach(sub => {
+                const statusBadge = sub.passed 
+                    ? '<span class="badge success">PASSED</span>' 
+                    : '<span class="badge danger">FAILED</span>';
+                
+                html += `
+                    <tr>
+                        <td><strong>${sub.full_name || sub.username}</strong></td>
+                        <td><strong>${sub.credibility_score}/100</strong></td>
+                        <td>${sub.total_violations}</td>
+                        <td>${statusBadge}</td>
+                        <td>${formatDateTime(sub.submitted_at)}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="viewResults(${sub.id})">
+                                View Report
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Render violations table
+        function renderViolations(violations) {
+            const container = document.getElementById('violations-container');
+            
+            if (!violations || violations.length === 0) {
+                container.innerHTML = '<div class="empty-state">No violations recorded</div>';
+                return;
+            }
+            
+            let html = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Violation Type</th>
+                            <th>Severity</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="violations-tbody">
+            `;
+            
+            violations.forEach(v => {
+                const severityClass = v.severity === 1 ? 'severity-low' : 
+                                     v.severity === 2 ? 'severity-medium' : 'severity-high';
+                const severityText = v.severity === 1 ? 'Low' : 
+                                    v.severity === 2 ? 'Medium' : 'High';
+                
+                html += `
+                    <tr>
+                        <td><strong>${v.username}</strong></td>
+                        <td>${formatViolationType(v.violation_type)}</td>
+                        <td><span class="${severityClass}">${severityText}</span></td>
+                        <td>${formatTime(v.timestamp)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Initialize Socket.IO for real-time updates
+        function initializeSocketIO() {
+            console.log('Initializing Socket.IO...');
+            
+            socket = io();
+
+            socket.on('connect', function() {
+                console.log('✅ Connected to Socket.IO server');
+                socket.emit('join_dashboard');
+            });
+
+            socket.on('disconnect', function() {
+                console.log('❌ Disconnected from Socket.IO server');
+            });
+
+            socket.on('joined', function(data) {
+                console.log('✅ Joined dashboard room:', data);
+            });
+
+            // Listen for real-time violation alerts
+            socket.on('violation_alert', function(data) {
+                console.log('🚨 Violation alert received:', data);
+                
+                // Show alert popup
+                showAlert(data);
+                
+                // Add to violations table
+                addViolationToTable(data);
+                
+                // Update violation count
+                const currentCount = parseInt(document.getElementById('total-violations').textContent);
+                document.getElementById('total-violations').textContent = currentCount + 1;
+            });
+        }
+
+        // Show alert popup
+        function showAlert(data) {
             const alertBox = document.getElementById('violation-alert');
             const alertMessage = document.getElementById('alert-message');
             
-            const severityText = {1: 'Low', 2: 'Medium', 3: 'High'}[data.severity];
-            alertMessage.textContent = `${data.username} - ${data.violation_type.replace('_', ' ')} (${severityText} severity) at ${data.timestamp}`;
+            const severityText = {1: 'Low', 2: 'Medium', 3: 'High'}[data.severity] || 'Unknown';
+            alertMessage.textContent = `${data.username} - ${formatViolationType(data.violation_type)} (${severityText} severity) at ${data.timestamp}`;
             
             alertBox.classList.add('show');
             
@@ -371,15 +515,23 @@
             setTimeout(() => {
                 alertBox.classList.remove('show');
             }, 5000);
+        }
+
+        // Add violation to table in real-time
+        function addViolationToTable(data) {
+            const tbody = document.querySelector('#violations-tbody');
+            if (!tbody) return;
             
-            // Add to violations table
-            const tbody = document.getElementById('violations-tbody');
+            const severityClass = data.severity === 1 ? 'severity-low' : 
+                                 data.severity === 2 ? 'severity-medium' : 'severity-high';
+            const severityText = data.severity === 1 ? 'Low' : 
+                                data.severity === 2 ? 'Medium' : 'High';
+            
             const row = tbody.insertRow(0);
-            
             row.innerHTML = `
                 <td><strong>${data.username}</strong></td>
-                <td>${data.violation_type.replace('_', ' ').title()}</td>
-                <td><span class="severity-${data.severity == 1 ? 'low' : data.severity == 2 ? 'medium' : 'high'}">${severityText}</span></td>
+                <td>${formatViolationType(data.violation_type)}</td>
+                <td><span class="${severityClass}">${severityText}</span></td>
                 <td>${data.timestamp}</td>
             `;
             
@@ -388,16 +540,57 @@
             setTimeout(() => {
                 row.style.background = '';
             }, 3000);
+        }
+
+        // View results page
+        function viewResults(submissionId) {
+            window.location.href = `results.html?id=${submissionId}`;
+        }
+
+        // Format date/time
+        function formatDateTime(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function formatTime(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        // Format violation type
+        function formatViolationType(type) {
+            return type.replace(/_/g, ' ')
+                      .split(' ')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ');
+        }
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM loaded, checking authentication...');
+            checkAuth();
         });
 
-        // Connection status
-        socket.on('connect', function() {
-            console.log('Connected to server');
-        });
-
-        socket.on('disconnect', function() {
-            console.log('Disconnected from server');
-        });
+        console.log('✅ Dashboard script loaded');
     </script>
 </body>
 </html>

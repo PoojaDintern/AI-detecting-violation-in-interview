@@ -219,96 +219,314 @@
         .btn-secondary:hover {
             background: #e9ecef;
         }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc3545;
+        }
+
+        .success-message {
+            text-align: center;
+            padding: 20px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📊 Exam Results</h1>
-            <p>{{ submission.user.full_name }} ({{ submission.user.username }})</p>
+            <p id="student-info">Loading...</p>
         </div>
 
-        <div class="content">
-            <!-- Score Section -->
-            <div class="score-section">
-                <div class="score-circle {{ 'passed' if submission.passed else 'failed' }}">
-                    {{ submission.credibility_score }}
-                </div>
-                <h2>Credibility Score</h2>
-                <div class="status-badge {{ 'passed' if submission.passed else 'failed' }}">
-                    {{ 'PASSED ✓' if submission.passed else 'FAILED ✗' }}
-                </div>
-            </div>
-
-            <!-- Info Cards -->
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3>Total Violations</h3>
-                    <div class="value">{{ submission.total_violations }}</div>
-                </div>
-                <div class="info-card">
-                    <h3>Exam Duration</h3>
-                    <div class="value">{{ (submission.exam_duration_seconds // 60) }}m {{ (submission.exam_duration_seconds % 60) }}s</div>
-                </div>
-                <div class="info-card">
-                    <h3>Submitted</h3>
-                    <div class="value" style="font-size: 16px;">{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}</div>
-                </div>
-            </div>
-
-            <!-- Violations Breakdown -->
-            {% if violations %}
-            <div class="violations-section">
-                <h2>Violation Breakdown</h2>
-                
-                <div class="violation-breakdown">
-                    {% for type, count in breakdown.items() %}
-                    <div class="violation-type {% if count <= 2 %}low{% elif count <= 5 %}medium{% else %}high{% endif %}">
-                        <div class="type-name">{{ type.replace('_', ' ').title() }}</div>
-                        <div class="type-count">{{ count }}</div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <h3 style="margin: 20px 0 10px 0;">Detailed Violation Log:</h3>
-                <div class="violations-list">
-                    {% for violation in violations %}
-                    <div class="violation-item {% if violation.severity == 1 %}low{% elif violation.severity == 2 %}medium{% else %}high{% endif %}">
-                        <div>
-                            <strong>{{ violation.violation_type.replace('_', ' ').title() }}</strong>
-                            <br>
-                            <small>{{ violation.description }}</small>
-                        </div>
-                        <div style="text-align: right;">
-                            <small>{{ violation.timestamp.strftime('%H:%M:%S') }}</small>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% else %}
-            <div class="violations-section">
-                <h2>No Violations Detected! 🎉</h2>
-                <p>Excellent performance! No violations were recorded during your exam.</p>
-            </div>
-            {% endif %}
-
-            <!-- Action Buttons -->
-            <div class="buttons">
-                <button class="btn btn-primary" onclick="window.location.href='/download-report/{{ submission.id }}'">
-                    📥 Download PDF Report
-                </button>
-                {% if current_user.is_admin %}
-                <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">
-                    ← Back to Dashboard
-                </button>
-                {% else %}
-                <button class="btn btn-secondary" onclick="window.location.href='/exam'">
-                    Take Another Exam
-                </button>
-                {% endif %}
-            </div>
+        <div class="content" id="results-content">
+            <div class="loading">Loading results...</div>
         </div>
     </div>
+
+    <script>
+        console.log('✅ Results page loaded');
+        
+        let currentUser = null;
+        let submissionData = null;
+
+        // Get submission ID from URL
+        function getSubmissionId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            console.log('Submission ID from URL:', id);
+            return id;
+        }
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check-auth');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    console.log('Not authenticated, redirecting to login');
+                    window.location.href = 'index.html';
+                    return false;
+                }
+                
+                currentUser = data;
+                console.log('User authenticated:', currentUser);
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = 'index.html';
+                return false;
+            }
+        }
+
+        // Load results data
+        async function loadResults() {
+            const submissionId = getSubmissionId();
+            
+            if (!submissionId) {
+                showError('No submission ID provided');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/results/${submissionId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load results');
+                }
+                
+                console.log('Results loaded:', data);
+                submissionData = data;
+                
+                // Update student info
+                document.getElementById('student-info').textContent = 
+                    `${data.submission.full_name} (${data.submission.username})`;
+                
+                // Render results
+                renderResults(data);
+                
+            } catch (error) {
+                console.error('Error loading results:', error);
+                showError('Failed to load results: ' + error.message);
+            }
+        }
+
+        // Render results content
+        function renderResults(data) {
+            const container = document.getElementById('results-content');
+            const sub = data.submission;
+            const violations = data.violations;
+            const breakdown = data.breakdown;
+            
+            const passedClass = sub.passed ? 'passed' : 'failed';
+            const passedText = sub.passed ? 'PASSED ✓' : 'FAILED ✗';
+            
+            // Calculate duration
+            const minutes = Math.floor(sub.exam_duration_seconds / 60);
+            const seconds = sub.exam_duration_seconds % 60;
+            
+            let html = `
+                <!-- Score Section -->
+                <div class="score-section">
+                    <div class="score-circle ${passedClass}">
+                        ${sub.credibility_score}
+                    </div>
+                    <h2>Credibility Score</h2>
+                    <div class="status-badge ${passedClass}">
+                        ${passedText}
+                    </div>
+                </div>
+
+                <!-- Info Cards -->
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h3>Total Violations</h3>
+                        <div class="value">${sub.total_violations}</div>
+                    </div>
+                    <div class="info-card">
+                        <h3>Exam Duration</h3>
+                        <div class="value">${minutes}m ${seconds}s</div>
+                    </div>
+                    <div class="info-card">
+                        <h3>Submitted</h3>
+                        <div class="value" style="font-size: 16px;">${formatDateTime(sub.submitted_at)}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Violations section
+            if (violations && violations.length > 0) {
+                html += `
+                    <div class="violations-section">
+                        <h2>Violation Breakdown</h2>
+                        
+                        <div class="violation-breakdown">
+                `;
+                
+                // Render breakdown
+                for (const [type, count] of Object.entries(breakdown)) {
+                    const severityClass = count <= 2 ? 'low' : count <= 5 ? 'medium' : 'high';
+                    html += `
+                        <div class="violation-type ${severityClass}">
+                            <div class="type-name">${formatViolationType(type)}</div>
+                            <div class="type-count">${count}</div>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                        </div>
+
+                        <h3 style="margin: 20px 0 10px 0;">Detailed Violation Log:</h3>
+                        <div class="violations-list">
+                `;
+                
+                // Render violation items
+                violations.forEach(v => {
+                    const severityClass = v.severity === 1 ? 'low' : v.severity === 2 ? 'medium' : 'high';
+                    html += `
+                        <div class="violation-item ${severityClass}">
+                            <div>
+                                <strong>${formatViolationType(v.violation_type)}</strong>
+                                <br>
+                                <small>${v.description}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <small>${formatTime(v.timestamp)}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="violations-section">
+                        <h2>No Violations Detected! 🎉</h2>
+                        <p>Excellent performance! No violations were recorded during your exam.</p>
+                    </div>
+                `;
+            }
+            
+            // Action buttons
+            html += `
+                <div class="buttons">
+                    <button class="btn btn-primary" onclick="downloadReport()">
+                        📥 Download PDF Report
+                    </button>
+            `;
+            
+            if (currentUser.is_admin) {
+                html += `
+                    <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                        ← Back to Dashboard
+                    </button>
+                `;
+            } else {
+                html += `
+                    <button class="btn btn-secondary" onclick="window.location.href='test.html'">
+                        Take Another Exam
+                    </button>
+                `;
+            }
+            
+            html += `
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        // Download PDF report
+        function downloadReport() {
+            const submissionId = getSubmissionId();
+            if (submissionId) {
+                window.location.href = `/download-report/${submissionId}`;
+            }
+        }
+
+        // Show error message
+        function showError(message) {
+            const container = document.getElementById('results-content');
+            container.innerHTML = `
+                <div class="error">
+                    <h2>❌ Error</h2>
+                    <p>${message}</p>
+                    <button class="btn btn-secondary" onclick="window.location.href='${currentUser && currentUser.is_admin ? "dashboard.html" : "test.html"}'">
+                        Go Back
+                    </button>
+                </div>
+            `;
+        }
+
+        // Format violation type
+        function formatViolationType(type) {
+            return type.replace(/_/g, ' ')
+                      .split(' ')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ');
+        }
+
+        // Format date/time
+        function formatDateTime(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        function formatTime(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch {
+                return dateStr;
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 DOM loaded, checking authentication...');
+            const authenticated = await checkAuth();
+            if (authenticated) {
+                await loadResults();
+            }
+        });
+
+        console.log('✅ Results script loaded');
+    </script>
 </body>
 </html>

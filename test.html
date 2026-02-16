@@ -388,7 +388,6 @@
             color: #856404;
         }
 
-        /* Violation Alert Popup */
         .violation-alert {
             position: fixed;
             top: 100px;
@@ -478,7 +477,6 @@
             font-size: 14px;
         }
 
-        /* Warning Sound Animation */
         .screen-flash {
             position: fixed;
             top: 0;
@@ -501,7 +499,6 @@
             50% { opacity: 1; }
         }
 
-        /* Fullscreen Required Overlay */
         .fullscreen-overlay {
             position: fixed;
             top: 0;
@@ -591,6 +588,12 @@
             color: #856404;
             font-size: 14px;
         }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -621,593 +624,14 @@
         <div class="header-content">
             <h1>📝 Online Examination System</h1>
             <div class="user-info">
-                <span>Welcome, <strong>{{ user.full_name }}</strong></span>
+                <span>Welcome, <strong id="user-name">Loading...</strong></span>
                 <a href="/logout" class="logout-btn">Logout</a>
             </div>
         </div>
     </div>
 
-    <div class="container">
-        <div class="exam-section">
-            <div class="exam-info">
-                <h2>🎓 Python Programming Assessment</h2>
-                <p><strong>Duration:</strong> 45 minutes</p>
-                <p><strong>Total Questions:</strong> 20</p>
-                <p><strong>Pass Score:</strong> 60% (12 correct answers)</p>
-                <p><strong>Instructions:</strong> Select one answer for each question. Your session is being monitored by AI proctoring system.</p>
-            </div>
-
-            <div class="warning-banner">
-                <span style="font-size: 24px;">⚠️</span>
-                <div>
-                    <strong>Proctoring Active:</strong> Do not switch tabs, exit fullscreen, or leave the exam window. All violations will be recorded and may affect your credibility score.
-                </div>
-            </div>
-
-            <form id="exam-form">
-                <!-- Question 1 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">1</div>
-                        <h3>What is Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q1" value="a" required>
-                            <span>A) A compiled programming language used for system programming</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q1" value="b">
-                            <span>B) A high-level, interpreted programming language</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q1" value="c">
-                            <span>C) A database management system</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q1" value="d">
-                            <span>D) An operating system like Linux</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 2 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">2</div>
-                        <h3>Which keyword is used to define a function in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q2" value="a" required>
-                            <span>A) function</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q2" value="b">
-                            <span>B) def</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q2" value="c">
-                            <span>C) func</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q2" value="d">
-                            <span>D) define</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 3 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">3</div>
-                        <h3>What is the output of: print(2 ** 3)</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q3" value="a" required>
-                            <span>A) 5</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q3" value="b">
-                            <span>B) 6</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q3" value="c">
-                            <span>C) 8</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q3" value="d">
-                            <span>D) 9</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 4 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">4</div>
-                        <h3>Which of the following data types is immutable in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q4" value="a" required>
-                            <span>A) List</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q4" value="b">
-                            <span>B) Dictionary</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q4" value="c">
-                            <span>C) Tuple</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q4" value="d">
-                            <span>D) Set</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 5 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">5</div>
-                        <h3>What does 'pip' stand for in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q5" value="a" required>
-                            <span>A) Python Installer Package</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q5" value="b">
-                            <span>B) Preferred Installer Program</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q5" value="c">
-                            <span>C) Package Installer for Python</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q5" value="d">
-                            <span>D) Python Installation Program</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 6 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">6</div>
-                        <h3>Which operator is used for floor division in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q6" value="a" required>
-                            <span>A) /</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q6" value="b">
-                            <span>B) //</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q6" value="c">
-                            <span>C) %</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q6" value="d">
-                            <span>D) **</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 7 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">7</div>
-                        <h3>How do you start a comment in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q7" value="a" required>
-                            <span>A) //</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q7" value="b">
-                            <span>B) #</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q7" value="c">
-                            <span>C) /*</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q7" value="d">
-                            <span>D) --</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 8 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">8</div>
-                        <h3>What is the correct way to create a list in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q8" value="a" required>
-                            <span>A) list = (1, 2, 3)</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q8" value="b">
-                            <span>B) list = [1, 2, 3]</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q8" value="c">
-                            <span>C) list = {1, 2, 3}</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q8" value="d">
-                            <span>D) list = <1, 2, 3></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 9 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">9</div>
-                        <h3>Which method is used to add an element to the end of a list?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q9" value="a" required>
-                            <span>A) add()</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q9" value="b">
-                            <span>B) append()</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q9" value="c">
-                            <span>C) insert()</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q9" value="d">
-                            <span>D) push()</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 10 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">10</div>
-                        <h3>What is the output of: print(type([]))</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q10" value="a" required>
-                            <span>A) &lt;class 'tuple'&gt;</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q10" value="b">
-                            <span>B) &lt;class 'list'&gt;</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q10" value="c">
-                            <span>C) &lt;class 'dict'&gt;</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q10" value="d">
-                            <span>D) &lt;class 'set'&gt;</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 11 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">11</div>
-                        <h3>Which of the following is used to handle exceptions in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q11" value="a" required>
-                            <span>A) try-catch</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q11" value="b">
-                            <span>B) try-except</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q11" value="c">
-                            <span>C) do-catch</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q11" value="d">
-                            <span>D) try-error</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 12 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">12</div>
-                        <h3>What is the correct syntax to import a module named 'math'?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q12" value="a" required>
-                            <span>A) include math</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q12" value="b">
-                            <span>B) import math</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q12" value="c">
-                            <span>C) using math</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q12" value="d">
-                            <span>D) require math</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 13 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">13</div>
-                        <h3>Which keyword is used to create a class in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q13" value="a" required>
-                            <span>A) class</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q13" value="b">
-                            <span>B) Class</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q13" value="c">
-                            <span>C) struct</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q13" value="d">
-                            <span>D) object</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 14 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">14</div>
-                        <h3>What is the output of: len("Python")</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q14" value="a" required>
-                            <span>A) 5</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q14" value="b">
-                            <span>B) 6</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q14" value="c">
-                            <span>C) 7</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q14" value="d">
-                            <span>D) Error</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 15 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">15</div>
-                        <h3>Which of the following is NOT a valid variable name in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q15" value="a" required>
-                            <span>A) my_var</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q15" value="b">
-                            <span>B) _myvar</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q15" value="c">
-                            <span>C) 2myvar</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q15" value="d">
-                            <span>D) myVar2</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 16 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">16</div>
-                        <h3>What does the 'break' statement do in a loop?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q16" value="a" required>
-                            <span>A) Skips the current iteration and continues with the next</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q16" value="b">
-                            <span>B) Exits the loop entirely</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q16" value="c">
-                            <span>C) Pauses the loop temporarily</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q16" value="d">
-                            <span>D) Restarts the loop from the beginning</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 17 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">17</div>
-                        <h3>Which method converts a string to lowercase in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q17" value="a" required>
-                            <span>A) lowercase()</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q17" value="b">
-                            <span>B) lower()</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q17" value="c">
-                            <span>C) toLower()</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q17" value="d">
-                            <span>D) caseLower()</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 18 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">18</div>
-                        <h3>What is the output of: print(3 == 3.0)</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q18" value="a" required>
-                            <span>A) True</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q18" value="b">
-                            <span>B) False</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q18" value="c">
-                            <span>C) Error</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q18" value="d">
-                            <span>D) None</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 19 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">19</div>
-                        <h3>Which of the following is used to create a dictionary in Python?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q19" value="a" required>
-                            <span>A) []</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q19" value="b">
-                            <span>B) {}</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q19" value="c">
-                            <span>C) ()</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q19" value="d">
-                            <span>D) <></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Question 20 -->
-                <div class="question">
-                    <div class="question-header">
-                        <div class="question-number">20</div>
-                        <h3>What is the purpose of the 'self' parameter in Python class methods?</h3>
-                    </div>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q20" value="a" required>
-                            <span>A) It refers to the class itself</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q20" value="b">
-                            <span>B) It refers to the current instance of the class</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q20" value="c">
-                            <span>C) It is used to create global variables</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q20" value="d">
-                            <span>D) It is optional and has no special meaning</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button type="submit" class="submit-btn" id="submit-btn">Submit Exam</button>
-            </form>
-        </div>
-
-        <div class="sidebar">
-            <div class="proctoring-panel">
-                <h3>🎥 AI Proctoring</h3>
-                <div class="webcam-container">
-                    <video id="webcam" autoplay playsinline muted></video>
-                </div>
-                <div id="face-status" class="status-indicator warning">
-                    <span>⚠️</span>
-                    <span>Initializing camera...</span>
-                </div>
-
-                <div class="timer" id="timer">45:00</div>
-                
-                <div class="credibility-score">
-                    <div class="score-value" id="credibility-score">100</div>
-                    <div class="score-label">Credibility Score</div>
-                </div>
-
-                <div class="stats">
-                    <div class="stat-item">
-                        <div class="stat-value" id="answered-count">0</div>
-                        <div class="stat-label">Answered</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="violation-count">0</div>
-                        <div class="stat-label">Violations</div>
-                    </div>
-                </div>
-
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-
-                <h3 style="margin-top: 20px; font-size: 14px;">📋 Violation Log</h3>
-                <div class="violation-log" id="violation-log">
-                    <small style="color: #666;">No violations recorded</small>
-                </div>
-            </div>
-        </div>
+    <div id="main-content" class="loading">
+        Loading exam...
     </div>
 
     <!-- Violation Alert Popup -->
@@ -1230,9 +654,8 @@
 
     <script>
         console.log('✅ Exam page loaded');
-        console.log('Current URL:', window.location.href);
-        console.log('User: {{ user.username }}');
-
+        
+        let currentUser = null;
         let examStartTime = Date.now();
         let violations = [];
         let credibilityScore = 100;
@@ -1241,14 +664,148 @@
         const totalQuestions = 20;
         let examStarted = false;
 
-        // Handle fullscreen button click
-        document.addEventListener('DOMContentLoaded', function() {
-            const enterFullscreenBtn = document.getElementById('enter-fullscreen-btn');
+        // Check authentication and load user data
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/check-auth');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    console.log('Not authenticated, redirecting to login');
+                    window.location.href = 'index.html';
+                    return false;
+                }
+                
+                currentUser = data;
+                console.log('User authenticated:', currentUser);
+                document.getElementById('user-name').textContent = currentUser.full_name || currentUser.username;
+                
+                loadExamContent();
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = 'index.html';
+                return false;
+            }
+        }
+
+        // Load exam content after authentication
+        function loadExamContent() {
+            const mainContent = document.getElementById('main-content');
+            mainContent.className = 'container';
+            mainContent.innerHTML = `
+                <div class="exam-section">
+                    <div class="exam-info">
+                        <h2>🎓 Python Programming Assessment</h2>
+                        <p><strong>Duration:</strong> 45 minutes</p>
+                        <p><strong>Total Questions:</strong> 20</p>
+                        <p><strong>Pass Score:</strong> 60% (12 correct answers)</p>
+                        <p><strong>Instructions:</strong> Select one answer for each question. Your session is being monitored by AI proctoring system.</p>
+                    </div>
+
+                    <div class="warning-banner">
+                        <span style="font-size: 24px;">⚠️</span>
+                        <div>
+                            <strong>Proctoring Active:</strong> Do not switch tabs, exit fullscreen, or leave the exam window. All violations will be recorded and may affect your credibility score.
+                        </div>
+                    </div>
+
+                    <form id="exam-form">
+                        ${generateQuestions()}
+                        <button type="submit" class="submit-btn" id="submit-btn">Submit Exam</button>
+                    </form>
+                </div>
+
+                <div class="sidebar">
+                    <div class="proctoring-panel">
+                        <h3>🎥 AI Proctoring</h3>
+                        <div class="webcam-container">
+                            <video id="webcam" autoplay playsinline muted></video>
+                        </div>
+                        <div id="face-status" class="status-indicator warning">
+                            <span>⚠️</span>
+                            <span>Initializing camera...</span>
+                        </div>
+
+                        <div class="timer" id="timer">45:00</div>
+                        
+                        <div class="credibility-score">
+                            <div class="score-value" id="credibility-score">100</div>
+                            <div class="score-label">Credibility Score</div>
+                        </div>
+
+                        <div class="stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="answered-count">0</div>
+                                <div class="stat-label">Answered</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="violation-count">0</div>
+                                <div class="stat-label">Violations</div>
+                            </div>
+                        </div>
+
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+
+                        <h3 style="margin-top: 20px; font-size: 14px;">📋 Violation Log</h3>
+                        <div class="violation-log" id="violation-log">
+                            <small style="color: #666;">No violations recorded</small>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            enterFullscreenBtn.addEventListener('click', async function() {
+            setupExamHandlers();
+        }
+
+        function generateQuestions() {
+            const questions = [
+                {q: "What is Python?", options: ["A compiled programming language used for system programming", "A high-level, interpreted programming language", "A database management system", "An operating system like Linux"], answer: "b"},
+                {q: "Which keyword is used to define a function in Python?", options: ["function", "def", "func", "define"], answer: "b"},
+                {q: "What is the output of: print(2 ** 3)", options: ["5", "6", "8", "9"], answer: "c"},
+                {q: "Which of the following data types is immutable in Python?", options: ["List", "Dictionary", "Tuple", "Set"], answer: "c"},
+                {q: "What does 'pip' stand for in Python?", options: ["Python Installer Package", "Preferred Installer Program", "Package Installer for Python", "Python Installation Program"], answer: "b"},
+                {q: "Which operator is used for floor division in Python?", options: ["/", "//", "%", "**"], answer: "b"},
+                {q: "How do you start a comment in Python?", options: ["//", "#", "/*", "--"], answer: "b"},
+                {q: "What is the correct way to create a list in Python?", options: ["list = (1, 2, 3)", "list = [1, 2, 3]", "list = {1, 2, 3}", "list = <1, 2, 3>"], answer: "b"},
+                {q: "Which method is used to add an element to the end of a list?", options: ["add()", "append()", "insert()", "push()"], answer: "b"},
+                {q: "What is the output of: print(type([]))", options: ["<class 'tuple'>", "<class 'list'>", "<class 'dict'>", "<class 'set'>"], answer: "b"},
+                {q: "Which of the following is used to handle exceptions in Python?", options: ["try-catch", "try-except", "do-catch", "try-error"], answer: "b"},
+                {q: "What is the correct syntax to import a module named 'math'?", options: ["include math", "import math", "using math", "require math"], answer: "b"},
+                {q: "Which keyword is used to create a class in Python?", options: ["class", "Class", "struct", "object"], answer: "a"},
+                {q: "What is the output of: len(\"Python\")", options: ["5", "6", "7", "Error"], answer: "b"},
+                {q: "What is the purpose of the 'self' parameter in Python class methods?", options: ["It refers to the class itself", "It refers to the current instance of the class", "It is used to create global variables", "It is optional and has no special meaning"], answer: "b"}
+            ];
+            
+            let html = '';
+            questions.forEach((q, i) => {
+                html += `
+                    <div class="question">
+                        <div class="question-header">
+                            <div class="question-number">${i + 1}</div>
+                            <h3>${q.q}</h3>
+                        </div>
+                        <div class="options">
+                            ${q.options.map((opt, j) => `
+                                <label class="option">
+                                    <input type="radio" name="q${i + 1}" value="${String.fromCharCode(97 + j)}" required>
+                                    <span>${String.fromCharCode(65 + j)}) ${opt}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function setupExamHandlers() {
+            // Setup fullscreen button
+            document.getElementById('enter-fullscreen-btn').addEventListener('click', async function() {
                 try {
                     await document.documentElement.requestFullscreen();
-                    // Fullscreen accepted - hide overlay and start exam
                     document.getElementById('fullscreen-overlay').classList.add('hidden');
                     examStarted = true;
                     startExam();
@@ -1257,78 +814,42 @@
                     alert('❌ Fullscreen mode is required to start the exam. Please allow fullscreen and try again.');
                 }
             });
-        });
 
-        // Start exam after fullscreen is granted
+            // Track answered questions
+            document.querySelectorAll('input[type="radio"]').forEach(input => {
+                input.addEventListener('change', function() {
+                    answeredQuestions.add(this.name);
+                    updateProgress();
+                });
+            });
+
+            // Setup form submission
+            document.getElementById('exam-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (answeredQuestions.size < totalQuestions) {
+                    const unanswered = totalQuestions - answeredQuestions.size;
+                    if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
+                        return;
+                    }
+                }
+                
+                submitExam();
+            });
+
+            // Start timer
+            startTimer();
+            
+            // Setup violation monitors
+            setupViolationMonitors();
+        }
+
         function startExam() {
             console.log('🚀 Exam started in fullscreen mode');
             initWebcam();
-            examStartTime = Date.now(); // Reset start time
+            examStartTime = Date.now();
         }
 
-        // Detect screenshot attempts (multiple methods)
-        
-        // Method 1: Detect Print Screen key
-        document.addEventListener('keyup', function(e) {
-            // Print Screen key
-            if (e.key === 'PrintScreen' || e.keyCode === 44) {
-                logViolation('screenshot_attempt');
-                alert('🚫 Screenshots are not allowed during the exam!');
-                // Try to clear clipboard
-                navigator.clipboard.writeText('');
-            }
-        });
-
-        // Method 2: Detect common screenshot shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Windows: Win + Shift + S (Snipping Tool)
-            // Windows: Win + PrtScn
-            // Mac: Cmd + Shift + 3/4/5
-            if (
-                (e.key === 'PrintScreen') ||
-                (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5')) ||
-                (e.metaKey && e.shiftKey && e.key === 's')
-            ) {
-                e.preventDefault();
-                logViolation('screenshot_attempt');
-                alert('🚫 Screenshots are not allowed during the exam!');
-                return false;
-            }
-        });
-
-        // Method 3: Detect when window loses focus (might indicate screenshot tool)
-        let lastBlurTime = 0;
-        window.addEventListener('blur', function() {
-            if (!examStarted) return;
-            
-            const now = Date.now();
-            // If window lost focus quickly (possible screenshot tool)
-            if (now - lastBlurTime > 1000) {
-                setTimeout(function() {
-                    if (!document.hasFocus()) {
-                        logViolation('window_focus_lost');
-                    }
-                }, 100);
-            }
-            lastBlurTime = now;
-        });
-
-        // Method 4: Detect visibility change (screenshot tools often trigger this)
-        let visibilityChangeCount = 0;
-        document.addEventListener('visibilitychange', function() {
-            if (!examStarted) return;
-            
-            if (document.hidden) {
-                visibilityChangeCount++;
-                // Multiple quick visibility changes might indicate screenshot tool
-                if (visibilityChangeCount > 3) {
-                    logViolation('suspicious_activity');
-                    visibilityChangeCount = 0;
-                }
-            }
-        });
-
-        // Initialize webcam
         async function initWebcam() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
@@ -1344,7 +865,6 @@
             }
         }
 
-        // Update face detection status
         function updateFaceStatus(type, message) {
             const status = document.getElementById('face-status');
             status.className = `status-indicator ${type}`;
@@ -1352,11 +872,10 @@
             status.innerHTML = `<span>${parts[0]}</span><span>${message.substring(parts[0].length + 1)}</span>`;
         }
 
-        // Face detection (sends frames to backend)
         function startFaceDetection() {
             setInterval(async () => {
                 const video = document.getElementById('webcam');
-                if (!video.videoWidth) return;
+                if (!video || !video.videoWidth) return;
 
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
@@ -1390,11 +909,8 @@
             }, 3000);
         }
 
-        // Log violation
         async function logViolation(type) {
             violations.push({ type, time: new Date() });
-            
-            // Show immediate alert to student
             showViolationAlert(type);
             
             try {
@@ -1412,11 +928,8 @@
             }
         }
 
-        // Add violation to UI
         function addViolationToLog(type) {
             const log = document.getElementById('violation-log');
-            
-            // Remove "no violations" message
             if (log.querySelector('small')) {
                 log.innerHTML = '';
             }
@@ -1429,7 +942,6 @@
             log.scrollTop = log.scrollHeight;
         }
 
-        // Show violation alert popup with custom message
         function showViolationAlert(type) {
             const messages = {
                 'tab_switch': '🚫 Tab switching detected! Do not leave the exam window.',
@@ -1441,7 +953,6 @@
                 'no_face': '⚠️ Your face is not visible. Please look at the camera.',
                 'multiple_faces': '🚫 Multiple faces detected! Only you should be visible.',
                 'camera_denied': '❌ Camera access is required to take the exam.',
-                'fullscreen_denied': '⚠️ Please allow fullscreen mode for the exam.',
                 'screenshot_attempt': '🚫 SCREENSHOT DETECTED! Screenshots are strictly prohibited.',
                 'window_focus_lost': '⚠️ Do not switch away from the exam window.',
                 'suspicious_activity': '🚫 Suspicious activity detected!'
@@ -1449,12 +960,10 @@
 
             const message = messages[type] || '⚠️ Violation detected!';
             
-            // Flash screen
             const flash = document.getElementById('screen-flash');
             flash.classList.add('active');
             setTimeout(() => flash.classList.remove('active'), 300);
             
-            // Show alert
             const alert = document.getElementById('violation-alert');
             const messageEl = document.getElementById('violation-alert-message');
             const timeEl = document.getElementById('violation-alert-time');
@@ -1467,7 +976,6 @@
             alert.classList.remove('hiding');
             alert.classList.add('show');
             
-            // Auto-hide after 5 seconds
             setTimeout(() => {
                 alert.classList.add('hiding');
                 setTimeout(() => {
@@ -1476,17 +984,15 @@
             }, 5000);
         }
 
-        // Update credibility score
         async function updateCredibilityScore() {
             try {
                 const response = await fetch('/get-credibility-score');
                 const data = await response.json();
                 if (data.success) {
                     credibilityScore = data.credibility_score;
-                    document.getElementById('credibility-score').textContent = credibilityScore;
-                    
-                    // Update color based on score
                     const scoreEl = document.getElementById('credibility-score');
+                    scoreEl.textContent = credibilityScore;
+                    
                     if (credibilityScore >= 80) {
                         scoreEl.style.color = '#28a745';
                     } else if (credibilityScore >= 60) {
@@ -1500,38 +1006,29 @@
             }
         }
 
-        // Timer
-        let timeLeft = 45 * 60; // 45 minutes in seconds
-        
-        function updateTimer() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            const timerEl = document.getElementById('timer');
-            timerEl.textContent = 
-                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        function startTimer() {
+            let timeLeft = 45 * 60;
             
-            // Warning color when 5 minutes left
-            if (timeLeft <= 300) {
-                timerEl.classList.add('warning');
-            }
-            
-            if (timeLeft === 0) {
-                submitExam();
-            } else {
-                timeLeft--;
-            }
+            setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                const timerEl = document.getElementById('timer');
+                if (timerEl) {
+                    timerEl.textContent = 
+                        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    
+                    if (timeLeft <= 300) {
+                        timerEl.classList.add('warning');
+                    }
+                    
+                    if (timeLeft === 0) {
+                        submitExam();
+                    } else {
+                        timeLeft--;
+                    }
+                }
+            }, 1000);
         }
-        
-        setInterval(updateTimer, 1000);
-
-        // Track answered questions
-        document.querySelectorAll('input[type="radio"]').forEach(input => {
-            input.addEventListener('change', function() {
-                const questionName = this.name;
-                answeredQuestions.add(questionName);
-                updateProgress();
-            });
-        });
 
         function updateProgress() {
             const answered = answeredQuestions.size;
@@ -1540,65 +1037,75 @@
             document.getElementById('answered-count').textContent = answered;
         }
 
-        // Monitor tab switching
-        document.addEventListener('visibilitychange', function() {
-            if (!examStarted) return; // Don't log violations before exam starts
-            
-            if (document.hidden) {
-                logViolation('tab_switch');
-            }
-        });
-
-        // Prevent right-click
-        document.addEventListener('contextmenu', function(e) {
-            if (!examStarted) return;
-            e.preventDefault();
-            logViolation('right_click');
-        });
-
-        // Prevent copying
-        document.addEventListener('copy', function(e) {
-            if (!examStarted) return;
-            e.preventDefault();
-            logViolation('copy_attempt');
-        });
-
-        // Prevent pasting
-        document.addEventListener('paste', function(e) {
-            if (!examStarted) return;
-            e.preventDefault();
-            logViolation('paste_attempt');
-        });
-
-        // Detect keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if (!examStarted) return;
-            // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
-            if (e.keyCode === 123 || 
-                (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
-                (e.ctrlKey && e.keyCode === 85)) {
-                e.preventDefault();
-                logViolation('devtools_attempt');
-            }
-        });
-
-        // Submit exam
-        document.getElementById('exam-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            // Check if all questions are answered
-            if (answeredQuestions.size < totalQuestions) {
-                const unanswered = totalQuestions - answeredQuestions.size;
-                if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
-                    return;
+        function setupViolationMonitors() {
+            document.addEventListener('visibilitychange', function() {
+                if (!examStarted) return;
+                if (document.hidden) {
+                    logViolation('tab_switch');
                 }
-            }
-            
-            submitExam();
-        });
+            });
+
+            document.addEventListener('contextmenu', function(e) {
+                if (!examStarted) return;
+                e.preventDefault();
+                logViolation('right_click');
+            });
+
+            document.addEventListener('copy', function(e) {
+                if (!examStarted) return;
+                e.preventDefault();
+                logViolation('copy_attempt');
+            });
+
+            document.addEventListener('paste', function(e) {
+                if (!examStarted) return;
+                e.preventDefault();
+                logViolation('paste_attempt');
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (!examStarted) return;
+                if (e.keyCode === 123 || 
+                    (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+                    (e.ctrlKey && e.keyCode === 85)) {
+                    e.preventDefault();
+                    logViolation('devtools_attempt');
+                }
+                
+                if (e.key === 'PrintScreen' || e.keyCode === 44 ||
+                    (e.metaKey && e.shiftKey && (e.key === '3' || e.key === '4' || e.key === '5')) ||
+                    (e.metaKey && e.shiftKey && e.key === 's')) {
+                    e.preventDefault();
+                    logViolation('screenshot_attempt');
+                    return false;
+                }
+            });
+
+            document.addEventListener('fullscreenchange', function() {
+                if (!examStarted) return;
+                
+                if (!document.fullscreenElement) {
+                    logViolation('exit_fullscreen');
+                    setTimeout(() => {
+                        if (confirm('⚠️ You exited fullscreen mode. Click OK to re-enter fullscreen and continue the exam.')) {
+                            document.documentElement.requestFullscreen().catch(err => {
+                                console.error('Failed to re-enter fullscreen:', err);
+                            });
+                        }
+                    }, 500);
+                }
+            });
+
+            window.addEventListener('beforeunload', function(e) {
+                if (examStarted) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                    return 'Are you sure you want to leave? Your exam will be submitted.';
+                }
+            });
+        }
 
         async function submitExam() {
-            // Disable submit button
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Submitting...';
@@ -1625,15 +1132,11 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Stop webcam
                     if (stream) {
                         stream.getTracks().forEach(track => track.stop());
                     }
                     
-                    // Show success message
                     alert('Exam submitted successfully!');
-                    
-                    // Redirect to results
                     window.location.href = data.redirect;
                 } else {
                     alert('Error submitting exam: ' + (data.error || 'Unknown error'));
@@ -1648,34 +1151,10 @@
             }
         }
 
-        // Initialize on load
-        window.addEventListener('load', function() {
-            console.log('🚀 Page loaded - waiting for fullscreen confirmation');
-            // Don't start exam until fullscreen is accepted via button
-        });
-
-        // Detect fullscreen exit
-        document.addEventListener('fullscreenchange', function() {
-            if (!examStarted) return;
-            
-            if (!document.fullscreenElement) {
-                logViolation('exit_fullscreen');
-                // Try to re-enter fullscreen
-                setTimeout(() => {
-                    if (confirm('⚠️ You exited fullscreen mode. Click OK to re-enter fullscreen and continue the exam.')) {
-                        document.documentElement.requestFullscreen().catch(err => {
-                            console.error('Failed to re-enter fullscreen:', err);
-                        });
-                    }
-                }, 500);
-            }
-        });
-
-        // Prevent leaving page
-        window.addEventListener('beforeunload', function(e) {
-            e.preventDefault();
-            e.returnValue = '';
-            return 'Are you sure you want to leave? Your exam will be submitted.';
+        // Initialize when page loads
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM loaded, checking authentication...');
+            checkAuth();
         });
 
         console.log('✅ All exam features initialized');
