@@ -1,5 +1,5 @@
-# app.py - Main Flask Application - NO TEMPLATES VERSION
-from flask import Flask, request, jsonify, session, redirect, url_for, send_from_directory, send_file
+# app.py - AI Recruiting System - Complete Backend (Gemini Edition)
+from flask import Flask, request, jsonify, session, send_from_directory, send_file, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -7,756 +7,1308 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from config import Config
-import cv2
-import base64
-import numpy as np
-import json
-import os
+import cv2, base64, numpy as np, json, os, random, string, secrets
+from io import BytesIO
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from io import BytesIO
 
-# ========================================
-# INITIALIZE FLASK APP (ONLY ONCE!)
-# ========================================
+# ── App Init ───────────────────────────────────────────────────────────────────
 app = Flask(__name__, static_folder='.')
 app.config.from_object(Config)
 Config.init_app(app)
 
-# Add CORS support
-CORS(app, resources={
-    r"/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
-    }
-})
-
-# Initialize extensions
+CORS(app, resources={"/*": {"origins": "*", "supports_credentials": True}})
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'serve_index'
 login_manager.session_protection = 'strong'
 
-# ========================================
-# DATABASE MODELS
-# ========================================
+# ── Models ─────────────────────────────────────────────────────────────────────
 
 class User(UserMixin, db.Model):
-    """User model"""
     __tablename__ = 'users'
-    
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username      = db.Column(db.String(80),  unique=True, nullable=False, index=True)
+    email         = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(512), nullable=False)
-    full_name = db.Column(db.String(150))
-    is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    
-    # Relationships
-    violations = db.relationship('Violation', backref='user', lazy='dynamic', cascade='all, delete-orphan')
-    submissions = db.relationship('TestSubmission', backref='user', lazy='dynamic', cascade='all, delete-orphan')
-    
-    def set_password(self, password):
-        """Hash and set password using scrypt"""
-        self.password_hash = generate_password_hash(password, method='scrypt')
-        print(f"✅ Password set for {self.username}")
-    
-    def check_password(self, password):
-        """Verify password"""
-        result = check_password_hash(self.password_hash, password)
-        print(f"🔐 Password check for '{self.username}': {'✅ MATCH' if result else '❌ NO MATCH'}")
-        return result
-    
-    def __repr__(self):
-        return f'<User {self.username}>'
+    full_name     = db.Column(db.String(150))
+    role          = db.Column(db.String(20), default='candidate')
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
-class Violation(db.Model):
-    """Violation model"""
-    __tablename__ = 'violations'
-    
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
-    violation_type = db.Column(db.String(50), nullable=False, index=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    severity = db.Column(db.Integer, default=1, nullable=False)
-    description = db.Column(db.Text)
-    
+    violations  = db.relationship('Violation',      backref='user', lazy='dynamic', cascade='all,delete-orphan')
+    submissions = db.relationship('TestSubmission', backref='user', lazy='dynamic', cascade='all,delete-orphan')
+
+    @property
+    def is_admin(self):
+        return self.role in ('admin', 'recruiter')
+
+    def set_password(self, pw):
+        self.password_hash = generate_password_hash(pw, method='scrypt')
+
+    def check_password(self, pw):
+        return check_password_hash(self.password_hash, pw)
+
+
+class ExamQuestion(db.Model):
+    __tablename__ = 'exam_questions'
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    job_role      = db.Column(db.String(100), nullable=False, index=True)
+    question_text = db.Column(db.Text,        nullable=False)
+    option_a      = db.Column(db.String(500), nullable=False)
+    option_b      = db.Column(db.String(500), nullable=False)
+    option_c      = db.Column(db.String(500), nullable=False)
+    option_d      = db.Column(db.String(500), nullable=False)
+    correct_answer= db.Column(db.String(1),   nullable=False)
+    difficulty    = db.Column(db.String(20),  default='medium')
+    category      = db.Column(db.String(100))
+
+    def to_dict(self, include_answer=False):
+        d = {
+            'id': self.id, 'job_role': self.job_role,
+            'question_text': self.question_text,
+            'options': {'a': self.option_a, 'b': self.option_b,
+                        'c': self.option_c, 'd': self.option_d},
+            'difficulty': self.difficulty, 'category': self.category
+        }
+        if include_answer:
+            d['correct_answer'] = self.correct_answer
+        return d
+
+
+class InterviewSession(db.Model):
+    __tablename__ = 'interview_sessions'
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    candidate_id  = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    recruiter_id  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    job_role      = db.Column(db.String(100), nullable=False)
+    mode          = db.Column(db.String(30),  nullable=False)
+    room_code     = db.Column(db.String(16),  unique=True, nullable=False)
+    status        = db.Column(db.String(20),  default='pending')
+    credibility_score = db.Column(db.Integer, default=100)
+    interview_score   = db.Column(db.Integer, default=0)
+    started_at    = db.Column(db.DateTime)
+    ended_at      = db.Column(db.DateTime)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    question_ids  = db.Column(db.Text)
+    ai_transcript = db.Column(db.Text)
+    recruiter_notes = db.Column(db.Text)
+
+    candidate = db.relationship('User', foreign_keys=[candidate_id], backref='sessions_as_candidate')
+    recruiter = db.relationship('User', foreign_keys=[recruiter_id], backref='sessions_as_recruiter')
+
     def to_dict(self):
         return {
             'id': self.id,
-            'user_id': self.user_id,
+            'candidate_name': self.candidate.full_name or self.candidate.username,
+            'candidate_username': self.candidate.username,
+            'job_role': self.job_role,
+            'mode': self.mode,
+            'room_code': self.room_code,
+            'status': self.status,
+            'credibility_score': self.credibility_score,
+            'interview_score': self.interview_score,
+            'started_at': self.started_at.strftime('%Y-%m-%d %H:%M:%S') if self.started_at else None,
+            'ended_at':   self.ended_at.strftime('%Y-%m-%d %H:%M:%S') if self.ended_at else None,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        }
+
+
+class Violation(db.Model):
+    __tablename__ = 'violations'
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id       = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    session_id    = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='CASCADE'), nullable=True)
+    violation_type= db.Column(db.String(50), nullable=False, index=True)
+    timestamp     = db.Column(db.DateTime,   default=datetime.utcnow, index=True)
+    severity      = db.Column(db.Integer,    default=1)
+    description   = db.Column(db.Text)
+    gaze_data     = db.Column(db.Text)
+    device_data   = db.Column(db.Text)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'user_id': self.user_id,
             'username': self.user.username,
             'violation_type': self.violation_type,
             'timestamp': self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'severity': self.severity,
-            'description': self.description
+            'severity': self.severity, 'description': self.description
         }
-    
-    def __repr__(self):
-        return f'<Violation {self.violation_type}>'
+
+
+class GazeEvent(db.Model):
+    __tablename__ = 'gaze_events'
+    id         = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id    = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    session_id = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='CASCADE'), nullable=True)
+    direction  = db.Column(db.String(20))
+    confidence = db.Column(db.Float)
+    timestamp  = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class DeviceAlert(db.Model):
+    __tablename__ = 'device_alerts'
+    id          = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id     = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    session_id  = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='CASCADE'), nullable=True)
+    device_type = db.Column(db.String(50))
+    confidence  = db.Column(db.Float)
+    image_b64   = db.Column(db.Text)
+    timestamp   = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class TestSubmission(db.Model):
-    """Test submission model"""
     __tablename__ = 'test_submissions'
-    
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
-    answers = db.Column(db.Text, nullable=False)
-    credibility_score = db.Column(db.Integer, default=100, nullable=False)
-    total_violations = db.Column(db.Integer, default=0, nullable=False)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id         = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    session_id      = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='SET NULL'), nullable=True)
+    job_role        = db.Column(db.String(100), default='General')
+    mode            = db.Column(db.String(30),  default='mcq')
+    answers         = db.Column(db.Text, nullable=False)
+    credibility_score   = db.Column(db.Integer, default=100)
+    interview_score     = db.Column(db.Integer, default=0)
+    total_violations    = db.Column(db.Integer, default=0)
+    submitted_at    = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     exam_duration_seconds = db.Column(db.Integer)
-    passed = db.Column(db.Boolean, default=False)
-    
+    passed          = db.Column(db.Boolean, default=False)
+    attempt_number  = db.Column(db.Integer, default=1)
+    ai_feedback     = db.Column(db.Text)
+
     def to_dict(self):
         return {
-            'id': self.id,
-            'user_id': self.user_id,
+            'id': self.id, 'user_id': self.user_id,
             'username': self.user.username,
             'full_name': self.user.full_name,
+            'job_role': self.job_role or 'General',
+            'mode': self.mode,
             'answers': json.loads(self.answers),
             'credibility_score': self.credibility_score,
+            'interview_score': self.interview_score,
             'total_violations': self.total_violations,
             'submitted_at': self.submitted_at.strftime('%Y-%m-%d %H:%M:%S'),
             'exam_duration_seconds': self.exam_duration_seconds,
-            'passed': self.passed
+            'passed': self.passed,
+            'attempt_number': self.attempt_number,
+            'ai_feedback': self.ai_feedback,
         }
 
-# ========================================
-# FLASK-LOGIN SETUP
-# ========================================
 
+# ── Login Manager ──────────────────────────────────────────────────────────────
 @login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
+def load_user(uid): return db.session.get(User, int(uid))
 
 @login_manager.unauthorized_handler
 def unauthorized():
-    """Handle unauthorized access"""
     if request.is_json or request.path.startswith('/api/'):
         return jsonify({'success': False, 'message': 'Login required'}), 401
     return send_from_directory('.', 'index.html')
 
-# ========================================
-# DATABASE INITIALIZATION
-# ========================================
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+
+def make_room_code(n=8):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=n))
+
+def get_violation_info(vtype):
+    return {
+        'tab_switch':       {'severity': 2, 'description': 'User switched tab/window'},
+        'exit_fullscreen':  {'severity': 3, 'description': 'Exited fullscreen'},
+        'no_face':          {'severity': 2, 'description': 'Face not visible'},
+        'multiple_faces':   {'severity': 3, 'description': 'Multiple faces detected'},
+        'right_click':      {'severity': 1, 'description': 'Right-click attempt'},
+        'copy_attempt':     {'severity': 1, 'description': 'Copy attempt'},
+        'paste_attempt':    {'severity': 1, 'description': 'Paste attempt'},
+        'devtools':         {'severity': 2, 'description': 'DevTools attempt'},
+        'gaze_away':        {'severity': 2, 'description': 'Looking away from screen'},
+        'phone_detected':   {'severity': 3, 'description': 'Phone/device detected'},
+        'second_screen':    {'severity': 3, 'description': 'Second screen detected'},
+    }.get(vtype, {'severity': 1, 'description': 'Unknown violation'})
+
+def calc_credibility(session_id):
+    violations = Violation.query.filter_by(session_id=session_id).all()
+    score = 100
+    for v in violations:
+        score -= app.config['SEVERITY_POINTS'].get(v.severity, 5)
+    if len(violations) > 10:
+        score -= (len(violations) - 10) * 2
+    return max(0, min(100, score))
+
+def log_violation_db(user_id, session_id, vtype, gaze_data=None, device_data=None):
+    info = get_violation_info(vtype)
+    v = Violation(
+        user_id=user_id, session_id=session_id,
+        violation_type=vtype, severity=info['severity'],
+        description=info['description'],
+        gaze_data=json.dumps(gaze_data) if gaze_data else None,
+        device_data=json.dumps(device_data) if device_data else None,
+    )
+    db.session.add(v)
+    db.session.commit()
+    sess = db.session.get(InterviewSession, session_id) if session_id else None
+    new_score = calc_credibility(session_id) if session_id else 100
+    if sess:
+        sess.credibility_score = new_score
+        db.session.commit()
+    socketio.emit('violation_alert', {
+        'user_id': user_id,
+        'username': db.session.get(User, user_id).username,
+        'violation_type': vtype, 'severity': info['severity'],
+        'timestamp': datetime.utcnow().strftime('%H:%M:%S'),
+        'new_credibility': new_score,
+    }, room='dashboard')
+    return v
+
+
+# ── Gemini Helper ──────────────────────────────────────────────────────────────
+def get_gemini_client():
+    """
+    Returns a configured Gemini GenerativeModel.
+    Install SDK:  pip install google-generativeai
+    Set key:      set GEMINI_API_KEY=AIza...your-key-here
+    """
+    import google.generativeai as genai
+    api_key = app.config.get('GEMINI_API_KEY', '') or os.environ.get('GEMINI_API_KEY', '')
+    if not api_key:
+        return None
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel('gemini-1.5-flash')   # fast + free tier available
+
+def gemini_ask(prompt):
+    """Send a prompt to Gemini and return the text response. Returns None on failure."""
+    model = get_gemini_client()
+    if not model:
+        return None
+    try:
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        print(f"Gemini error: {e}")
+        return None
+
+def parse_json_response(raw):
+    """Strip markdown code fences and parse JSON safely."""
+    if not raw:
+        return None
+    text = raw.strip()
+    if text.startswith('```'):
+        parts = text.split('```')
+        # parts[1] is the content inside the first fence pair
+        text = parts[1] if len(parts) > 1 else text
+        if text.startswith('json'):
+            text = text[4:]
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        return None
+
+
+# ── DB Seed ────────────────────────────────────────────────────────────────────
+QUESTION_BANK = {
+    "Python Developer": [
+        ("What is a Python decorator?","A function that modifies another function's behavior","A design pattern for objects","A type of Python variable","A method to import modules","a","Core Python"),
+        ("What does GIL stand for in Python?","General Interface Layer","Global Interpreter Lock","Generic Import Library","Global Instance List","b","Core Python"),
+        ("Which library is used for data manipulation?","NumPy","Matplotlib","Pandas","SciPy","c","Libraries"),
+        ("What does 'yield' do in Python?","Returns a value and exits","Pauses a function and returns a value (generator)","Imports an external library","Declares a global variable","b","Advanced Python"),
+        ("What is __init__ in Python classes?","Destroys objects","Class constructor called on instantiation","A static method","A module initializer","b","OOP"),
+        ("How do you handle exceptions in Python?","if/else blocks","try/except blocks","switch/case","catch/throw","b","Error Handling"),
+        ("What is the difference between list and tuple?","Lists store more elements","Tuples are mutable, lists immutable","Lists are mutable, tuples immutable","No difference","c","Data Structures"),
+        ("What is a virtual environment?","A remote server","Isolated Python env with its own packages","A GUI framework","A debugging tool","b","Development"),
+        ("What does the 'with' statement do?","Creates a loop","Defines a function","Manages context and ensures resource cleanup","Imports modules","c","Core Python"),
+        ("What is the purpose of *args?","Pass keyword arguments","Pass variable number of positional arguments","Define default values","Import arguments","b","Core Python"),
+        ("What is duck typing?","Duck-shaped data structures","Type system based on object behavior not class","Automatic type conversion","Testing methodology","b","Advanced Python"),
+        ("What does json.loads() do?","Saves data to JSON file","Converts JSON string to Python object","Loads a JSON module","Validates JSON syntax","b","Data Formats"),
+        ("What is method resolution order (MRO)?","Order methods are defined","Order Python searches for methods in inheritance","Alphabetical method sort","Async method execution order","b","OOP"),
+        ("What is list comprehension?","A way to sort lists","Concise way to create lists in one line","Merge multiple lists","Delete list elements","b","Core Python"),
+        ("What does @property do in Python?","Makes a method static","Allows a method to be accessed like an attribute","Creates a private variable","Imports a property from module","b","OOP"),
+    ],
+    "Frontend Developer": [
+        ("What is the Virtual DOM in React?","A real browser DOM","Lightweight in-memory copy of DOM for efficient updates","A virtual reality interface","A database for React state","b","React"),
+        ("What is the purpose of async/await?","Make code run faster","Handle async operations in synchronous-like syntax","Create multiple threads","Delay function execution","b","JavaScript"),
+        ("What does HTTP status 404 mean?","Server error","Unauthorized","Resource not found","Request timeout","c","Web Fundamentals"),
+        ("What is event bubbling in JavaScript?","Floating animations","Event propagation from child to parent elements","Method for creating listeners","Canceling events","b","JavaScript"),
+        ("What is the purpose of webpack?","CSS preprocessor","JavaScript testing framework","Module bundler that packages assets","Backend web framework","c","Tools"),
+        ("What is CORS?","CSS layout system","Security mechanism for cross-origin HTTP requests","JavaScript testing library","React state management","b","Web Security"),
+        ("Difference between == and === in JavaScript?","No difference","== checks value only, === checks value and type","=== checks value only","Both check type and value","b","JavaScript"),
+        ("What is a Promise in JavaScript?","Guaranteed synchronous operation","Object for eventual completion of async operation","Way to create classes","A type of variable","b","JavaScript"),
+        ("What is Flexbox used for?","Animation creation","Database connections","One-dimensional layout alignment","Creating 3D effects","c","CSS"),
+        ("What is semantic HTML?","HTML with inline CSS","HTML tags that describe meaning of content","Minified HTML","HTML generated by JavaScript","b","HTML"),
+        ("What is localStorage?","Server-side storage","Client-side key-value storage persisting across sessions","In-memory cache clearing on reload","Database for frontend","b","Web APIs"),
+        ("What is the CSS Box Model?","3D rendering system","Layout model with margin, border, padding, content","Grid system for CSS","Flexbox config method","b","CSS"),
+        ("What is a REST API?","Rapid execution system tool","Stateless web service using HTTP methods","Testing framework","Real-time protocol","b","APIs"),
+        ("What is z-index in CSS?","Sets transparency","Controls stacking order of overlapping elements","Zooms in on elements","Sets position from top","b","CSS"),
+        ("What does 'use strict' do in JavaScript?","Makes code faster","Enables strict mode catching common errors","Imports strict library","Disables debugging","b","JavaScript"),
+    ],
+    "Data Scientist": [
+        ("What is overfitting?","Model performs well on train but poorly on unseen data","Model is too simple","Training takes too long","Dataset is too large","a","ML Concepts"),
+        ("What is a confusion matrix?","A matrix that confuses the model","Table summarizing classification performance","Type of neural network layer","Data preprocessing technique","b","Model Evaluation"),
+        ("What does SQL GROUP BY do?","Sorts alphabetically","Aggregates rows with same values in specified columns","Joins tables","Filters rows","b","SQL"),
+        ("What is gradient descent?","Data visualization technique","Optimization algorithm minimizing a loss function","Type of decision tree","Method to normalize gradients","b","ML Algorithms"),
+        ("What is a p-value?","Probability H0 is true","Probability of results as extreme assuming H0 is true","Mean of a distribution","Standard deviation of sample","b","Statistics"),
+        ("Supervised vs unsupervised learning?","No difference","Supervised uses labeled data; unsupervised finds patterns in unlabeled","Supervised is faster","Unsupervised needs more data","b","ML Concepts"),
+        ("What is a Random Forest?","Single decision tree","Ensemble of decision trees on random subsets","Neural network with random weights","Clustering algorithm","b","ML Algorithms"),
+        ("What is feature engineering?","Building new models","Creating/transforming features to improve model performance","Removing irrelevant features","Visualizing features","b","Data Preparation"),
+        ("What is cross-validation?","Combine multiple datasets","Assess model generalization on different data splits","Cross-check feature importance","Data augmentation technique","b","Model Evaluation"),
+        ("What is regularization?","Makes models more complex","Penalty term to prevent overfitting","Data normalization method","Regularize training epochs","b","ML Concepts"),
+        ("What is a hyperparameter?","Learned from training data","Config variable set before training, not learned from data","High-value feature","Parameter in test dataset","b","ML Concepts"),
+        ("What is the Central Limit Theorem?","Mean equals median","Sample means approximate normal distribution as n increases","Large datasets are always normal","Central values are most important","b","Statistics"),
+        ("What is dimensionality reduction?","Increasing features","Reducing features while preserving important information","Removing rows","Normalizing values","b","ML Concepts"),
+        ("What does Pandas groupby() return?","List of DataFrames","GroupBy object for applying aggregate functions","Sorted DataFrame","Filtered dataset","b","Pandas"),
+        ("What is PCA used for?","Predicting values","Reducing dimensions by finding principal components","Classifying data","Cleaning missing values","b","ML Algorithms"),
+    ],
+    "Backend Developer": [
+        ("What is database indexing?","Numbering rows sequentially","Data structure speeding up data retrieval","Method to backup databases","Encrypting columns","b","Databases"),
+        ("What is a foreign key?","Key to encrypt foreign data","Field referencing primary key in another table","Key from external API","Unique key for each row","b","Databases"),
+        ("SQL vs NoSQL databases?","No difference","SQL uses structured schemas; NoSQL is flexible schema-less","NoSQL is always faster","SQL only for small datasets","b","Databases"),
+        ("What is JWT?","JavaScript Web Toolkit","JSON Web Token for secure information transmission","Java Web Technology","JSON Write Tool","b","Security"),
+        ("What is caching?","Permanently storing data","Temporarily storing data for faster future access","Deleting old records","Compressing database","b","Performance"),
+        ("What is a microservices architecture?","One large application","Small independent services communicating via APIs","A database architecture","A frontend pattern","b","Architecture"),
+        ("What is Docker?","A programming language","Platform to build, run, ship applications in containers","A database system","A testing framework","b","DevOps"),
+        ("What is an ORM?","A REST framework","Object-Relational Mapper bridging code and database","A caching system","A message queue","b","Databases"),
+        ("What is rate limiting?","Limiting data storage","Controlling request frequency to protect APIs from abuse","Limiting user accounts","A database constraint","b","API Design"),
+        ("What is a message queue?","A database type","Asynchronous communication system between services","A logging system","A load balancer","b","Architecture"),
+        ("What is ACID in databases?","A database query language","Atomicity, Consistency, Isolation, Durability – transaction properties","A NoSQL database","A backup strategy","b","Databases"),
+        ("What is a RESTful API?","API using only GET","Architectural style using HTTP methods and stateless communication","A real-time socket API","API using only JSON","b","API Design"),
+        ("What is load balancing?","Balancing database load","Distributing traffic across multiple servers","A caching technique","A security protocol","b","Architecture"),
+        ("What is SQL injection?","A database optimization","Attack inserting malicious SQL code through user input","A query optimization","A join technique","b","Security"),
+        ("What is a webhook?","A database trigger","HTTP callback sent when an event occurs in a system","A testing endpoint","A logging mechanism","b","API Design"),
+    ],
+    "Full Stack Developer": [
+        ("What is the MVC pattern?","Model View Component","Model View Controller – separates concerns in an app","Multiple View Controller","Master Version Control","b","Architecture"),
+        ("What is GraphQL?","A graph database","Query language for APIs allowing specific data requests","A JavaScript framework","A CSS preprocessor","b","APIs"),
+        ("What is server-side rendering (SSR)?","Rendering on client browser","Rendering HTML on the server before sending to browser","A caching technique","A database pattern","b","Web Concepts"),
+        ("What is a CDN?","Code Deployment Network","Content Delivery Network serving assets from nearest servers","Central Database Node","Code Design Notation","b","Infrastructure"),
+        ("What is the purpose of environment variables?","Store user preferences","Store config values outside code, like API keys","Define global CSS","Manage database schemas","b","Development"),
+        ("What is CI/CD?","Code Integration/Code Deployment","Continuous Integration/Continuous Deployment automation pipeline","A testing methodology","A version control system","b","DevOps"),
+        ("What is HTTPS?","Hyper Text Transfer Protocol","Secure HTTP using TLS/SSL encryption","High Transfer Protocol Suite","Hybrid Transfer Protocol","b","Web Security"),
+        ("What is session management?","Managing CSS sessions","Tracking user state across multiple HTTP requests","A database management pattern","A React concept","b","Web Concepts"),
+        ("What is a monorepo?","A single-page app","Single repository containing multiple related projects","A database architecture","A deployment strategy","b","Development"),
+        ("What is TypeScript?","A database language","Strongly typed superset of JavaScript","A CSS framework","A backend framework","b","Languages"),
+        ("What is lazy loading?","Loading everything upfront","Deferring loading of resources until they are needed","A database technique","An animation effect","b","Performance"),
+        ("What is OAuth?","A database protocol","Open authorization standard for delegated access","A CSS framework","A JavaScript engine","b","Security"),
+        ("What is a proxy server?","A database server","Intermediary server between client and destination server","A CDN node","A caching database","b","Infrastructure"),
+        ("What is Web Accessibility (a11y)?","Making websites faster","Designing websites usable by people with disabilities","A testing framework","An API standard","b","Web Standards"),
+        ("What is the purpose of package.json?","Stores CSS","Defines project metadata, dependencies, and scripts for Node.js","Configures databases","Stores environment variables","b","Development"),
+    ],
+    "DevOps Engineer": [
+        ("What is Infrastructure as Code (IaC)?","Manual server setup","Managing infrastructure through config files and code","A deployment strategy","A monitoring approach","b","IaC"),
+        ("What is Kubernetes used for?","Code versioning","Orchestrating and managing containerized applications at scale","A CI/CD pipeline","A cloud database","b","Containers"),
+        ("What is a Dockerfile?","A database config file","Script with instructions to build a Docker image","A Kubernetes config","A CI/CD config file","b","Docker"),
+        ("What is blue-green deployment?","A CSS color theme","Deployment strategy with two identical environments to reduce downtime","A Kubernetes pod type","A monitoring strategy","b","Deployment"),
+        ("What is Terraform?","A cloud provider","IaC tool to provision infrastructure across cloud providers","A containerization platform","A monitoring tool","b","IaC"),
+        ("What does a reverse proxy do?","Forwards client requests to itself","Sits in front of servers forwarding client requests to them","Blocks incoming requests","Caches database queries","b","Infrastructure"),
+        ("What is a CI pipeline?","Continuous Improvement","Automated process to build, test, and validate code changes","Code Integration Protocol","A deployment strategy","b","CI/CD"),
+        ("What is observability in DevOps?","A monitoring tool","Ability to understand system state from its outputs (logs, metrics, traces)","A deployment pattern","An IaC concept","b","Monitoring"),
+        ("What is Ansible used for?","Container orchestration","Automation tool for config management and app deployment","A monitoring platform","A CI/CD service","b","Automation"),
+        ("What is a Helm chart?","A deployment diagram","Package manager for Kubernetes applications","A Docker config","A CI/CD pipeline","b","Kubernetes"),
+        ("What is a service mesh?","A network type","Infrastructure layer managing service-to-service communication","A database pattern","A monitoring dashboard","b","Architecture"),
+        ("What is GitOps?","Git best practices","Using Git as the single source of truth for infrastructure","A CI/CD tool","A code review process","b","DevOps"),
+        ("What is log aggregation?","Deleting old logs","Collecting logs from multiple sources into a centralized system","A monitoring alert","A backup strategy","b","Monitoring"),
+        ("What is autoscaling?","Fixed server count","Automatically adjusting compute resources based on demand","A load balancing method","A deployment pattern","b","Cloud"),
+        ("What is a zero-downtime deployment?","Fast deployment","Deploying new code without interrupting service availability","A testing technique","A rollback strategy","b","Deployment"),
+    ],
+    "Mobile Developer": [
+        ("What is the difference between native and hybrid mobile apps?","Native apps use HTML; hybrid use Swift","Native apps are built for specific platforms; hybrid use web tech wrapped in native container","Hybrid apps are faster than native","Native apps run in a browser","b","Mobile Basics"),
+        ("What is React Native?","A native iOS framework","A JavaScript framework for building cross-platform mobile apps","A CSS framework for mobile","A database for mobile apps","b","Cross Platform"),
+        ("What is the purpose of AndroidManifest.xml?","Stores app data","Declares app components, permissions, and metadata for Android","Configures the UI layout","Manages database connections","b","Android"),
+        ("What is a ViewModel in Android?","A UI layout file","Stores and manages UI-related data surviving configuration changes","A database helper class","A network request class","b","Android Architecture"),
+        ("What is Swift used for?","Android development","Building iOS and macOS applications","Cross-platform web apps","Backend development","b","iOS"),
+        ("What is the difference between Activity and Fragment in Android?","No difference","Activity is a full screen; Fragment is a reusable portion of UI","Fragment is a full screen; Activity is reusable","Activities run in background","b","Android"),
+        ("What is APK?","Apple Package Kit","Android Package Kit — the file format for Android app distribution","A programming language","A mobile database","b","Android"),
+        ("What is Flutter?","A native Android framework","Google's UI toolkit for building cross-platform apps from a single codebase","An iOS testing tool","A mobile backend service","b","Cross Platform"),
+        ("What is the purpose of a mobile app lifecycle?","To manage database connections","To manage app states like foreground, background, and terminated","To handle UI animations","To manage network requests","b","Mobile Basics"),
+        ("What is push notification?","A UI gesture","Message sent from server to user device even when app is not open","A local notification","A database trigger","b","Mobile Features"),
+        ("What is AsyncStorage in React Native?","A sync database","Simple unencrypted key-value storage system for React Native apps","A network storage","A cloud database","b","React Native"),
+        ("What is Xcode?","A mobile framework","Apple's IDE for developing iOS and macOS applications","A cross-platform tool","A testing framework","b","iOS"),
+        ("What is the purpose of Gradle in Android?","A UI framework","Build automation tool for Android projects managing dependencies","A testing tool","A version control system","b","Android"),
+        ("What is deep linking in mobile apps?","A database connection","URL that navigates user directly to specific content inside an app","A network protocol","A security feature","b","Mobile Features"),
+        ("What is mobile app signing?","Adding app logo","Process of digitally signing app to verify developer identity for distribution","Encrypting app data","Testing the app","b","Deployment"),
+    ],
+    "QA Engineer": [
+        ("What is the difference between functional and non-functional testing?","No difference","Functional tests what system does; non-functional tests how system performs","Non-functional tests features; functional tests performance","Both test the same things","b","Testing Basics"),
+        ("What is regression testing?","Testing new features only","Re-testing previously working features after code changes to ensure nothing broke","Testing performance under load","Testing security vulnerabilities","b","Testing Types"),
+        ("What is a test case?","A bug report","A set of conditions and steps to verify a specific feature or behavior","A test environment","A testing tool","b","Testing Basics"),
+        ("What is the difference between black box and white box testing?","Black box is manual; white box is automated","Black box tests without knowing internals; white box tests with knowledge of code","Black box is faster","White box is for UI testing only","b","Testing Types"),
+        ("What is Selenium used for?","Mobile testing","Automating web browser interactions for testing","Load testing","API testing","b","Test Automation"),
+        ("What is a bug life cycle?","How bugs are created","Stages a bug goes through from discovery to closure","How testers find bugs","The testing process","b","Bug Management"),
+        ("What is smoke testing?","Testing for performance","Quick basic testing to check if build is stable enough for further testing","Testing all features thoroughly","Security testing","b","Testing Types"),
+        ("What is the difference between verification and validation?","Same thing","Verification checks process; validation checks if product meets user needs","Validation checks code; verification checks UI","Both check requirements","b","Testing Concepts"),
+        ("What is a test plan?","A list of bugs","Document describing testing scope, approach, resources and schedule","A test automation script","A bug tracking tool","b","Test Management"),
+        ("What is API testing?","Testing mobile apps","Testing APIs directly to verify functionality, reliability and security","Testing user interface","Testing databases","b","Testing Types"),
+        ("What is load testing?","Testing one user","Testing system behavior under expected and peak load conditions","Testing security","Testing UI layout","b","Performance Testing"),
+        ("What is the purpose of a test environment?","Writing test cases","Isolated setup that mirrors production for safe testing without affecting live data","Storing bug reports","Running CI/CD pipelines","b","Testing Basics"),
+        ("What is exploratory testing?","Automated testing","Simultaneous learning, test design and execution without predefined scripts","Performance testing","Unit testing","b","Testing Types"),
+        ("What is JIRA used for in QA?","Writing code","Project management and bug tracking tool for managing issues and test cycles","Automated testing","Load testing","b","Tools"),
+        ("What is a test automation framework?","A testing language","Structured guidelines and tools for creating and running automated tests efficiently","A bug tracking system","A test environment","b","Test Automation"),
+    ],
+    "Product Manager": [
+        ("What is a product roadmap?","A list of bugs","Strategic plan showing product vision, direction and priorities over time","A project timeline","A marketing plan","b","Product Strategy"),
+        ("What is the difference between product manager and project manager?","Same role","Product manager owns the what and why; project manager owns the how and when","Project manager owns the product vision","Product manager manages timelines","b","PM Basics"),
+        ("What is a user story?","A bug report","Short description of a feature from the end user's perspective","A technical specification","A test case","b","Agile"),
+        ("What is MVP in product management?","Most Valuable Player","Minimum Viable Product — simplest version to test core assumptions with users","Maximum Value Proposition","Minimum Value Proposition","b","Product Strategy"),
+        ("What is product-market fit?","When product is launched","When product satisfies a strong market demand and users love it","When product has many features","When product is profitable","b","Product Strategy"),
+        ("What are OKRs?","A project management tool","Objectives and Key Results — goal-setting framework for measurable outcomes","A design framework","A testing methodology","b","Goal Setting"),
+        ("What is a sprint in Agile?","A long release cycle","Fixed time period (usually 2 weeks) where team completes a set of work","A bug fixing session","A design review","b","Agile"),
+        ("What is the purpose of A/B testing?","Testing code quality","Comparing two versions of a feature to determine which performs better","Testing security","Load testing","b","Product Analytics"),
+        ("What is the RICE scoring model?","A product design model","Prioritization framework using Reach, Impact, Confidence, Effort","A roadmap template","An agile ceremony","b","Prioritization"),
+        ("What is a product backlog?","A list of completed features","Prioritized list of all desired features, improvements and bug fixes for a product","A sprint plan","A release schedule","b","Agile"),
+        ("What is churn rate?","New user growth","Percentage of users who stop using product over a given period","Revenue growth rate","User engagement rate","b","Product Metrics"),
+        ("What is the Jobs To Be Done framework?","A hiring framework","Understanding what problem or job users hire a product to do for them","A development framework","A testing methodology","b","Product Strategy"),
+        ("What is DAU/MAU ratio?","A revenue metric","Daily Active Users divided by Monthly Active Users — measures user engagement stickiness","A bug tracking metric","A performance metric","b","Product Metrics"),
+        ("What is a go-to-market strategy?","A product roadmap","Plan for launching product to market including target audience and channels","A development plan","A testing strategy","b","Product Strategy"),
+        ("What is user persona?","A real user account","Semi-fictional representation of ideal customer based on research and data","A user story","A product feature","b","UX Research"),
+    ],
+    "UI/UX Designer": [
+        ("What is the difference between UI and UX?","They are the same","UI is visual design of interface; UX is overall experience and usability","UX is visual; UI is experience","UI is for mobile; UX is for web","b","Design Basics"),
+        ("What is a wireframe?","A final design","Low-fidelity skeletal outline of a screen showing layout without visual details","A prototype","A design system","b","Design Process"),
+        ("What is a design system?","A single UI component","Collection of reusable components, guidelines and standards for consistent design","A wireframing tool","A prototyping method","b","Design Systems"),
+        ("What is the purpose of user research?","To design UI","To understand user needs, behaviors and pain points to inform design decisions","To test performance","To write code","b","UX Research"),
+        ("What is Figma used for?","Backend development","Collaborative UI/UX design tool for creating wireframes, prototypes and designs","Database management","Project management","b","Design Tools"),
+        ("What is accessibility in design?","Making designs colorful","Designing products usable by people with disabilities following WCAG guidelines","Making designs responsive","Making designs fast","b","Accessibility"),
+        ("What is a prototype?","A final product","Interactive simulation of product used to test and validate design ideas","A wireframe","A design system","b","Design Process"),
+        ("What is the 80/20 rule in UX?","Design principle for colors","80% of users use 20% of features — focus on most impactful features","Rule for whitespace","Typography guideline","b","UX Principles"),
+        ("What is information architecture?","Database structure","Organizing and structuring content so users can find information easily","UI component organization","Code architecture","b","UX Design"),
+        ("What is usability testing?","Testing code","Observing real users interacting with product to identify usability issues","A/B testing","Performance testing","b","UX Research"),
+        ("What is the difference between serif and sans-serif fonts?","No difference","Serif fonts have small strokes on letters; sans-serif fonts do not","Sans-serif is older","Serif is for digital only","b","Typography"),
+        ("What is gestalt principle in design?","A color theory","Psychological principles explaining how humans perceive visual elements as unified wholes","A typography rule","A grid system","b","Design Principles"),
+        ("What is responsive design?","A fast website","Design approach that makes UI adapt to different screen sizes and devices","A design tool","An animation technique","b","UI Design"),
+        ("What is a user flow?","A design component","Visual representation of steps a user takes to complete a task in a product","A wireframe","A prototype","b","UX Design"),
+        ("What is the purpose of white space in design?","Wasted space","Empty space around elements that improves readability and visual hierarchy","A design error","A color choice","b","Design Principles"),
+    ],
+    "Cybersecurity Analyst": [
+        ("What is the CIA triad in cybersecurity?","Central Intelligence Agency model","Confidentiality, Integrity, Availability — core principles of information security","A network protocol","A hacking technique","b","Security Fundamentals"),
+        ("What is a firewall?","A type of virus","Network security system that monitors and controls incoming and outgoing traffic","An encryption tool","A VPN service","b","Network Security"),
+        ("What is phishing?","A network attack","Social engineering attack tricking users into revealing sensitive information","A malware type","A firewall bypass","b","Cyber Threats"),
+        ("What is the difference between authentication and authorization?","Same thing","Authentication verifies identity; authorization determines what user can access","Authorization verifies identity","Authentication grants permissions","b","Access Control"),
+        ("What is a VPN?","A firewall type","Virtual Private Network encrypting internet connection for secure private browsing","A type of malware","A network protocol","b","Network Security"),
+        ("What is SQL injection?","A database optimization","Attack inserting malicious SQL code through input fields to manipulate database","A security protocol","A firewall rule","b","Web Security"),
+        ("What is two-factor authentication?","A strong password","Security process requiring two different forms of verification to access account","A type of encryption","A firewall setting","b","Access Control"),
+        ("What is a zero-day vulnerability?","An old bug","Security flaw unknown to vendor with no patch available yet","A firewall rule","A network attack","b","Vulnerabilities"),
+        ("What is encryption?","Deleting data","Process of converting data into coded format to prevent unauthorized access","Compressing data","Backing up data","b","Cryptography"),
+        ("What is penetration testing?","Breaking into buildings","Authorized simulated cyberattack to find and fix security vulnerabilities","A firewall test","A network scan","b","Security Testing"),
+        ("What is a DDoS attack?","A phishing attack","Distributed Denial of Service — overwhelming server with traffic to make it unavailable","A SQL injection","A malware infection","b","Cyber Threats"),
+        ("What is HTTPS?","A hacking tool","Secure version of HTTP using SSL/TLS encryption for safe data transmission","A firewall protocol","A VPN service","b","Web Security"),
+        ("What is malware?","A security tool","Malicious software designed to damage, disrupt or gain unauthorized access to systems","A network protocol","A firewall type","b","Cyber Threats"),
+        ("What is the principle of least privilege?","Give all users admin access","Grant users only minimum access permissions needed to perform their job","A firewall rule","An encryption method","b","Access Control"),
+        ("What is a security audit?","A malware scan","Systematic evaluation of organization's security policies and controls for compliance","A penetration test","A firewall configuration","b","Security Management"),
+    ],
+    "Cloud Architect": [
+        ("What are the three main cloud service models?","Public, Private, Hybrid","IaaS, PaaS, SaaS — Infrastructure, Platform and Software as a Service","AWS, Azure, GCP","Compute, Storage, Network","b","Cloud Fundamentals"),
+        ("What is auto-scaling in cloud?","Manual server addition","Automatically adjusting compute resources up or down based on demand","A load balancer","A CDN service","b","Cloud Computing"),
+        ("What is the difference between public and private cloud?","No difference","Public cloud is shared infrastructure; private cloud is dedicated to one organization","Private cloud is cheaper","Public cloud is more secure","b","Cloud Types"),
+        ("What is a CDN?","A cloud database","Content Delivery Network distributing content from servers closest to users","A cloud storage service","A security service","b","Cloud Services"),
+        ("What is serverless computing?","Computing without servers","Cloud model where provider manages servers and you only pay for actual execution","A type of virtual machine","A container service","b","Cloud Computing"),
+        ("What is cloud elasticity?","Cloud flexibility in pricing","Ability to dynamically provision and de-provision resources as demand changes","A cloud security feature","A backup strategy","b","Cloud Concepts"),
+        ("What is a cloud region?","A pricing zone","Geographic area containing multiple data centers for redundancy and latency optimization","A security boundary","A virtual network","b","Cloud Infrastructure"),
+        ("What is object storage?","A database type","Storage architecture managing data as objects — used for unstructured data like images","A file system","A block storage type","b","Cloud Storage"),
+        ("What is a virtual private cloud (VPC)?","A type of VPN","Isolated private network within public cloud infrastructure with full control over networking","A physical server","A cloud database","b","Cloud Networking"),
+        ("What is cloud cost optimization?","Reducing cloud features","Strategies to reduce cloud spend while maintaining performance and reliability","Deleting cloud resources","Avoiding cloud services","b","Cloud Management"),
+        ("What is multi-cloud strategy?","Using one cloud provider","Using multiple cloud providers to avoid vendor lock-in and improve resilience","A hybrid cloud approach","A private cloud setup","b","Cloud Strategy"),
+        ("What is infrastructure as code?","Writing cloud documentation","Managing cloud infrastructure through machine-readable configuration files","A monitoring approach","A deployment strategy","b","Cloud Automation"),
+        ("What is a load balancer in cloud?","A cost management tool","Distributes incoming traffic across multiple servers for high availability","A storage service","A database service","b","Cloud Networking"),
+        ("What is disaster recovery in cloud?","Avoiding disasters","Strategy to restore systems and data after catastrophic failure or outage","A backup tool","A monitoring service","b","Cloud Reliability"),
+        ("What is cloud monitoring?","A cloud database","Tracking performance, availability and health of cloud resources and applications","A security service","A cost management tool","b","Cloud Management"),
+    ],
+    "Database Administrator": [
+        ("What is database normalization?","Making database faster","Organizing database to reduce redundancy and improve data integrity","Encrypting a database","Backing up a database","b","Database Design"),
+        ("What is the difference between clustered and non-clustered index?","No difference","Clustered index sorts data rows physically; non-clustered creates separate structure","Non-clustered is faster","Clustered index is always better","b","Indexing"),
+        ("What is a stored procedure?","A database backup","Precompiled SQL code stored in database and executed on demand","A database trigger","A view","b","SQL"),
+        ("What is database replication?","Making database larger","Copying and synchronizing data across multiple database servers for redundancy","Encrypting database","Indexing data","b","Database Administration"),
+        ("What is ACID in databases?","A cleaning solution","Atomicity, Consistency, Isolation, Durability — properties ensuring reliable transactions","A query language","A backup strategy","b","Database Concepts"),
+        ("What is a database trigger?","A stored procedure","Automatic action executed in response to specific events on a table","A database index","A view","b","SQL"),
+        ("What is the difference between DELETE and TRUNCATE?","Same command","DELETE removes specific rows with WHERE clause; TRUNCATE removes all rows faster","TRUNCATE is slower","DELETE removes all rows","b","SQL"),
+        ("What is database sharding?","A backup technique","Horizontal partitioning of data across multiple database instances for scalability","A replication method","An indexing strategy","b","Scalability"),
+        ("What is a database view?","A stored procedure","Virtual table based on result of SQL query providing simplified data access","A physical table","A backup copy","b","SQL"),
+        ("What is query optimization?","Writing longer queries","Process of improving SQL query performance by reducing execution time and resources","Adding more indexes","Rewriting in another language","b","Performance"),
+        ("What is a connection pool?","A database backup","Cache of database connections maintained for reuse to improve performance","A replication method","A security feature","b","Performance"),
+        ("What is the difference between INNER JOIN and LEFT JOIN?","No difference","INNER JOIN returns matching rows; LEFT JOIN returns all left table rows plus matches","LEFT JOIN is faster","INNER JOIN returns all rows","b","SQL"),
+        ("What is database backup strategy?","Deleting old data","Plan for regularly copying database to protect against data loss","A replication method","An indexing strategy","b","Database Administration"),
+        ("What is a primary key?","Any column in a table","Unique identifier for each row in a table that cannot be null or duplicate","A foreign key","An index","b","Database Design"),
+        ("What is NoSQL and when would you use it?","A bad database","Non-relational database used for unstructured data, high scalability and flexible schemas","A type of SQL","An old database type","b","Database Types"),
+    ],
+    "Machine Learning Engineer": [
+        ("What is the difference between supervised and unsupervised learning?","No difference","Supervised uses labeled data; unsupervised finds patterns in unlabeled data","Supervised is faster","Unsupervised needs more data","b","ML Fundamentals"),
+        ("What is overfitting and how do you prevent it?","Model is too simple","Model memorizes training data but fails on new data — prevented by regularization and more data","Model trains too slowly","Model has too many features","b","ML Concepts"),
+        ("What is a neural network?","A biological brain","Computing system inspired by brain with layers of nodes learning patterns from data","A decision tree","A clustering algorithm","b","Deep Learning"),
+        ("What is backpropagation?","Forward pass in neural network","Algorithm for training neural networks by computing gradients and updating weights","A regularization technique","A data preprocessing step","b","Deep Learning"),
+        ("What is the purpose of a loss function?","To speed up training","Measures difference between model predictions and actual values to guide training","To normalize data","To split data","b","ML Training"),
+        ("What is transfer learning?","Training from scratch","Using pretrained model on new related task to save time and data requirements","A regularization method","A data augmentation technique","b","Deep Learning"),
+        ("What is the difference between batch and stochastic gradient descent?","Same algorithm","Batch uses all data per update; stochastic uses one sample — mini-batch is a compromise","Batch is always better","Stochastic is more accurate","b","ML Optimization"),
+        ("What is feature scaling and why is it important?","Removing features","Normalizing feature ranges so no single feature dominates distance-based algorithms","Adding new features","Selecting important features","b","Data Preprocessing"),
+        ("What is cross-validation?","Testing on training data","Technique to assess model generalization by training and testing on different data splits","A regularization method","A feature selection technique","b","Model Evaluation"),
+        ("What is the ROC curve?","A training curve","Graph showing true positive rate vs false positive rate at various classification thresholds","A loss curve","A learning rate curve","b","Model Evaluation"),
+        ("What is the difference between precision and recall?","Same metric","Precision measures correct positive predictions; recall measures coverage of actual positives","Precision is better than recall","Recall measures accuracy","b","Model Evaluation"),
+        ("What is an embedding in machine learning?","A data format","Dense vector representation of data like words or categories in continuous space","A type of neural network","A preprocessing step","b","Deep Learning"),
+        ("What is dropout in neural networks?","Removing neurons permanently","Regularization technique randomly disabling neurons during training to prevent overfitting","A type of activation function","A weight initialization method","b","Deep Learning"),
+        ("What is hyperparameter tuning?","Training the model","Process of finding optimal model configuration values not learned from training data","Feature engineering","Data preprocessing","b","ML Optimization"),
+        ("What is the bias-variance tradeoff?","A data imbalance issue","Balance between model being too simple (high bias) and too complex (high variance)","A regularization method","A feature selection technique","b","ML Concepts"),
+    ],
+    "Business Analyst": [
+        ("What is a Business Requirements Document (BRD)?","A project plan","Formal document describing business solution needed including objectives and scope","A technical specification","A test plan","b","Requirements"),
+        ("What is the difference between functional and non-functional requirements?","Same thing","Functional requirements describe what system does; non-functional describe how well it performs","Non-functional describes features","Functional describes performance","b","Requirements"),
+        ("What is a use case diagram?","A project timeline","Visual representation showing interactions between users and system to achieve goals","A database diagram","A wireframe","b","UML"),
+        ("What is gap analysis?","A performance review","Comparing current state to desired future state to identify what needs to change","A risk assessment","A requirements document","b","Analysis Techniques"),
+        ("What is SWOT analysis?","A financial model","Framework analyzing Strengths, Weaknesses, Opportunities, Threats of a business","A project plan","A requirements method","b","Business Analysis"),
+        ("What is a stakeholder?","A project manager","Anyone who has interest in or is affected by the outcome of a project","A developer","A business analyst","b","Project Management"),
+        ("What is the purpose of a feasibility study?","Writing requirements","Assessing if proposed solution is technically and financially viable before development","A project plan","A test plan","b","Analysis Techniques"),
+        ("What is process mapping?","A project roadmap","Visual representation of workflow steps showing how a business process works","A requirements document","A data flow diagram","b","Business Process"),
+        ("What is an ERD?","A project diagram","Entity Relationship Diagram showing relationships between data entities in a system","A process map","A use case diagram","b","Data Modeling"),
+        ("What is the MoSCoW method?","A city in Russia","Prioritization technique: Must have, Should have, Could have, Won't have","A requirements template","An analysis framework","b","Prioritization"),
+        ("What is a data flow diagram?","A database schema","Visual showing how data moves through a system between processes and storage","A process map","An ERD","b","System Analysis"),
+        ("What is the purpose of a sprint review?","Code review","Meeting at end of sprint where team demonstrates completed work to stakeholders","A bug review","A requirements review","b","Agile"),
+        ("What is root cause analysis?","Finding bugs","Technique to identify underlying cause of a problem rather than treating symptoms","A risk assessment","A requirements review","b","Problem Solving"),
+        ("What is a KPI?","A project tool","Key Performance Indicator — measurable value showing how effectively objectives are achieved","A requirements document","A test metric","b","Business Metrics"),
+        ("What is change management in BA?","Managing code changes","Structured approach to transitioning individuals and organizations to desired future state","A version control process","A database update process","b","Business Analysis"),
+    ],
+}
+
+def seed_questions():
+    print("🌱 Checking question bank...")
+    count = 0
+    for role, questions in QUESTION_BANK.items():
+        # Only seed roles that don't have questions yet
+        existing = ExamQuestion.query.filter_by(job_role=role).first()
+        if existing:
+            continue
+        print(f"   Adding questions for: {role}")
+        for q in questions:
+            eq = ExamQuestion(
+                job_role=role, question_text=q[0],
+                option_a=q[1], option_b=q[2],
+                option_c=q[3], option_d=q[4],
+                correct_answer=q[5],
+                category=q[6] if len(q) > 6 else 'General'
+            )
+            db.session.add(eq)
+            count += 1
+    if count > 0:
+        db.session.commit()
+        print(f"✅ Seeded {count} new questions across {len(QUESTION_BANK)} roles")
+    else:
+        print(f"✅ Question bank already complete ({len(QUESTION_BANK)} roles)")
 
 def init_database():
-    """Initialize database"""
-    try:
-        with app.app_context():
-            db.create_all()
-            print("✅ Database tables created!")
-            
-            # Create admin user if doesn't exist
-            admin = User.query.filter_by(username='admin').first()
-            if not admin:
-                admin = User(
-                    username='admin',
-                    email='admin@proctoring.com',
-                    full_name='Administrator',
-                    is_admin=True
-                )
-                admin.set_password('admin123')
-                db.session.add(admin)
-                db.session.commit()
-                print("✅ Admin user created! (username: admin, password: admin123)")
-            
-            # Create test student if doesn't exist
-            student = User.query.filter_by(username='student').first()
-            if not student:
-                student = User(
-                    username='student',
-                    email='student@test.com',
-                    full_name='Test Student',
-                    is_admin=False
-                )
-                student.set_password('student123')
-                db.session.add(student)
-                db.session.commit()
-                print("✅ Test student created! (username: student, password: student123)")
-            
-            return True
-    except Exception as e:
-        print(f"❌ Database error: {str(e)}")
-        return False
+    with app.app_context():
+        db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            u = User(username='admin', email='admin@proctoring.com', full_name='Administrator', role='admin')
+            u.set_password('admin123'); db.session.add(u); db.session.commit()
+        if not User.query.filter_by(username='recruiter').first():
+            u = User(username='recruiter', email='recruiter@proctoring.com', full_name='Demo Recruiter', role='recruiter')
+            u.set_password('recruiter123'); db.session.add(u); db.session.commit()
+        if not User.query.filter_by(username='student').first():
+            u = User(username='student', email='student@test.com', full_name='Test Student', role='candidate')
+            u.set_password('student123'); db.session.add(u); db.session.commit()
+        seed_questions()
+        print("✅ Database ready")
 
-# Initialize database
 with app.app_context():
     init_database()
 
-# Load face detection model
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-)
 
-# ========================================
-# HELPER FUNCTIONS
-# ========================================
-
-def log_violation_to_db(user_id, violation_type, severity, description):
-    """Log violation to database"""
-    try:
-        violation = Violation(
-            user_id=user_id,
-            violation_type=violation_type,
-            severity=severity,
-            description=description
-        )
-        db.session.add(violation)
-        db.session.commit()
-        
-        # Emit real-time alert to dashboard
-        socketio.emit('violation_alert', {
-            'user_id': user_id,
-            'username': User.query.get(user_id).username,
-            'violation_type': violation_type,
-            'severity': severity,
-            'timestamp': datetime.utcnow().strftime('%H:%M:%S')
-        }, room='dashboard')
-        
-        return violation
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error logging violation: {str(e)}")
-        return None
-
-def get_violation_info(violation_type):
-    """Get violation severity and description"""
-    violation_map = {
-        'tab_switch': {'severity': 2, 'description': 'User switched tab/window'},
-        'exit_fullscreen': {'severity': 3, 'description': 'User exited fullscreen'},
-        'no_face': {'severity': 2, 'description': 'Face not visible'},
-        'multiple_faces': {'severity': 3, 'description': 'Multiple faces detected'},
-        'right_click': {'severity': 1, 'description': 'Right-click attempt'},
-        'copy_attempt': {'severity': 1, 'description': 'Copy attempt'},
-        'paste_attempt': {'severity': 1, 'description': 'Paste attempt'},
-        'devtools': {'severity': 2, 'description': 'DevTools attempt'}
-    }
-    return violation_map.get(violation_type, {'severity': 1, 'description': 'Unknown'})
-
-def calculate_credibility_score(violations):
-    """Calculate credibility score"""
-    base_score = 100
-    for v in violations:
-        base_score -= app.config['SEVERITY_POINTS'].get(v.severity, 5)
-    
-    # Extra penalty for too many violations
-    if len(list(violations)) > 10:
-        base_score -= (len(list(violations)) - 10) * 2
-    
-    return max(0, min(100, base_score))
-
-def generate_pdf_report(submission):
-    """Generate PDF report for submission"""
-    try:
-        buffer = BytesIO()
-        pdf = canvas.Canvas(buffer, pagesize=letter)
-        width, height = letter
-        
-        # Title
-        pdf.setFont("Helvetica-Bold", 20)
-        pdf.drawString(1*inch, height - 1*inch, "Exam Proctoring Report")
-        
-        # User info
-        pdf.setFont("Helvetica", 12)
-        y = height - 1.5*inch
-        pdf.drawString(1*inch, y, f"Student: {submission.user.full_name}")
-        y -= 0.3*inch
-        pdf.drawString(1*inch, y, f"Username: {submission.user.username}")
-        y -= 0.3*inch
-        pdf.drawString(1*inch, y, f"Email: {submission.user.email}")
-        y -= 0.3*inch
-        pdf.drawString(1*inch, y, f"Submitted: {submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        # Credibility Score
-        y -= 0.5*inch
-        pdf.setFont("Helvetica-Bold", 16)
-        pdf.drawString(1*inch, y, f"Credibility Score: {submission.credibility_score}/100")
-        
-        # Status
-        y -= 0.4*inch
-        pdf.setFont("Helvetica", 14)
-        status = "PASSED ✓" if submission.passed else "FAILED ✗"
-        color = colors.green if submission.passed else colors.red
-        pdf.setFillColor(color)
-        pdf.drawString(1*inch, y, f"Status: {status}")
-        pdf.setFillColor(colors.black)
-        
-        # Violations
-        y -= 0.5*inch
-        pdf.setFont("Helvetica-Bold", 14)
-        pdf.drawString(1*inch, y, f"Total Violations: {submission.total_violations}")
-        
-        y -= 0.4*inch
-        pdf.setFont("Helvetica", 10)
-        violations = Violation.query.filter_by(user_id=submission.user_id).all()
-        
-        for v in violations[:15]:
-            y -= 0.25*inch
-            if y < 1*inch:
-                pdf.showPage()
-                y = height - 1*inch
-            severity_text = {1: 'Low', 2: 'Medium', 3: 'High'}[v.severity]
-            pdf.drawString(1*inch, y, f"• {v.timestamp.strftime('%H:%M:%S')} - {v.violation_type} (Severity: {severity_text})")
-        
-        pdf.setFont("Helvetica", 8)
-        pdf.drawString(1*inch, 0.5*inch, "Generated by AI Proctoring System")
-        
-        pdf.save()
-        buffer.seek(0)
-        return buffer
-    except Exception as e:
-        print(f"Error generating PDF: {str(e)}")
-        return None
-
-# ========================================
-# ROUTES - STATIC FILE SERVING
-# ========================================
-
+# ── Static Routes ──────────────────────────────────────────────────────────────
 @app.route('/')
-def index():
-    """Home page - serve index.html"""
-    if current_user.is_authenticated:
-        if current_user.is_admin:
-            return send_from_directory('.', 'dashboard.html')
-        else:
-            return send_from_directory('.', 'test.html')
-    return send_from_directory('.', 'index.html')
-
-@app.route('/index.html')
 def serve_index():
-    """Serve index.html directly"""
     return send_from_directory('.', 'index.html')
 
-@app.route('/test.html')
-@login_required
-def serve_test():
-    """Serve test.html"""
-    if current_user.is_admin:
-        return send_from_directory('.', 'dashboard.html')
-    return send_from_directory('.', 'test.html')
+for page in ['index.html','test.html','dashboard.html','results.html',
+             'recruiter_dashboard.html','interview_room.html','recruiter_room.html']:
+    exec(f"""
+@app.route('/{page}')
+def serve_{page.replace('.','_').replace('-','_')}():
+    return send_from_directory('.', '{page}')
+""")
 
-@app.route('/dashboard.html')
-@login_required
-def serve_dashboard():
-    """Serve dashboard.html"""
-    if not current_user.is_admin:
-        return send_from_directory('.', 'test.html')
-    return send_from_directory('.', 'dashboard.html')
 
-@app.route('/results.html')
-@login_required
-def serve_results():
-    """Serve results.html"""
-    return send_from_directory('.', 'results.html')
-
-# ========================================
-# ROUTES - AUTHENTICATION
-# ========================================
-
+# ── Auth Routes ────────────────────────────────────────────────────────────────
 @app.route('/login', methods=['POST'])
 def login():
-    """Login endpoint"""
-    try:
-        if not request.is_json:
-            return jsonify({
-                'success': False,
-                'message': 'Content-Type must be application/json'
-            }), 400
-        
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({
-                'success': False,
-                'message': 'No data provided'
-            }), 400
-        
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
-        
-        print(f"\n{'='*60}")
-        print(f"🔐 LOGIN ATTEMPT")
-        print(f"{'='*60}")
-        print(f"Username: {username}")
-        print(f"Password: {'*' * len(password)}")
-        
-        if not username or not password:
-            print("❌ Missing credentials")
-            return jsonify({
-                'success': False,
-                'message': 'Username and password are required'
-            }), 400
-        
-        user = User.query.filter_by(username=username).first()
-        
-        if not user:
-            print(f"❌ User '{username}' not found")
-            return jsonify({
-                'success': False,
-                'message': 'Invalid username or password'
-            }), 401
-        
-        print(f"✅ User found: {user.username}")
-        
-        if not user.check_password(password):
-            print(f"❌ Password incorrect")
-            return jsonify({
-                'success': False,
-                'message': 'Invalid username or password'
-            }), 401
-        
-        login_user(user, remember=True)
-        print(f"✅ Login successful for {user.username}")
-        
-        # Return HTML file names for redirect
-        redirect_page = 'dashboard.html' if user.is_admin else 'test.html'
-        print(f"🔀 Redirect to: {redirect_page}")
-        
-        response = jsonify({
-            'success': True,
-            'message': 'Login successful',
-            'is_admin': user.is_admin,
-            'redirect': redirect_page
-        })
-        response.status_code = 200
-        return response
-        
-    except Exception as e:
-        print(f"\n❌ LOGIN ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
-        return jsonify({
-            'success': False,
-            'message': f'Server error: {str(e)}'
-        }), 500
+    data = request.get_json() or {}
+    username = data.get('username','').strip()
+    password = data.get('password','')
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'Username and password required'}), 400
+    user = User.query.filter_by(username=username).first()
+    if not user or not user.check_password(password):
+        return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+    login_user(user, remember=True)
+    redirect = 'test.html' if user.role == 'candidate' else 'recruiter_dashboard.html'
+    return jsonify({'success': True, 'redirect': redirect,
+                    'role': user.role, 'full_name': user.full_name})
+
 
 @app.route('/signup', methods=['POST'])
 def signup():
-    """Signup endpoint"""
-    try:
-        if not request.is_json:
-            return jsonify({
-                'success': False,
-                'message': 'Content-Type must be application/json'
-            }), 400
-        
-        data = request.get_json()
-        
-        username = data.get('username', '').strip()
-        email = data.get('email', '').strip()
-        password = data.get('password', '')
-        full_name = data.get('full_name', '').strip()
-        
-        if not all([username, email, password, full_name]):
-            return jsonify({
-                'success': False,
-                'message': 'All fields are required'
-            }), 400
-        
-        if len(password) < 6:
-            return jsonify({
-                'success': False,
-                'message': 'Password must be at least 6 characters'
-            }), 400
-        
-        if User.query.filter_by(username=username).first():
-            return jsonify({
-                'success': False,
-                'message': 'Username already exists'
-            }), 400
-        
-        if User.query.filter_by(email=email).first():
-            return jsonify({
-                'success': False,
-                'message': 'Email already exists'
-            }), 400
-        
-        user = User(
-            username=username,
-            email=email,
-            full_name=full_name,
-            is_admin=False
-        )
-        user.set_password(password)
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        print(f"✅ New user created: {username}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Account created successfully! Please login.'
-        }), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"❌ Signup error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'Error creating account: {str(e)}'
-        }), 500
+    data = request.get_json() or {}
+    username  = data.get('username','').strip()
+    email     = data.get('email','').strip()
+    password  = data.get('password','')
+    full_name = data.get('full_name','').strip()
+    role      = data.get('role','candidate')
+    if not all([username, email, password, full_name]):
+        return jsonify({'success': False, 'message': 'All fields required'}), 400
+    if len(password) < 6:
+        return jsonify({'success': False, 'message': 'Password min 6 characters'}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({'success': False, 'message': 'Email already registered. Please login.'}), 400
+    if User.query.filter_by(username=username).first():
+        return jsonify({'success': False, 'message': 'Username already taken'}), 400
+    u = User(username=username, email=email, full_name=full_name, role=role)
+    u.set_password(password)
+    db.session.add(u); db.session.commit()
+    return jsonify({'success': True, 'message': 'Account created! Please login.'})
+
 
 @app.route('/logout')
 @login_required
 def logout():
-    """Logout"""
-    logout_user()
-    return redirect('/')
+    logout_user(); return redirect('/')
+
 
 @app.route('/api/check-auth')
 def check_auth():
-    """Check authentication status"""
     if current_user.is_authenticated:
-        return jsonify({
-            'authenticated': True,
-            'username': current_user.username,
-            'is_admin': current_user.is_admin,
-            'full_name': current_user.full_name
-        })
+        return jsonify({'authenticated': True, 'username': current_user.username,
+                        'full_name': current_user.full_name, 'role': current_user.role,
+                        'is_admin': current_user.is_admin})
     return jsonify({'authenticated': False})
 
-# ========================================
-# ROUTES - EXAM
-# ========================================
 
-@app.route('/exam')
+# ── Job Roles & Questions ──────────────────────────────────────────────────────
+@app.route('/api/job-roles')
+def get_job_roles():
+    db_roles = db.session.query(ExamQuestion.job_role).distinct().all()
+    roles = [r[0] for r in db_roles]
+    for r in app.config.get('JOB_ROLES', []):
+        if r not in roles:
+            roles.append(r)
+    return jsonify({'success': True, 'roles': sorted(roles)})
+
+
+@app.route('/api/mcq-questions/<job_role>')
 @login_required
-def exam():
-    """Exam page redirect"""
-    if current_user.is_admin:
-        return send_from_directory('.', 'dashboard.html')
-    return send_from_directory('.', 'test.html')
+def get_mcq_questions(job_role):
+    questions = ExamQuestion.query.filter_by(job_role=job_role).all()
+    if len(questions) < 10:
+        questions = ExamQuestion.query.limit(10).all()
+    selected = random.sample(questions, min(10, len(questions)))
+    return jsonify({'success': True, 'questions': [q.to_dict() for q in selected], 'job_role': job_role})
 
+
+# ── Session Management ─────────────────────────────────────────────────────────
+@app.route('/api/create-session', methods=['POST'])
+@login_required
+def create_session():
+    data = request.get_json() or {}
+    job_role = data.get('job_role', 'Python Developer')
+    mode     = data.get('mode', 'mcq')
+    candidate_username = data.get('candidate_username')
+
+    if current_user.role == 'candidate':
+        candidate = current_user
+        recruiter_id = None
+    else:
+        if candidate_username:
+            candidate = User.query.filter_by(username=candidate_username).first()
+            if not candidate:
+                return jsonify({'success': False, 'message': 'Candidate not found'}), 404
+        else:
+            return jsonify({'success': False, 'message': 'candidate_username required'}), 400
+        recruiter_id = current_user.id
+
+    question_ids = []
+    if mode == 'mcq':
+        qs = ExamQuestion.query.filter_by(job_role=job_role).all()
+        if len(qs) < 10:
+            qs = ExamQuestion.query.limit(15).all()
+        selected = random.sample(qs, min(10, len(qs)))
+        question_ids = [q.id for q in selected]
+
+    sess = InterviewSession(
+        candidate_id=candidate.id, recruiter_id=recruiter_id,
+        job_role=job_role, mode=mode,
+        room_code=make_room_code(), status='pending',
+        credibility_score=100, question_ids=json.dumps(question_ids),
+    )
+    db.session.add(sess); db.session.commit()
+    return jsonify({'success': True, 'session': sess.to_dict(), 'room_code': sess.room_code})
+
+
+@app.route('/api/join-session/<room_code>')
+@login_required
+def join_session(room_code):
+    sess = InterviewSession.query.filter_by(room_code=room_code).first()
+    if not sess:
+        return jsonify({'success': False, 'message': 'Session not found'}), 404
+    questions = []
+    if sess.mode == 'mcq' and sess.question_ids:
+        ids = json.loads(sess.question_ids)
+        questions = [ExamQuestion.query.get(i).to_dict() for i in ids if ExamQuestion.query.get(i)]
+    return jsonify({'success': True, 'session': sess.to_dict(),
+                    'questions': questions, 'ice_servers': app.config['WEBRTC_ICE_SERVERS']})
+
+
+@app.route('/api/start-session/<int:session_id>', methods=['POST'])
+@login_required
+def start_session(session_id):
+    sess = db.session.get(InterviewSession, session_id)
+    if not sess:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    sess.status = 'active'
+    sess.started_at = datetime.utcnow()
+    db.session.commit()
+    socketio.emit('session_started', {'session_id': session_id, 'room_code': sess.room_code}, room=sess.room_code)
+    return jsonify({'success': True})
+
+
+# ── Proctoring ─────────────────────────────────────────────────────────────────
 @app.route('/detect-face', methods=['POST'])
 @login_required
 def detect_face():
-    """Face detection endpoint"""
     try:
-        data = request.get_json()
-        image_data = data['image']
-        
-        image_data = image_data.split(',')[1]
-        image_bytes = base64.b64decode(image_data)
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-        num_faces = len(faces)
-        
-        if num_faces == 0:
-            log_violation_to_db(current_user.id, 'no_face', 2, 'Face not visible')
-        elif num_faces > 1:
-            log_violation_to_db(current_user.id, 'multiple_faces', 3, f'{num_faces} faces')
-        
-        return jsonify({
-            'success': True,
-            'face_detected': num_faces == 1,
-            'num_faces': num_faces,
-            'message': f'{"Face detected" if num_faces == 1 else "No face" if num_faces == 0 else "Multiple faces"}'
-        })
+        data       = request.get_json()
+        session_id = data.get('session_id')
+        img_b64    = data['image'].split(',')[1]
+        frame      = cv2.imdecode(np.frombuffer(base64.b64decode(img_b64), np.uint8), cv2.IMREAD_COLOR)
+        gray       = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces      = face_cascade.detectMultiScale(gray, 1.3, 5)
+        n          = len(faces)
+        if n == 0:
+            log_violation_db(current_user.id, session_id, 'no_face')
+        elif n > 1:
+            log_violation_db(current_user.id, session_id, 'multiple_faces')
+        return jsonify({'success': True, 'face_detected': n == 1, 'num_faces': n})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/analyze-gaze', methods=['POST'])
+@login_required
+def analyze_gaze():
+    try:
+        data       = request.get_json()
+        session_id = data.get('session_id')
+        img_b64    = data['image'].split(',')[1]
+        frame      = cv2.imdecode(np.frombuffer(base64.b64decode(img_b64), np.uint8), cv2.IMREAD_COLOR)
+        gray       = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces      = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(80, 80))
+        gaze_result = {'direction': 'unknown', 'confidence': 0.0, 'looking_away': False}
+
+        if len(faces) == 1:
+            fx, fy, fw, fh = faces[0]
+            face_roi = gray[fy:fy+fh, fx:fx+fw]
+            eyes = eye_cascade.detectMultiScale(face_roi, 1.1, 10, minSize=(20, 20))
+
+            if len(eyes) >= 2:
+                eyes = sorted(eyes, key=lambda e: e[0])
+                ex1, ey1, ew1, eh1 = eyes[0]
+                ex2, ey2, ew2, eh2 = eyes[1]
+
+                def pupil_center(roi_gray):
+                    _, thresh = cv2.threshold(roi_gray, 70, 255, cv2.THRESH_BINARY_INV)
+                    m = cv2.moments(thresh)
+                    if m['m00'] != 0:
+                        return int(m['m10']/m['m00']), int(m['m01']/m['m00'])
+                    return roi_gray.shape[1]//2, roi_gray.shape[0]//2
+
+                p1x, p1y = pupil_center(face_roi[ey1:ey1+eh1, ex1:ex1+ew1])
+                p2x, p2y = pupil_center(face_roi[ey2:ey2+eh2, ex2:ex2+ew2])
+                avg_ratio   = ((p1x/max(ew1,1)) + (p2x/max(ew2,1))) / 2
+                avg_v_ratio = ((p1y/max(eh1,1)) + (p2y/max(eh2,1))) / 2
+
+                if avg_ratio < 0.35:
+                    direction, looking_away = 'left', True
+                elif avg_ratio > 0.65:
+                    direction, looking_away = 'right', True
+                elif avg_v_ratio < 0.30:
+                    direction, looking_away = 'up', True
+                else:
+                    direction, looking_away = 'center', False
+
+                gaze_result = {'direction': direction, 'confidence': 0.80,
+                               'looking_away': looking_away, 'ratio': round(avg_ratio, 3)}
+
+                if looking_away:
+                    ge = GazeEvent(user_id=current_user.id, session_id=session_id,
+                                   direction=direction, confidence=0.80)
+                    db.session.add(ge); db.session.commit()
+                    log_violation_db(current_user.id, session_id, 'gaze_away',
+                                     gaze_data={'direction': direction, 'ratio': round(avg_ratio, 3)})
+            elif len(eyes) == 0:
+                gaze_result = {'direction': 'no_eyes', 'confidence': 0.5, 'looking_away': True}
+
+        return jsonify({'success': True, 'gaze': gaze_result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/detect-device', methods=['POST'])
+@login_required
+def detect_device():
+    try:
+        data       = request.get_json()
+        session_id = data.get('session_id')
+        img_b64    = data['image'].split(',')[1]
+        frame      = cv2.imdecode(np.frombuffer(base64.b64decode(img_b64), np.uint8), cv2.IMREAD_COLOR)
+        gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        edges   = cv2.Canny(blurred, 50, 150)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        phone_detected = False
+        confidence = 0.0
+        device_type = None
+        fh, fw = frame.shape[:2]
+        frame_area = fw * fh
+        faces = face_cascade.detectMultiScale(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 1.3, 5)
+        face_regions = [(x, y, x+w, y+h) for (x,y,w,h) in faces]
+
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area < 3000 or area > frame_area * 0.4: continue
+            peri  = cv2.arcLength(cnt, True)
+            approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+            if len(approx) == 4:
+                x, y, w, h = cv2.boundingRect(approx)
+                aspect = max(w, h) / max(min(w, h), 1)
+                if 1.4 <= aspect <= 2.8 and area < frame_area * 0.25:
+                    cx, cy = x + w//2, y + h//2
+                    in_face = any(fx1 < cx < fx2 and fy1 < cy < fy2 for (fx1,fy1,fx2,fy2) in face_regions)
+                    if not in_face:
+                        conf = min(0.95, 0.5 + (area / (frame_area * 0.25)) * 0.45)
+                        if conf > confidence:
+                            confidence = conf
+                            phone_detected = conf >= app.config['PHONE_DETECTION_CONFIDENCE']
+                            device_type = 'phone'
+
+        if phone_detected:
+            _, buf = cv2.imencode('.jpg', cv2.resize(frame, (160, 120)))
+            thumb = base64.b64encode(buf).decode('utf-8')
+            da = DeviceAlert(user_id=current_user.id, session_id=session_id,
+                             device_type=device_type, confidence=confidence, image_b64=thumb)
+            db.session.add(da); db.session.commit()
+            log_violation_db(current_user.id, session_id, 'phone_detected',
+                             device_data={'device_type': device_type, 'confidence': round(confidence, 2)})
+
+        return jsonify({'success': True, 'phone_detected': phone_detected,
+                        'device_type': device_type, 'confidence': round(confidence, 2)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/log-violation', methods=['POST'])
 @login_required
-def log_violation():
-    """Log violation"""
-    try:
-        data = request.get_json()
-        violation_type = data.get('violation_type')
-        info = get_violation_info(violation_type)
-        log_violation_to_db(current_user.id, violation_type, info['severity'], info['description'])
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+def log_violation_route():
+    data = request.get_json() or {}
+    log_violation_db(current_user.id, data.get('session_id'), data.get('violation_type'))
+    return jsonify({'success': True})
 
-@app.route('/submit-test', methods=['POST'])
-@login_required
-def submit_test():
-    """Submit test"""
-    try:
-        data = request.get_json()
-        violations = Violation.query.filter_by(user_id=current_user.id).all()
-        credibility_score = calculate_credibility_score(violations)
-        passed = credibility_score >= app.config['CREDIBILITY_PASS_THRESHOLD']
-        
-        submission = TestSubmission(
-            user_id=current_user.id,
-            answers=json.dumps(data.get('answers', {})),
-            credibility_score=credibility_score,
-            total_violations=len(violations),
-            exam_duration_seconds=data.get('duration_seconds', 0),
-            passed=passed
-        )
-        
-        db.session.add(submission)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'submission_id': submission.id,
-            'credibility_score': credibility_score,
-            'total_violations': len(violations),
-            'passed': passed,
-            'redirect': f'results.html?id={submission.id}'
-        })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/get-credibility-score')
 @login_required
-def get_credibility_score():
-    """Get current credibility score"""
-    violations = Violation.query.filter_by(user_id=current_user.id).all()
-    score = calculate_credibility_score(violations)
-    return jsonify({
-        'success': True,
-        'credibility_score': score,
-        'total_violations': len(violations)
-    })
+def get_credibility():
+    session_id = request.args.get('session_id', type=int)
+    score = calc_credibility(session_id) if session_id else 100
+    v_count = Violation.query.filter_by(session_id=session_id).count() if session_id else 0
+    return jsonify({'success': True, 'credibility_score': score, 'total_violations': v_count})
 
-# ========================================
-# ROUTES - RESULTS
-# ========================================
 
+# ══════════════════════════════════════════════════════════════════════════════
+# ── AI ROUTES — powered by Gemini (google-generativeai) ──────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/ai-generate-questions', methods=['POST'])
+@login_required
+def ai_generate_questions():
+    """
+    Uses Gemini to generate 10 role-specific interview questions.
+    Falls back to DB questions if GEMINI_API_KEY is not set.
+    """
+    data     = request.get_json() or {}
+    job_role = data.get('job_role', 'Software Developer')
+
+    # ── Try Gemini ──
+    prompt = f"""You are an expert technical recruiter interviewing a candidate for a {job_role} position.
+
+Generate exactly 10 interview questions. Return ONLY a valid JSON array like this:
+[
+  {{
+    "id": 1,
+    "question": "Your interview question here?",
+    "type": "technical",
+    "expected_keywords": ["keyword1", "keyword2", "keyword3"],
+    "follow_up": "A follow-up question if they answer correctly?"
+  }}
+]
+
+Rules:
+- Mix of difficulty: 3 easy, 4 medium, 3 hard
+- Cover fundamentals, problem-solving, best practices, real-world scenarios
+- Questions must be specific to {job_role}
+- Sound like a real human recruiter is asking
+- Return ONLY the JSON array. No explanation, no markdown, no extra text."""
+
+    raw = gemini_ask(prompt)
+    questions = parse_json_response(raw)
+
+    if questions and isinstance(questions, list) and len(questions) > 0:
+        return jsonify({'success': True, 'source': 'gemini', 'questions': questions})
+
+    # ── Fallback to DB if Gemini fails or key not set ──
+    print("⚠️  Gemini unavailable — falling back to DB questions")
+    qs = ExamQuestion.query.filter_by(job_role=job_role).limit(10).all()
+    if not qs:
+        qs = ExamQuestion.query.limit(10).all()
+    return jsonify({'success': True, 'source': 'db_fallback',
+                    'questions': [q.to_dict() for q in qs]})
+
+
+@app.route('/api/ai-evaluate-answer', methods=['POST'])
+@login_required
+def ai_evaluate_answer():
+    """
+    Uses Gemini to score a candidate's answer (1-10) and give feedback.
+    Falls back to keyword-matching if Gemini is unavailable.
+    """
+    data     = request.get_json() or {}
+    question = data.get('question', '')
+    answer   = data.get('answer', '')
+    job_role = data.get('job_role', 'Developer')
+    keywords = data.get('expected_keywords', [])
+
+    # ── Try Gemini ──
+    prompt = f"""You are evaluating a {job_role} interview answer.
+
+Question: {question}
+Candidate's Answer: {answer}
+Expected Keywords/Concepts: {', '.join(keywords) if keywords else 'N/A'}
+
+Evaluate strictly and fairly. Return ONLY this JSON object (no markdown, no explanation):
+{{
+  "score": <integer 1-10>,
+  "feedback": "<exactly 2 sentences of constructive feedback>",
+  "follow_up": "<one follow-up question if the answer was incomplete, or null if complete>",
+  "strong_points": ["<what they got right>"],
+  "missing_points": ["<what was missing>"]
+}}"""
+
+    raw = gemini_ask(prompt)
+    result = parse_json_response(raw)
+
+    if result and 'score' in result:
+        return jsonify({'success': True, **result})
+
+    # ── Fallback: keyword-matching score ──
+    print("⚠️  Gemini unavailable — using keyword fallback scoring")
+    matches = sum(1 for kw in keywords if kw.lower() in answer.lower())
+    score   = min(10, max(1, 4 + round((matches / max(len(keywords), 1)) * 6)))
+    return jsonify({'success': True, 'score': score,
+                    'feedback': f'Answer recorded. {matches} of {len(keywords)} key concepts mentioned.',
+                    'follow_up': None, 'strong_points': [], 'missing_points': []})
+
+
+@app.route('/api/ai-final-evaluation', methods=['POST'])
+@login_required
+def ai_final_evaluation():
+    """
+    Uses Gemini to generate a full evaluation report from the complete Q&A transcript.
+    """
+    data       = request.get_json() or {}
+    transcript = data.get('transcript', [])
+    job_role   = data.get('job_role', 'Developer')
+
+    if not transcript:
+        return jsonify({'success': True, 'overall_score': 50,
+                        'summary': 'No transcript available.', 'recommendation': 'Review required.'})
+
+    # Build readable Q&A text
+    qa_text = '\n\n'.join([
+        f"Q{i+1}: {t.get('question','')}\nAnswer: {t.get('answer','')}\nScore: {t.get('score','?')}/10"
+        for i, t in enumerate(transcript)
+    ])
+
+    # ── Try Gemini ──
+    prompt = f"""You are a senior hiring manager reviewing a completed {job_role} interview.
+
+Full Q&A Transcript:
+{qa_text}
+
+Based on all answers, provide a final evaluation. Return ONLY this JSON (no markdown, no extra text):
+{{
+  "overall_score": <integer 0-100>,
+  "technical_score": <integer 0-100>,
+  "communication_score": <integer 0-100>,
+  "summary": "<3-4 sentence overall assessment of the candidate>",
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "improvements": ["<area to improve 1>", "<area to improve 2>"],
+  "recommendation": "<exactly one of: Strong Hire | Hire | Maybe | No Hire>"
+}}"""
+
+    raw = gemini_ask(prompt)
+    result = parse_json_response(raw)
+
+    if result and 'overall_score' in result:
+        return jsonify({'success': True, **result})
+
+    # ── Fallback: average the per-question scores ──
+    print("⚠️  Gemini unavailable — using average score fallback")
+    avg = sum(t.get('score', 5) for t in transcript) / max(len(transcript), 1)
+    overall = int(avg * 10)
+    rec = 'Strong Hire' if overall >= 80 else 'Hire' if overall >= 65 else 'Maybe' if overall >= 50 else 'No Hire'
+    return jsonify({'success': True, 'overall_score': overall,
+                    'technical_score': overall, 'communication_score': overall,
+                    'summary': f'Interview completed with an average score of {avg:.1f}/10.',
+                    'strengths': ['Completed the interview'], 'improvements': ['More detail needed'],
+                    'recommendation': rec})
+
+
+# ── Submit ─────────────────────────────────────────────────────────────────────
+@app.route('/submit-test', methods=['POST'])
+@login_required
+def submit_test():
+    data       = request.get_json() or {}
+    session_id = data.get('session_id')
+    job_role   = data.get('job_role', 'General')
+    mode       = data.get('mode', 'mcq')
+    cred_score = calc_credibility(session_id) if session_id else 100
+
+    interview_score = 0
+    if mode == 'mcq':
+        answers = data.get('answers', {})
+        question_ids = []
+        if session_id:
+            sess = db.session.get(InterviewSession, session_id)
+            if sess and sess.question_ids:
+                question_ids = json.loads(sess.question_ids)
+        correct = 0
+        for i, qid in enumerate(question_ids):
+            q = ExamQuestion.query.get(qid)
+            if q:
+                user_ans = answers.get(f'q{i+1}', answers.get(str(qid), ''))
+                if user_ans == q.correct_answer:
+                    correct += 1
+        interview_score = int((correct / max(len(question_ids), 1)) * 100)
+    elif mode == 'ai_interview':
+        interview_score = data.get('ai_overall_score', 0)
+
+    passed      = cred_score >= app.config['CREDIBILITY_PASS_THRESHOLD']
+    attempt_num = TestSubmission.query.filter_by(user_id=current_user.id).count() + 1
+
+    sub = TestSubmission(
+        user_id=current_user.id, session_id=session_id,
+        job_role=job_role, mode=mode,
+        answers=json.dumps(data.get('answers', {})),
+        credibility_score=cred_score, interview_score=interview_score,
+        total_violations=Violation.query.filter_by(session_id=session_id).count() if session_id else 0,
+        exam_duration_seconds=data.get('duration_seconds', 0),
+        passed=passed, attempt_number=attempt_num,
+        ai_feedback=json.dumps(data.get('ai_feedback', {})),
+    )
+    db.session.add(sub)
+
+    if session_id:
+        sess = db.session.get(InterviewSession, session_id)
+        if sess:
+            sess.status = 'completed'
+            sess.ended_at = datetime.utcnow()
+            sess.credibility_score = cred_score
+            sess.interview_score   = interview_score
+    db.session.commit()
+
+    return jsonify({'success': True, 'submission_id': sub.id,
+                    'credibility_score': cred_score, 'interview_score': interview_score,
+                    'total_violations': sub.total_violations, 'passed': passed,
+                    'redirect': f'results.html?id={sub.id}'})
+
+
+# ── Results ────────────────────────────────────────────────────────────────────
 @app.route('/api/results/<int:submission_id>')
 @login_required
 def get_results(submission_id):
-    """Get results data as JSON"""
-    submission = TestSubmission.query.get_or_404(submission_id)
-    
-    if submission.user_id != current_user.id and not current_user.is_admin:
+    sub = TestSubmission.query.get_or_404(submission_id)
+    if sub.user_id != current_user.id and not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    violations = Violation.query.filter_by(user_id=submission.user_id).all()
-    
+    violations    = Violation.query.filter_by(session_id=sub.session_id).all() if sub.session_id else []
+    gaze_events   = GazeEvent.query.filter_by(session_id=sub.session_id).count() if sub.session_id else 0
+    device_alerts = DeviceAlert.query.filter_by(session_id=sub.session_id).count() if sub.session_id else 0
     breakdown = {}
     for v in violations:
         breakdown[v.violation_type] = breakdown.get(v.violation_type, 0) + 1
-    
-    return jsonify({
-        'success': True,
-        'submission': submission.to_dict(),
-        'violations': [v.to_dict() for v in violations],
-        'breakdown': breakdown
-    })
+    ai_feedback = {}
+    if sub.ai_feedback:
+        try: ai_feedback = json.loads(sub.ai_feedback)
+        except: pass
+    return jsonify({'success': True, 'submission': sub.to_dict(),
+                    'violations': [v.to_dict() for v in violations],
+                    'breakdown': breakdown, 'gaze_events': gaze_events,
+                    'device_alerts': device_alerts, 'ai_feedback': ai_feedback})
 
-@app.route('/download-report/<int:submission_id>')
+
+@app.route('/api/retake-exam', methods=['POST'])
 @login_required
-def download_report(submission_id):
-    """Download PDF report"""
-    submission = TestSubmission.query.get_or_404(submission_id)
-    
-    if submission.user_id != current_user.id and not current_user.is_admin:
-        return "Unauthorized", 403
-    
-    pdf_buffer = generate_pdf_report(submission)
-    
-    if pdf_buffer:
-        return send_file(
-            pdf_buffer,
-            as_attachment=True,
-            download_name=f'exam_report_{submission.user.username}_{submission.id}.pdf',
-            mimetype='application/pdf'
-        )
-    else:
-        return "Error generating PDF", 500
+def retake_exam():
+    data     = request.get_json() or {}
+    job_role = data.get('job_role', 'Python Developer')
+    mode     = data.get('mode', 'mcq')
+    qs = ExamQuestion.query.filter_by(job_role=job_role).all()
+    if len(qs) < 10:
+        qs = ExamQuestion.query.limit(15).all()
+    selected = random.sample(qs, min(10, len(qs)))
+    sess = InterviewSession(
+        candidate_id=current_user.id, job_role=job_role, mode=mode,
+        room_code=make_room_code(), status='pending', credibility_score=100,
+        question_ids=json.dumps([q.id for q in selected]),
+    )
+    db.session.add(sess); db.session.commit()
+    return jsonify({'success': True, 'session': sess.to_dict(),
+                    'room_code': sess.room_code,
+                    'message': 'Fresh session created. Credibility starts at 100.'})
 
-# ========================================
-# ROUTES - ADMIN DASHBOARD
-# ========================================
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    """Admin dashboard redirect"""
-    if not current_user.is_admin:
-        return send_from_directory('.', 'test.html')
-    return send_from_directory('.', 'dashboard.html')
-
+# ── Dashboard ──────────────────────────────────────────────────────────────────
 @app.route('/api/dashboard-stats')
 @login_required
 def dashboard_stats():
-    """Get dashboard statistics"""
     if not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    total_students = User.query.filter_by(is_admin=False).count()
-    total_submissions = TestSubmission.query.count()
-    total_violations = Violation.query.count()
-    active_exams = 0
-    
-    recent_submissions = TestSubmission.query.order_by(
-        TestSubmission.submitted_at.desc()
-    ).limit(10).all()
-    
-    recent_violations = Violation.query.order_by(
-        Violation.timestamp.desc()
-    ).limit(20).all()
-    
-    return jsonify({
-        'success': True,
+    return jsonify({'success': True,
         'stats': {
-            'total_students': total_students,
-            'total_submissions': total_submissions,
-            'total_violations': total_violations,
-            'active_exams': active_exams
+            'total_candidates': User.query.filter_by(role='candidate').count(),
+            'total_submissions': TestSubmission.query.count(),
+            'total_violations': Violation.query.count(),
+            'active_sessions': InterviewSession.query.filter_by(status='active').count(),
+            'total_gaze_events': GazeEvent.query.count(),
+            'total_device_alerts': DeviceAlert.query.count(),
         },
-        'recent_submissions': [s.to_dict() for s in recent_submissions],
-        'recent_violations': [v.to_dict() for v in recent_violations]
+        'recent_submissions': [s.to_dict() for s in
+            TestSubmission.query.order_by(TestSubmission.submitted_at.desc()).limit(20).all()],
+        'recent_violations': [v.to_dict() for v in
+            Violation.query.order_by(Violation.timestamp.desc()).limit(30).all()],
+        'active_sessions_list': [s.to_dict() for s in
+            InterviewSession.query.filter_by(status='active').all()],
     })
 
-@app.route('/api/all-submissions')
+
+@app.route('/api/candidates')
 @login_required
-def all_submissions():
-    """Get all submissions"""
+def get_candidates():
     if not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    
-    submissions = TestSubmission.query.order_by(
-        TestSubmission.submitted_at.desc()
-    ).all()
-    
-    return jsonify({
-        'success': True,
-        'submissions': [s.to_dict() for s in submissions]
-    })
+    candidates = User.query.filter_by(role='candidate').all()
+    return jsonify({'success': True, 'candidates': [
+        {'id': c.id, 'username': c.username, 'full_name': c.full_name,
+         'email': c.email, 'submissions': c.submissions.count()} for c in candidates
+    ]})
 
-# ========================================
-# SOCKETIO EVENTS
-# ========================================
 
+# ── SocketIO ───────────────────────────────────────────────────────────────────
 @socketio.on('connect')
-def handle_connect():
-    """Handle client connection"""
-    print(f"Client connected: {request.sid}")
+def on_connect():
+    print(f'Connected: {request.sid}')
+
+@socketio.on('join_room_event')
+def on_join_room(data):
+    room = data.get('room')
+    role = data.get('role', 'candidate')
+    join_room(room)
+    emit('user_joined', {'role': role, 'sid': request.sid}, room=room)
+
+@socketio.on('leave_room_event')
+def on_leave_room(data):
+    leave_room(data.get('room'))
+
+@socketio.on('webrtc_offer')
+def on_offer(data):
+    emit('webrtc_offer', data, room=data['room'], include_self=False)
+
+@socketio.on('webrtc_answer')
+def on_answer(data):
+    emit('webrtc_answer', data, room=data['room'], include_self=False)
+
+@socketio.on('webrtc_ice_candidate')
+def on_ice(data):
+    emit('webrtc_ice_candidate', data, room=data['room'], include_self=False)
+
+@socketio.on('recruiter_message')
+def on_recruiter_msg(data):
+    emit('recruiter_message', data, room=data['room'], include_self=False)
+
+@socketio.on('end_interview')
+def on_end_interview(data):
+    emit('interview_ended', data, room=data['room'])
 
 @socketio.on('join_dashboard')
-def handle_join_dashboard():
-    """Admin joins dashboard room"""
+def on_join_dashboard():
     join_room('dashboard')
-    emit('joined', {'message': 'Joined dashboard room'})
 
 @socketio.on('disconnect')
-def handle_disconnect():
-    """Handle client disconnection"""
-    print(f"Client disconnected: {request.sid}")
+def on_disconnect():
+    print(f'Disconnected: {request.sid}')
 
-# ========================================
-# RUN APPLICATION
-# ========================================
+
+# ── PDF Report ─────────────────────────────────────────────────────────────────
+@app.route('/download-report/<int:submission_id>')
+@login_required
+def download_report(submission_id):
+    sub = TestSubmission.query.get_or_404(submission_id)
+    if sub.user_id != current_user.id and not current_user.is_admin:
+        return "Unauthorized", 403
+    buf = BytesIO()
+    pdf = pdf_canvas.Canvas(buf, pagesize=letter)
+    w, h = letter
+    pdf.setFont("Helvetica-Bold", 22)
+    pdf.drawString(1*inch, h-1*inch, "AI Recruiting System — Interview Report")
+    pdf.setFont("Helvetica", 12)
+    y = h - 1.6*inch
+    for line in [f"Candidate: {sub.user.full_name} ({sub.user.username})",
+                 f"Job Role: {sub.job_role}", f"Mode: {sub.mode.replace('_',' ').title()}",
+                 f"Submitted: {sub.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}",
+                 f"Attempt: #{sub.attempt_number}"]:
+        pdf.drawString(1*inch, y, line); y -= 0.28*inch
+    y -= 0.2*inch
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(1*inch, y, f"Credibility Score:  {sub.credibility_score} / 100"); y -= 0.3*inch
+    pdf.drawString(1*inch, y, f"Interview Score:    {sub.interview_score} / 100"); y -= 0.35*inch
+    pdf.setFillColor(colors.green if sub.passed else colors.red)
+    pdf.drawString(1*inch, y, f"Status: {'PASSED ✓' if sub.passed else 'FAILED ✗'}")
+    pdf.setFillColor(colors.black)
+    y -= 0.5*inch
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(1*inch, y, f"Total Violations: {sub.total_violations}")
+    violations = Violation.query.filter_by(session_id=sub.session_id).all()
+    y -= 0.3*inch
+    pdf.setFont("Helvetica", 10)
+    for v in violations[:20]:
+        y -= 0.22*inch
+        if y < 1*inch: pdf.showPage(); y = h - 1*inch
+        pdf.drawString(
+    1*inch,
+    y,
+    f"  • {v.timestamp.strftime('%H:%M:%S')}  {v.violation_type}  [{ {1:'Low', 2:'Medium', 3:'High'}.get(v.severity, '') }]"
+)
+    if sub.ai_feedback:
+        try:
+            fb = json.loads(sub.ai_feedback)
+            y -= 0.5*inch
+            pdf.setFont("Helvetica-Bold", 13)
+            pdf.drawString(1*inch, y, "AI Interview Feedback:"); y -= 0.25*inch
+            pdf.setFont("Helvetica", 10)
+            summary = fb.get('summary', '')
+            for chunk in [summary[i:i+90] for i in range(0, len(summary), 90)]:
+                y -= 0.22*inch
+                if y < 1*inch: pdf.showPage(); y = h - 1*inch
+                pdf.drawString(1*inch, y, chunk)
+        except: pass
+    pdf.setFont("Helvetica", 8)
+    pdf.drawString(1*inch, 0.5*inch, "Generated by AI Recruiting & Proctoring System (Gemini Edition)")
+    pdf.save(); buf.seek(0)
+    return send_file(buf, as_attachment=True,
+                     download_name=f'report_{sub.user.username}_{sub.id}.pdf',
+                     mimetype='application/pdf')
+
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
