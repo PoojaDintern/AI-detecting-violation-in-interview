@@ -1,70 +1,97 @@
-# config.py - Windows Authentication (No password needed!)
 import os
-import urllib.parse
+
+# Flask
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False  # Set True in production with HTTPS
+PERMANENT_SESSION_LIFETIME = 7200  # 2 hours
+
+# ── Supabase PostgreSQL Database ───────────────────────────────────────────────
+# Replace YOUR-PASSWORD with your actual Supabase database password
+SQLALCHEMY_DATABASE_URI = os.environ.get(
+    'DATABASE_URL',
+    'postgresql://postgres:poojad01252006d@db.vlvpnxbctzxlljqapqyw.supabase.co:5432/postgres'
+)
+SQLALCHEMY_ECHO = False
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+# ── Gemini AI ──────────────────────────────────────────────────────────────────
+# Get your key from: https://aistudio.google.com/app/apikey
+# Set before running: set GEMINI_API_KEY=AIza-your-key-here
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+AI_MODEL = 'gemini-1.5-flash'
+
+# Scoring
+CREDIBILITY_PASS_THRESHOLD = 60
+SEVERITY_POINTS = {1: 5, 2: 10, 3: 15}
+EXCESS_VIOLATION_PENALTY = 2
+EXCESS_VIOLATION_THRESHOLD = 10
+
+# Proctoring thresholds
+FACE_CHECK_INTERVAL = 3000
+GAZE_CHECK_INTERVAL = 4000
+DEVICE_CHECK_INTERVAL = 6000
+GAZE_AWAY_THRESHOLD = 0.35
+PHONE_DETECTION_CONFIDENCE = 0.70
+PHONE_MIN_CONTOUR_AREA = 3000
+PHONE_MAX_FRAME_RATIO = 0.40
+PHONE_ASPECT_RATIO_MIN = 1.4
+PHONE_ASPECT_RATIO_MAX = 2.8
+
+# Job Roles
+JOB_ROLES = [
+    'Python Developer',
+    'Frontend Developer',
+    'Backend Developer',
+    'Full Stack Developer',
+    'Data Scientist',
+    'Machine Learning Engineer',
+    'DevOps Engineer',
+    'Mobile Developer',
+    'QA Engineer',
+    'Product Manager',
+    'UI/UX Designer',
+    'Cybersecurity Analyst',
+    'Cloud Architect',
+    'Database Administrator',
+    'Business Analyst',
+]
+
+# WebRTC ICE Servers
+WEBRTC_ICE_SERVERS = [
+    {'urls': 'stun:stun.l.google.com:19302'},
+    {'urls': 'stun:stun1.l.google.com:19302'},
+]
+
 
 class Config:
-    """Application configuration"""
-    
-    # Flask Secret Key
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    
-    # ========================================
-    # SESSION CONFIGURATION - ADD THIS SECTION
-    # ========================================
-    SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_NAME = 'proctoring_session'
-    PERMANENT_SESSION_LIFETIME = 3600  # 1 hour in seconds
-    SESSION_TYPE = 'filesystem'  # or 'sqlalchemy' if you prefer
-    
-    # ========================================
-    # MSSQL Database Configuration
-    # WINDOWS AUTHENTICATION (No password!)
-    # ========================================
-    
-    DB_SERVER = 'localhost\\SQLEXPRESS'  # ← Change if your server name is different
-    DB_NAME = 'ProctoringDB'
-    
-    # Build connection string for Windows Authentication
-    params = urllib.parse.quote_plus(
-        'DRIVER={ODBC Driver 17 for SQL Server};'
-        f'SERVER={DB_SERVER};'
-        f'DATABASE={DB_NAME};'
-        'Trusted_Connection=yes;'  # ← This uses Windows Authentication
-        'TrustServerCertificate=yes;'
-    )
-    
-    SQLALCHEMY_DATABASE_URI = f"mssql+pyodbc:///?odbc_connect={params}"
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ECHO = False  # Set to True for debugging SQL queries
-    
-    # ========================================
-    # Proctoring Settings
-    # ========================================
-    
-    MAX_TAB_SWITCHES = 3
-    MAX_FULLSCREEN_EXITS = 2
-    FACE_CHECK_INTERVAL = 3000  # milliseconds
-    CREDIBILITY_PASS_THRESHOLD = 60  # minimum score to pass
-    
-    # Violation Severity Points
-    SEVERITY_POINTS = {
-        1: 5,   # Low severity
-        2: 10,  # Medium severity
-        3: 15   # High severity
-    }
-    
-    # Upload folder for profile pictures (future use)
-    UPLOAD_FOLDER = 'uploads'
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-    
-    # PDF Report Settings
-    REPORTS_FOLDER = 'reports'
-    
+    SECRET_KEY                     = SECRET_KEY
+    SESSION_COOKIE_HTTPONLY        = SESSION_COOKIE_HTTPONLY
+    SESSION_COOKIE_SAMESITE        = SESSION_COOKIE_SAMESITE
+    SESSION_COOKIE_SECURE          = SESSION_COOKIE_SECURE
+    PERMANENT_SESSION_LIFETIME     = PERMANENT_SESSION_LIFETIME
+    SQLALCHEMY_DATABASE_URI        = SQLALCHEMY_DATABASE_URI
+    SQLALCHEMY_ECHO                = SQLALCHEMY_ECHO
+    SQLALCHEMY_TRACK_MODIFICATIONS = SQLALCHEMY_TRACK_MODIFICATIONS
+    GEMINI_API_KEY                 = GEMINI_API_KEY
+    AI_MODEL                       = AI_MODEL
+    CREDIBILITY_PASS_THRESHOLD     = CREDIBILITY_PASS_THRESHOLD
+    SEVERITY_POINTS                = SEVERITY_POINTS
+    EXCESS_VIOLATION_PENALTY       = EXCESS_VIOLATION_PENALTY
+    EXCESS_VIOLATION_THRESHOLD     = EXCESS_VIOLATION_THRESHOLD
+    FACE_CHECK_INTERVAL            = FACE_CHECK_INTERVAL
+    GAZE_CHECK_INTERVAL            = GAZE_CHECK_INTERVAL
+    DEVICE_CHECK_INTERVAL          = DEVICE_CHECK_INTERVAL
+    GAZE_AWAY_THRESHOLD            = GAZE_AWAY_THRESHOLD
+    PHONE_DETECTION_CONFIDENCE     = PHONE_DETECTION_CONFIDENCE
+    PHONE_MIN_CONTOUR_AREA         = PHONE_MIN_CONTOUR_AREA
+    PHONE_MAX_FRAME_RATIO          = PHONE_MAX_FRAME_RATIO
+    PHONE_ASPECT_RATIO_MIN         = PHONE_ASPECT_RATIO_MIN
+    PHONE_ASPECT_RATIO_MAX         = PHONE_ASPECT_RATIO_MAX
+    JOB_ROLES                      = JOB_ROLES
+    WEBRTC_ICE_SERVERS             = WEBRTC_ICE_SERVERS
+
     @staticmethod
     def init_app(app):
-        """Initialize application"""
-        # Create necessary folders
-        os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
-        os.makedirs(Config.REPORTS_FOLDER, exist_ok=True)
+        pass

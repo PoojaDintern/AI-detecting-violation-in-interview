@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recruiter Room — RecruitAI</title>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--s:#13131a;--s2:#1c1c28;--border:#2a2a3d;--accent:#6c63ff;--accent2:#a78bfa;--green:#10b981;--red:#f43f5e;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:grid;grid-template-rows:60px 1fr;}
+.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.session-info{display:flex;align-items:center;gap:14px;font-size:13px;}
+.live-badge{padding:4px 12px;background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.4);border-radius:20px;color:var(--red);font-size:11px;font-weight:700;animation:pulseLive 2s infinite;}
+@keyframes pulseLive{0%,100%{opacity:1}50%{opacity:.6}}
+.layout{display:grid;grid-template-columns:1fr 340px;overflow:hidden;}
+/* VIDEO AREA */
+.video-area{padding:20px;display:flex;flex-direction:column;gap:16px;overflow-y:auto;}
+.video-grid{display:grid;grid-template-columns:3fr 2fr;gap:14px;}
+.vbox{background:#000;border-radius:14px;aspect-ratio:16/9;overflow:hidden;position:relative;border:1px solid var(--border);}
+.vbox video{width:100%;height:100%;object-fit:cover;}
+.vbox .vlabel{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.75);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;}
+.vbox.main-view{grid-column:1;}
+.vbox.self-view{grid-column:2;}
+/* CONTROLS */
+.controls{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px;}
+.ctrl-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer;font-size:20px;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.ctrl-btn:hover{border-color:var(--accent);background:rgba(108,99,255,.15);}
+.ctrl-btn.active{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);}
+.ctrl-btn.end{background:var(--red);border-color:var(--red);width:56px;height:56px;font-size:22px;}
+.ctrl-btn.end:hover{background:#c81340;}
+/* NOTES & MSG */
+.panel{display:flex;flex-direction:column;gap:0;background:var(--s);border-left:1px solid var(--border);overflow:hidden;}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);}
+.ptab{flex:1;padding:14px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .2s;text-transform:uppercase;letter-spacing:.04em;}
+.ptab.active{color:var(--accent2);border-bottom-color:var(--accent);}
+.panel-body{flex:1;overflow-y:auto;padding:18px;}
+.panel-section{display:none;}
+.panel-section.active{display:block;}
+/* PROCTORING MONITOR */
+.proctor-cam{background:#000;border-radius:10px;aspect-ratio:4/3;overflow:hidden;position:relative;margin-bottom:14px;}
+.proctor-cam video{width:100%;height:100%;object-fit:cover;}
+.score-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.sc{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.sc-val{font-family:'Syne',sans-serif;font-size:32px;font-weight:700;}
+.sc-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:3px;}
+.status-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.st-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 10px;border-radius:7px;}
+.st-item.ok{background:rgba(16,185,129,.08);color:#6ee7b7;}
+.st-item.warn{background:rgba(245,158,11,.08);color:#fcd34d;}
+.st-item.bad{background:rgba(244,63,94,.08);color:#fda4af;}
+.vio-feed{max-height:200px;overflow-y:auto;}
+.vf-item{padding:6px 9px;background:rgba(244,63,94,.07);border-left:2px solid var(--red);border-radius:4px;margin-bottom:5px;font-size:11px;color:#fda4af;}
+/* NOTES */
+.notes-area textarea{width:100%;min-height:200px;padding:14px;background:var(--s2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;resize:vertical;outline:none;line-height:1.7;}
+.notes-area textarea:focus{border-color:var(--accent);}
+.rating-section{margin-top:16px;}
+.rating-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600;}
+.stars{display:flex;gap:6px;margin-bottom:14px;}
+.star{font-size:26px;cursor:pointer;transition:transform .15s;filter:grayscale(1);opacity:.4;}
+.star:hover,.star.on{filter:none;opacity:1;transform:scale(1.15);}
+.btn-save-notes{padding:9px 20px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;}
+.btn-save-notes:hover{border-color:var(--green);color:var(--green);}
+/* MESSAGES */
+.msg-thread{height:220px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;}
+.msg-bubble{padding:9px 12px;border-radius:9px;font-size:13px;max-width:90%;}
+.msg-bubble.sent{background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.25);align-self:flex-end;}
+.msg-bubble.recv{background:var(--s2);border:1px solid var(--border);align-self:flex-start;}
+.msg-from{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600;text-transform:uppercase;}
+.msg-input-row{display:flex;gap:8px;}
+.msg-input{flex:1;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;}
+.msg-input:focus{border-color:var(--accent);}
+.btn-send-msg{padding:10px 16px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;}
+/* END MODAL */
+.end-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.end-modal.show{display:flex;}
+.end-card{background:var(--s);border:1px solid var(--border);border-radius:20px;padding:40px;text-align:center;max-width:420px;}
+.end-card h2{font-family:'Syne',sans-serif;font-size:26px;margin-bottom:10px;}
+.end-card p{color:var(--muted);margin-bottom:24px;font-size:14px;line-height:1.6;}
+.end-btns{display:flex;gap:12px;justify-content:center;}
+.btn-confirm-end{padding:13px 32px;background:var(--red);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;}
+.btn-cancel-end{padding:13px 24px;background:var(--s2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">🤖 RecruitAI — Recruiter Room</div>
+  <div class="session-info">
+    <div class="live-badge">🔴 LIVE</div>
+    <span id="session-info-text" style="font-size:13px;color:var(--muted);">Loading…</span>
+    <span id="session-timer" style="font-family:monospace;font-size:16px;font-weight:700;color:var(--accent2);">00:00</span>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- VIDEO AREA -->
+  <div class="video-area">
+    <div class="video-grid">
+      <div class="vbox main-view">
+        <video id="remote-video" autoplay playsinline></video>
+        <div class="vlabel" id="candidate-label">Candidate</div>
+      </div>
+      <div class="vbox self-view">
+        <video id="local-video" autoplay muted playsinline></video>
+        <div class="vlabel">You (Recruiter)</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn" id="mute-btn" onclick="toggleMute()" title="Mute/Unmute">🎤</button>
+      <button class="ctrl-btn" id="cam-btn" onclick="toggleCam()" title="Camera on/off">📷</button>
+      <button class="ctrl-btn end" onclick="showEndModal()" title="End interview">📵</button>
+    </div>
+    <!-- Waiting message -->
+    <div id="waiting-msg" style="text-align:center;padding:20px;background:var(--s);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:14px;">
+      ⏳ Waiting for candidate to join the room…
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel">
+    <div class="panel-tabs">
+      <div class="ptab active" onclick="switchPanel('proctor',this)">🛡️ Proctor</div>
+      <div class="ptab" onclick="switchPanel('notes',this)">📝 Notes</div>
+      <div class="ptab" onclick="switchPanel('messages',this)">💬 Chat</div>
+    </div>
+    <div class="panel-body">
+
+      <!-- PROCTORING -->
+      <div class="panel-section active" id="panel-proctor">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;">Candidate Camera Feed</div>
+        <div class="proctor-cam" id="proctor-cam-box">
+          <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;">Connecting…</div>
+        </div>
+        <div class="score-row">
+          <div class="sc"><div class="sc-val" id="r-cred" style="color:var(--green)">100</div><div class="sc-lbl">Credibility</div></div>
+          <div class="sc"><div class="sc-val" id="r-vios">0</div><div class="sc-lbl">Violations</div></div>
+        </div>
+        <div class="status-list">
+          <div class="st-item ok" id="r-face">✅ Face: OK</div>
+          <div class="st-item ok" id="r-gaze">👁️ Gaze: On screen</div>
+          <div class="st-item ok" id="r-device">📱 No device</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Live Violations</div>
+        <div class="vio-feed" id="r-vio-feed"><div style="color:var(--muted);font-size:11px;">No violations yet</div></div>
+      </div>
+
+      <!-- NOTES -->
+      <div class="panel-section" id="panel-notes">
+        <div class="notes-area">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;letter-spacing:.05em;margin-bottom:8px;">Interview Notes</div>
+          <textarea id="notes-input" placeholder="Type your observations, strengths, concerns…"></textarea>
+        </div>
+        <div class="rating-section">
+          <div class="rating-label">Overall Rating</div>
+          <div class="stars" id="stars">
+            <span class="star" onclick="setRating(1)">⭐</span>
+            <span class="star" onclick="setRating(2)">⭐</span>
+            <span class="star" onclick="setRating(3)">⭐</span>
+            <span class="star" onclick="setRating(4)">⭐</span>
+            <span class="star" onclick="setRating(5)">⭐</span>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;letter-spacing:.05em;margin-bottom:6px;">Recommendation</div>
+            <select id="rec-select" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;">
+              <option value="">Select…</option>
+              <option>Strong Hire</option>
+              <option>Hire</option>
+              <option>Maybe</option>
+              <option>No Hire</option>
+            </select>
+          </div>
+          <button class="btn-save-notes" onclick="saveNotes()">💾 Save Notes</button>
+          <div id="notes-saved" style="font-size:12px;color:var(--green);margin-top:8px;display:none;">✅ Saved!</div>
+        </div>
+      </div>
+
+      <!-- MESSAGES -->
+      <div class="panel-section" id="panel-messages">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;letter-spacing:.05em;margin-bottom:10px;">Chat with Candidate</div>
+        <div class="msg-thread" id="msg-thread"></div>
+        <div class="msg-input-row">
+          <input class="msg-input" id="msg-input" placeholder="Type a message or question…" onkeypress="if(event.key==='Enter')sendMsg()">
+          <button class="btn-send-msg" onclick="sendMsg()">➤</button>
+        </div>
+        <div style="margin-top:10px;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Quick prompts:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button onclick="quickMsg('Please describe a challenge you faced recently.')" style="padding:5px 10px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;">Challenge Q</button>
+            <button onclick="quickMsg('Can you explain your approach to problem-solving?')" style="padding:5px 10px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;">Problem-solving</button>
+            <button onclick="quickMsg('Tell me about your most relevant project.')" style="padding:5px 10px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;">Projects</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- END INTERVIEW MODAL -->
+<div class="end-modal" id="end-modal">
+  <div class="end-card">
+    <div style="font-size:56px;margin-bottom:14px;">⏹️</div>
+    <h2>End Interview?</h2>
+    <p>This will end the live session for both you and the candidate. Their exam will be submitted and scored.</p>
+    <div class="end-btns">
+      <button class="btn-cancel-end" onclick="hideEndModal()">Cancel</button>
+      <button class="btn-confirm-end" onclick="endInterview()">End Interview</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let socket, peerConn, localStream, sessionData;
+let rating = 0, sessionStartTime = Date.now();
+let micOn = true, camOn = true;
+
+async function init() {
+  const auth = await fetch('/api/check-auth').then(r=>r.json());
+  if (!auth.authenticated || !auth.is_admin) return window.location.href='index.html';
+
+  const params = new URLSearchParams(window.location.search);
+  const roomCode = params.get('room');
+  if (!roomCode) return alert('No room code in URL');
+
+  const data = await fetch(`/api/join-session/${roomCode}`).then(r=>r.json());
+  if (!data.success) return alert('Session not found: ' + roomCode);
+  sessionData = data.session;
+
+  document.getElementById('session-info-text').textContent =
+    `${sessionData.candidate_name} · ${sessionData.job_role}`;
+  document.getElementById('candidate-label').textContent = sessionData.candidate_name;
+
+  await startLocalVideo();
+  initSocket(roomCode, data.ice_servers || []);
+  startTimer();
+  pollProctoring();
+}
+
+async function startLocalVideo() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+    document.getElementById('local-video').srcObject = localStream;
+  } catch(e) { console.error('Camera error', e); }
+}
+
+function initSocket(room, iceServers) {
+  socket = io();
+  socket.on('connect', ()=>{
+    socket.emit('join_room_event', {room, role:'recruiter'});
+  });
+
+  socket.on('user_joined', data=>{
+    if (data.role==='candidate') {
+      document.getElementById('waiting-msg').style.display='none';
+      setupWebRTC(room, iceServers);
+    }
+  });
+
+  // WebRTC signaling
+  socket.on('webrtc_offer', async data=>{
+    if (!peerConn) return;
+    await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    const answer = await peerConn.createAnswer();
+    await peerConn.setLocalDescription(answer);
+    socket.emit('webrtc_answer', {sdp:answer, room});
+  });
+  socket.on('webrtc_answer', async data=>{
+    await peerConn?.setRemoteDescription(new RTCSessionDescription(data.sdp));
+  });
+  socket.on('webrtc_ice_candidate', async data=>{
+    await peerConn?.addIceCandidate(new RTCIceCandidate(data.candidate));
+  });
+
+  // Violations from candidate
+  socket.on('violation_alert', data=>{
+    addVioToFeed(data);
+    document.getElementById('r-vios').textContent = parseInt(document.getElementById('r-vios').textContent||0)+1;
+    document.getElementById('r-cred').textContent = data.new_credibility || '—';
+    const sc = parseInt(data.new_credibility||100);
+    document.getElementById('r-cred').style.color = sc>=80?'#10b981':sc>=60?'#f59e0b':'#f43f5e';
+  });
+}
+
+async function setupWebRTC(room, iceServers) {
+  peerConn = new RTCPeerConnection({iceServers});
+  localStream?.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+  peerConn.ontrack = e => {
+    document.getElementById('remote-video').srcObject = e.streams[0];
+  };
+  peerConn.onicecandidate = e => {
+    if (e.candidate) socket.emit('webrtc_ice_candidate', {candidate:e.candidate, room});
+  };
+  // Recruiter creates offer
+  const offer = await peerConn.createOffer();
+  await peerConn.setLocalDescription(offer);
+  socket.emit('webrtc_offer', {sdp:offer, room});
+}
+
+function addVioToFeed(data) {
+  const feed = document.getElementById('r-vio-feed');
+  if (feed.querySelector('div[style]')) feed.innerHTML='';
+  const item = document.createElement('div');
+  item.className = 'vf-item';
+  item.textContent = `${data.timestamp||new Date().toLocaleTimeString()}: ${data.violation_type?.replace(/_/g,' ')||'violation'}`;
+  feed.insertBefore(item, feed.firstChild);
+}
+
+async function pollProctoring() {
+  // Poll credibility score every 8 seconds
+  setInterval(async ()=>{
+    if (!sessionData?.id) return;
+    const res = await fetch(`/get-credibility-score?session_id=${sessionData.id}`).then(r=>r.json()).catch(()=>null);
+    if (!res?.success) return;
+    const sc = res.credibility_score;
+    document.getElementById('r-cred').textContent = sc;
+    document.getElementById('r-cred').style.color = sc>=80?'#10b981':sc>=60?'#f59e0b':'#f43f5e';
+    document.getElementById('r-vios').textContent = res.total_violations;
+  }, 8000);
+}
+
+function startTimer() {
+  setInterval(()=>{
+    const elapsed = Math.floor((Date.now()-sessionStartTime)/1000);
+    const m=Math.floor(elapsed/60), s=elapsed%60;
+    document.getElementById('session-timer').textContent =
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  },1000);
+}
+
+function toggleMute() {
+  micOn = !micOn;
+  localStream?.getAudioTracks().forEach(t=>t.enabled=micOn);
+  const btn = document.getElementById('mute-btn');
+  btn.textContent = micOn?'🎤':'🔇';
+  btn.classList.toggle('active', !micOn);
+}
+
+function toggleCam() {
+  camOn = !camOn;
+  localStream?.getVideoTracks().forEach(t=>t.enabled=camOn);
+  const btn = document.getElementById('cam-btn');
+  btn.textContent = camOn?'📷':'🚫';
+  btn.classList.toggle('active', !camOn);
+}
+
+function switchPanel(name, el) {
+  document.querySelectorAll('.panel-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+function setRating(r) {
+  rating = r;
+  document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<r));
+}
+
+async function saveNotes() {
+  const notes = document.getElementById('notes-input').value;
+  const rec   = document.getElementById('rec-select').value;
+  // Save to session via socket
+  socket?.emit('recruiter_message', {
+    room: sessionData?.room_code,
+    message: `[NOTES] ${notes} | Rating: ${rating}/5 | Recommendation: ${rec}`
+  });
+  document.getElementById('notes-saved').style.display='block';
+  setTimeout(()=>document.getElementById('notes-saved').style.display='none',2000);
+}
+
+function sendMsg() {
+  const input = document.getElementById('msg-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  socket?.emit('recruiter_message', {room: sessionData?.room_code, message: text});
+  addMsg(text, 'sent');
+  input.value = '';
+}
+
+function quickMsg(text) {
+  document.getElementById('msg-input').value = text;
+  sendMsg();
+}
+
+function addMsg(text, type) {
+  const thread = document.getElementById('msg-thread');
+  const d = document.createElement('div');
+  d.className = 'msg-bubble ' + type;
+  d.innerHTML = `<div class="msg-from">${type==='sent'?'You':'Candidate'}</div>${text}`;
+  thread.appendChild(d);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function showEndModal() { document.getElementById('end-modal').classList.add('show'); }
+function hideEndModal() { document.getElementById('end-modal').classList.remove('show'); }
+
+function endInterview() {
+  socket?.emit('end_interview', {room: sessionData?.room_code});
+  if (localStream) localStream.getTracks().forEach(t=>t.stop());
+  // Save final notes
+  const notes = document.getElementById('notes-input').value;
+  if (notes && sessionData?.id) {
+    fetch(`/api/start-session/${sessionData.id}`, {method:'POST'});
+  }
+  window.location.href = 'recruiter_dashboard.html';
+}
+
+// Listen for chat from candidate side
+socket?.on?.('recruiter_message', data => addMsg(data.message, 'recv'));
+
+init();
+</script>
+</body>
+</html>

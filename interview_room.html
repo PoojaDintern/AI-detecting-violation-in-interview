@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Room — RecruitAI</title>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--s:#13131a;--s2:#1c1c28;--border:#2a2a3d;--accent:#6c63ff;--accent2:#a78bfa;--green:#10b981;--red:#f43f5e;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.brand{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar-right{display:flex;align-items:center;gap:16px;}
+.timer-display{font-family:monospace;font-size:20px;font-weight:700;color:var(--accent2);background:var(--s2);padding:6px 14px;border-radius:8px;border:1px solid var(--border);}
+.timer-display.warn{color:var(--red);border-color:var(--red);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.layout{display:grid;grid-template-columns:1fr 300px;gap:0;min-height:calc(100vh - 60px);}
+.interview-area{padding:28px;overflow-y:auto;}
+.proctoring-sidebar{background:var(--s);border-left:1px solid var(--border);padding:20px;display:flex;flex-direction:column;gap:16px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;}
+#mode-selector{max-width:680px;margin:0 auto;}
+.mode-header{text-align:center;margin-bottom:32px;}
+.mode-header h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-bottom:8px;}
+.mode-header p{color:var(--muted);font-size:15px;}
+.room-join{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
+.room-join label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600;}
+.room-join input,.room-join select{width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;margin-bottom:14px;}
+.room-join input:focus,.room-join select:focus{border-color:var(--accent);}
+.btn-start{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;border-radius:11px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;transition:all .25s;}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(108,99,255,.4);}
+#mcq-area{display:none;}
+.q-progress{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
+.q-dots{display:flex;gap:6px;flex-wrap:wrap;}
+.qdot{width:14px;height:14px;border-radius:50%;background:var(--s2);border:2px solid var(--border);cursor:pointer;transition:all .2s;}
+.qdot.ans{background:var(--accent);border-color:var(--accent);}
+.qdot.curr{background:transparent;border-color:var(--accent2);}
+.question-card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:20px;}
+.q-num{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;font-family:'Syne',sans-serif;font-weight:700;}
+.q-text{font-size:19px;font-weight:500;line-height:1.55;margin-bottom:24px;}
+.options{display:grid;gap:10px;}
+.opt{display:flex;align-items:center;gap:14px;padding:15px 18px;background:var(--s2);border:2px solid var(--border);border-radius:11px;cursor:pointer;transition:all .2s;font-size:14px;}
+.opt:hover{border-color:var(--accent);background:rgba(108,99,255,.06);}
+.opt.selected{border-color:var(--accent);background:rgba(108,99,255,.12);}
+.opt-letter{width:30px;height:30px;border-radius:8px;background:var(--s);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;transition:all .2s;}
+.opt.selected .opt-letter{background:var(--accent);border-color:var(--accent);color:#fff;}
+.q-nav{display:flex;justify-content:space-between;align-items:center;}
+.btn-nav{padding:10px 22px;border:1px solid var(--border);border-radius:9px;background:var(--s2);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;transition:all .2s;}
+.btn-nav:hover{border-color:var(--accent);color:var(--accent2);}
+.btn-submit-mcq{padding:12px 28px;background:linear-gradient(135deg,var(--green),#34d399);border:none;border-radius:9px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+/* AI INTERVIEWER */
+#ai-area{display:none;}
+.ai-avatar-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:32px;}
+.ai-avatar{width:160px;height:160px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:72px;position:relative;box-shadow:0 0 0 8px rgba(108,99,255,.12),0 0 40px rgba(108,99,255,.25);}
+.ai-avatar.speaking .ring{animation:ripple 1.2s ease-out infinite;}
+.ai-avatar.speaking .ring2{animation:ripple 1.4s ease-out infinite .3s;}
+.ring{position:absolute;inset:-12px;border-radius:50%;border:3px solid rgba(108,99,255,.4);}
+.ring2{position:absolute;inset:-22px;border-radius:50%;border:2px solid rgba(108,99,255,.2);}
+@keyframes ripple{0%{transform:scale(1);opacity:1}100%{transform:scale(1.2);opacity:0}}
+.ai-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-top:14px;}
+.ai-status{font-size:13px;color:var(--muted);margin-top:4px;min-height:20px;}
+/* Loading spinner shown while fetching questions */
+.ai-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px;background:var(--s);border:1px solid var(--border);border-radius:16px;margin-bottom:20px;}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-error-box{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.3);border-radius:12px;padding:18px;margin-bottom:20px;display:none;text-align:center;}
+.ai-error-box h3{color:var(--red);margin-bottom:6px;font-size:15px;}
+.ai-error-box p{color:var(--muted);font-size:13px;line-height:1.6;}
+.btn-retry{margin-top:12px;padding:9px 20px;background:var(--red);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:13px;}
+.ai-question-box{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;min-height:100px;position:relative;}
+.ai-question-text{font-size:18px;line-height:1.6;font-weight:500;}
+.ai-question-text .cursor{display:inline-block;width:3px;height:20px;background:var(--accent);margin-left:2px;animation:blink .6s step-end infinite;vertical-align:middle;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.ai-q-num{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+.answer-area{position:relative;}
+.answer-textarea{width:100%;min-height:120px;padding:16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;resize:vertical;outline:none;line-height:1.6;transition:border-color .2s;}
+.answer-textarea:focus{border-color:var(--accent);}
+.answer-controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px;}
+.btn-voice{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
+.btn-voice.recording{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:var(--red);}
+.btn-send{padding:11px 26px;background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .2s;}
+.btn-send:disabled{opacity:.45;cursor:not-allowed;}
+.feedback-box{background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.2);border-radius:12px;padding:16px;margin-top:14px;display:none;}
+.fb-score{font-size:28px;font-weight:700;color:var(--accent2);margin-bottom:6px;}
+.fb-text{font-size:13px;color:var(--muted);line-height:1.6;}
+.progress-bar{height:5px;background:var(--border);border-radius:10px;overflow:hidden;margin:16px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s;}
+#live-area{display:none;}
+.video-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.video-box{background:#000;border-radius:14px;aspect-ratio:16/9;overflow:hidden;position:relative;border:1px solid var(--border);}
+.video-box video{width:100%;height:100%;object-fit:cover;}
+.video-label{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.7);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;}
+.recruiter-msg-box{background:var(--s);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;max-height:160px;overflow-y:auto;}
+.rmsg{padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:13px;}
+.rmsg.recruiter{background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.2);}
+.rmsg-from{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600;text-transform:uppercase;}
+.cam-box{background:#000;border-radius:10px;aspect-ratio:4/3;overflow:hidden;position:relative;}
+.cam-box video{width:100%;height:100%;object-fit:cover;}
+.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;}
+.score-widget{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+.score-big{font-family:'Syne',sans-serif;font-size:44px;font-weight:800;}
+.score-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
+.status-pill{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;margin:4px 0;}
+.status-pill.ok{background:rgba(16,185,129,.1);color:#6ee7b7;}
+.status-pill.warn{background:rgba(245,158,11,.1);color:#fcd34d;}
+.status-pill.bad{background:rgba(244,63,94,.1);color:#fda4af;}
+.vio-log{font-size:11px;max-height:180px;overflow-y:auto;}
+.vio-item{padding:6px 9px;background:rgba(244,63,94,.08);border-left:3px solid var(--red);border-radius:4px;margin-bottom:5px;color:#fda4af;}
+.stats-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sm{background:var(--s2);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border);}
+.sm-val{font-size:22px;font-weight:700;font-family:'Syne',sans-serif;color:var(--accent2);}
+.sm-lbl{font-size:10px;color:var(--muted);margin-top:3px;}
+.fs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);}
+.fs-card{background:var(--s);border:1px solid var(--border);border-radius:20px;padding:48px;text-align:center;max-width:520px;}
+.fs-card h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:12px;}
+.fs-card p{color:var(--muted);margin-bottom:24px;font-size:15px;line-height:1.6;}
+.fs-btn{padding:16px 40px;background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;box-shadow:0 8px 24px rgba(108,99,255,.4);}
+.vio-toast{position:fixed;top:75px;right:20px;background:var(--s);border:1px solid var(--red);border-radius:12px;padding:14px 18px;max-width:320px;z-index:9000;display:none;animation:toastIn .35s ease;}
+@keyframes toastIn{from{transform:translateX(340px);opacity:0}to{transform:translateX(0);opacity:1}}
+.vio-toast.show{display:block;}
+</style>
+</head>
+<body>
+
+<!-- FULLSCREEN GATE -->
+<div class="fs-overlay" id="fs-overlay">
+  <div class="fs-card">
+    <div style="font-size:60px;margin-bottom:16px;">🔒</div>
+    <h2>Fullscreen Required</h2>
+    <p>To maintain exam integrity, you must enter fullscreen mode. Your camera, gaze, and screen activity will be monitored throughout.</p>
+    <button class="fs-btn" id="fs-btn">Enter Fullscreen & Continue</button>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="brand">🤖 RecruitAI — Interview</div>
+  <div class="topbar-right">
+    <span style="font-size:13px;color:var(--muted)">Welcome, <strong id="user-name">…</strong></span>
+    <div class="timer-display" id="timer">45:00</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="interview-area">
+
+    <!-- MODE SELECTOR -->
+    <div id="mode-selector">
+      <div class="mode-header">
+        <h1>Join Your Interview</h1>
+        <p>Enter your room code to join, or start a self-scheduled interview</p>
+      </div>
+      <div class="room-join">
+        <label>Room Code (from recruiter)</label>
+        <input type="text" id="room-code-input" placeholder="e.g. AB12CD34" maxlength="8" style="text-transform:uppercase;font-family:monospace;letter-spacing:.1em;font-size:18px;">
+        <label>Job Role</label>
+        <select id="role-select"><option value="">Loading…</option></select>
+        <button class="btn-start" id="join-btn" onclick="joinOrStart()">🚀 Join Interview</button>
+      </div>
+    </div>
+
+    <!-- MCQ -->
+    <div id="mcq-area">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;" id="mcq-title">MCQ Assessment</div>
+          <div style="font-size:13px;color:var(--muted);" id="mcq-subtitle">10 Questions · Role-based</div>
+        </div>
+      </div>
+      <div class="q-progress">
+        <div class="q-dots" id="q-dots"></div>
+        <div style="font-size:12px;color:var(--muted);margin-left:auto;" id="q-counter">0/10</div>
+      </div>
+      <div class="question-card" id="q-card">
+        <div class="q-num" id="q-num">Question 1 of 10</div>
+        <div class="q-text" id="q-text">Loading…</div>
+        <div class="options" id="q-options"></div>
+      </div>
+      <div class="q-nav">
+        <button class="btn-nav" id="btn-prev" onclick="navQ(-1)">← Previous</button>
+        <div style="font-size:12px;color:var(--muted);" id="q-answered">0 answered</div>
+        <button class="btn-nav" id="btn-next" onclick="navQ(1)">Next →</button>
+      </div>
+      <div style="margin-top:20px;text-align:center;">
+        <button class="btn-submit-mcq" onclick="confirmSubmitMCQ()">✅ Submit Exam</button>
+      </div>
+    </div>
+
+    <!-- AI INTERVIEWER -->
+    <div id="ai-area">
+      <div class="ai-avatar-wrap">
+        <div class="ai-avatar" id="ai-avatar">
+          <div class="ring" id="ring1"></div>
+          <div class="ring ring2" id="ring2"></div>
+          🤖
+        </div>
+        <div class="ai-name">Alex — AI Interviewer</div>
+        <div class="ai-status" id="ai-status">Connecting to AI…</div>
+      </div>
+
+      <div class="progress-bar"><div class="progress-fill" id="ai-progress" style="width:0%"></div></div>
+
+      <!-- Loading spinner shown while questions are being fetched -->
+      <div class="ai-loading" id="ai-loading">
+        <div class="spinner"></div>
+        <div style="color:var(--muted);font-size:13px;">Alex is preparing your questions…</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:4px;" id="ai-load-detail">Connecting to AI engine…</div>
+      </div>
+
+      <!-- Error box shown if questions fail to load -->
+      <div class="ai-error-box" id="ai-error-box">
+        <h3>⚠️ Could not load AI questions</h3>
+        <p id="ai-error-msg">The AI engine is not connected. Make sure your ANTHROPIC_API_KEY is set before starting the server. Falling back to standard questions…</p>
+        <button class="btn-retry" onclick="retryLoadQuestions()">🔄 Retry</button>
+      </div>
+
+      <div class="ai-question-box" id="ai-q-box" style="display:none;">
+        <div class="ai-q-num" id="ai-q-num">Question 1 of 10</div>
+        <div class="ai-question-text" id="ai-q-text"><span class="cursor"></span></div>
+      </div>
+
+      <div class="answer-area" id="ai-answer-area" style="display:none;">
+        <textarea class="answer-textarea" id="ai-answer" placeholder="Type your answer here, or use the microphone…" rows="5"></textarea>
+        <div class="answer-controls">
+          <button class="btn-voice" id="voice-btn" onclick="toggleVoice()">🎤 Start Recording</button>
+          <div style="font-size:12px;color:var(--muted);" id="ai-hint">Be specific and concise</div>
+          <button class="btn-send" id="send-btn" onclick="submitAIAnswer()">Submit Answer →</button>
+        </div>
+      </div>
+
+      <div class="feedback-box" id="feedback-box">
+        <div class="fb-score" id="fb-score">—</div>
+        <div class="fb-text" id="fb-text"></div>
+      </div>
+    </div>
+
+    <!-- LIVE RECRUITER -->
+    <div id="live-area">
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:16px;">🎥 Live Interview</div>
+      <div class="video-grid">
+        <div class="video-box">
+          <video id="local-video" autoplay muted playsinline></video>
+          <div class="video-label">You</div>
+        </div>
+        <div class="video-box">
+          <video id="remote-video" autoplay playsinline></video>
+          <div class="video-label" style="background:rgba(108,99,255,.7);">Recruiter</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Messages from Recruiter:</div>
+      <div class="recruiter-msg-box" id="recruiter-msgs">
+        <div style="color:var(--muted);font-size:12px;text-align:center;">Waiting for recruiter to connect…</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PROCTORING SIDEBAR -->
+  <div class="proctoring-sidebar">
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">🛡️ Proctoring</div>
+    <div class="cam-box">
+      <video id="proctor-cam" autoplay muted playsinline></video>
+      <div class="cam-overlay" id="cam-status-overlay">Initializing…</div>
+    </div>
+    <div class="score-widget">
+      <div class="score-big" id="cred-score">100</div>
+      <div class="score-lbl">Credibility Score</div>
+    </div>
+    <div id="face-status" class="status-pill warn">⚠️ Initializing camera…</div>
+    <div id="gaze-status" class="status-pill warn">👁️ Calibrating gaze…</div>
+    <div id="device-status" class="status-pill ok">📱 No device detected</div>
+    <div class="stats-mini">
+      <div class="sm"><div class="sm-val" id="vio-count">0</div><div class="sm-lbl">Violations</div></div>
+      <div class="sm"><div class="sm-val" id="gaze-count">0</div><div class="sm-lbl">Gaze Alerts</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Violation Log</div>
+    <div class="vio-log" id="vio-log"><div style="color:var(--muted);font-size:11px;">No violations recorded</div></div>
+  </div>
+</div>
+
+<div class="vio-toast" id="vio-toast">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+    <span style="font-size:20px;">⚠️</span>
+    <strong style="color:var(--red);font-size:13px;">Violation Detected</strong>
+  </div>
+  <div id="vio-toast-msg" style="font-size:12px;color:var(--muted);"></div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let currentUser=null, socket=null, sessionData=null, examStarted=false;
+let camStream=null, peerConn=null, speechRec=null, isRecording=false;
+let mcqQuestions=[], currentQ=0, mcqAnswers={};
+let aiQuestions=[], aiCurrentQ=0, aiTranscript=[], aiTotalScore=0;
+let examStartTime=Date.now(), timerInterval=null;
+let violations=0, gazeAlerts=0;
+
+// ── FALLBACK QUESTIONS (used if API key is missing) ────────────────────────────
+const FALLBACK_QUESTIONS = {
+  default: [
+    {id:1, question:"Tell me about yourself and your background in this field.", expected_keywords:["experience","skills","background"]},
+    {id:2, question:"What are your strongest technical skills and how have you applied them?", expected_keywords:["technical","skills","project"]},
+    {id:3, question:"Describe a challenging project you worked on and how you handled it.", expected_keywords:["challenge","solution","team"]},
+    {id:4, question:"How do you approach debugging a complex problem you've never seen before?", expected_keywords:["debug","systematic","research","logs"]},
+    {id:5, question:"What is the difference between synchronous and asynchronous programming?", expected_keywords:["sync","async","blocking","callback","promise"]},
+    {id:6, question:"Explain how you would design a simple REST API for a user management system.", expected_keywords:["REST","endpoint","GET","POST","authentication"]},
+    {id:7, question:"What is version control and why is it important in software development?", expected_keywords:["git","commit","branch","merge","collaboration"]},
+    {id:8, question:"How do you ensure the quality of your code?", expected_keywords:["testing","review","unit test","documentation"]},
+    {id:9, question:"Where do you see yourself professionally in the next 2-3 years?", expected_keywords:["growth","goals","learning","leadership"]},
+    {id:10, question:"Do you have any questions for us about the role or the team?", expected_keywords:["team","culture","challenges","growth"]}
+  ]
+};
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+async function init() {
+  const auth = await fetch('/api/check-auth').then(r=>r.json());
+  if (!auth.authenticated) return window.location.href='index.html';
+  currentUser = auth;
+  document.getElementById('user-name').textContent = auth.full_name || auth.username;
+  await loadRoles();
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('room')) document.getElementById('room-code-input').value = params.get('room').toUpperCase();
+  setupViolationMonitors();
+}
+
+async function loadRoles() {
+  try {
+    const data = await fetch('/api/job-roles').then(r=>r.json());
+    const sel = document.getElementById('role-select');
+    sel.innerHTML = data.roles.map(r=>`<option value="${r}">${r}</option>`).join('');
+  } catch(e) {
+    console.error('Could not load roles:', e);
+  }
+}
+
+// ── FULLSCREEN ─────────────────────────────────────────────────────────────────
+document.getElementById('fs-btn').addEventListener('click', async () => {
+  try {
+    await document.documentElement.requestFullscreen();
+    document.getElementById('fs-overlay').style.display = 'none';
+    await initCamera();
+  } catch(e) {
+    // Allow continuing without fullscreen for dev/testing
+    document.getElementById('fs-overlay').style.display = 'none';
+    await initCamera();
+  }
+});
+
+// ── JOIN / START ───────────────────────────────────────────────────────────────
+async function joinOrStart() {
+  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+  const role = document.getElementById('role-select').value;
+
+  if (code.length >= 6) {
+    const data = await fetch(`/api/join-session/${code}`).then(r=>r.json());
+    if (!data.success) return alert(data.message || 'Session not found');
+    sessionData = data.session;
+    startSession(data);
+  } else {
+    if (!role) return alert('Please select a job role');
+    const data = await fetch('/api/create-session', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({job_role: role, mode: 'ai_interview'})
+    }).then(r=>r.json());
+    if (!data.success) return alert(data.message || 'Error creating session');
+    sessionData = data.session;
+    const joined = await fetch(`/api/join-session/${data.room_code}`).then(r=>r.json());
+    startSession(joined);
+  }
+}
+
+function startSession(data) {
+  sessionData = data.session;
+  document.getElementById('mode-selector').style.display = 'none';
+  examStarted = true;
+  examStartTime = Date.now();
+  fetch(`/api/start-session/${sessionData.id}`, {method:'POST'});
+
+  if (sessionData.mode === 'mcq') {
+    mcqQuestions = data.questions || [];
+    startMCQ();
+  } else if (sessionData.mode === 'ai_interview') {
+    startAIInterview();
+  } else if (sessionData.mode === 'live_recruiter') {
+    startLiveInterview(data.ice_servers || []);
+  }
+
+  startTimer();
+  initSocket();
+}
+
+// ── CAMERA & PROCTORING ────────────────────────────────────────────────────────
+async function initCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});
+    document.getElementById('proctor-cam').srcObject = camStream;
+    document.getElementById('cam-status-overlay').style.display = 'none';
+    setStatus('face-status','ok','✅ Camera active');
+    setTimeout(startProctoring, 1500);
+  } catch(e) {
+    setStatus('face-status','bad','❌ Camera denied');
+    logVio('camera_denied');
+  }
+}
+
+function startProctoring() {
+  setInterval(runFaceCheck, 3000);
+  setInterval(runGazeCheck, 4000);
+  setInterval(runDeviceCheck, 6000);
+  setInterval(updateScore, 5000);
+}
+
+async function captureFrame() {
+  const video = document.getElementById('proctor-cam');
+  if (!video || !video.videoWidth) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
+async function runFaceCheck() {
+  const img = await captureFrame(); if (!img) return;
+  const res = await fetch('/detect-face', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
+  if (!res) return;
+  if (res.face_detected) setStatus('face-status','ok','✅ Face detected');
+  else if (res.num_faces===0) setStatus('face-status','warn','⚠️ No face visible');
+  else setStatus('face-status','bad','🚫 Multiple faces');
+}
+
+async function runGazeCheck() {
+  const img = await captureFrame(); if (!img) return;
+  const res = await fetch('/analyze-gaze', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
+  if (!res?.success) return;
+  const g = res.gaze;
+  if (g.looking_away) {
+    gazeAlerts++;
+    document.getElementById('gaze-count').textContent = gazeAlerts;
+    setStatus('gaze-status','bad',`👁️ Looking ${g.direction}`);
+    showToast(`👁️ Gaze alert: looking ${g.direction}`);
+  } else {
+    setStatus('gaze-status','ok','👁️ Gaze: On screen');
+  }
+}
+
+async function runDeviceCheck() {
+  const img = await captureFrame(); if (!img) return;
+  const res = await fetch('/detect-device', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
+  if (!res) return;
+  if (res.phone_detected) {
+    setStatus('device-status','bad',`📱 Phone detected! (${Math.round(res.confidence*100)}%)`);
+    showToast('📱 Phone/device detected in frame!');
+  } else {
+    setStatus('device-status','ok','📱 No device detected');
+  }
+}
+
+async function updateScore() {
+  const res = await fetch(`/get-credibility-score?session_id=${sessionData?.id||''}`).then(r=>r.json()).catch(()=>null);
+  if (!res?.success) return;
+  const s = res.credibility_score;
+  const el = document.getElementById('cred-score');
+  el.textContent = s;
+  el.style.color = s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e';
+  document.getElementById('vio-count').textContent = res.total_violations;
+  violations = res.total_violations;
+}
+
+function setStatus(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'status-pill ' + (type==='ok'?'ok':type==='warn'?'warn':'bad');
+  el.textContent = text;
+}
+
+function logVio(type) {
+  violations++;
+  fetch('/log-violation',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({violation_type:type,session_id:sessionData?.id})});
+  const log = document.getElementById('vio-log');
+  if (log.querySelector('div[style]')) log.innerHTML = '';
+  const item = document.createElement('div');
+  item.className = 'vio-item';
+  item.textContent = `${new Date().toLocaleTimeString()}: ${type.replace(/_/g,' ')}`;
+  log.appendChild(item);
+  log.scrollTop = log.scrollHeight;
+  document.getElementById('vio-count').textContent = violations;
+  showToast(`🚫 ${type.replace(/_/g,' ')}`);
+  updateScore();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('vio-toast');
+  document.getElementById('vio-toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 4000);
+}
+
+// ── MCQ ────────────────────────────────────────────────────────────────────────
+function startMCQ() {
+  document.getElementById('mcq-area').style.display = 'block';
+  document.getElementById('mcq-title').textContent = `MCQ: ${sessionData.job_role}`;
+  buildDots(); renderQ();
+}
+
+function buildDots() {
+  const el = document.getElementById('q-dots');
+  el.innerHTML = mcqQuestions.map((_,i)=>`<div class="qdot ${i===0?'curr':''}" id="dot-${i}" onclick="goQ(${i})"></div>`).join('');
+}
+
+function renderQ() {
+  const q = mcqQuestions[currentQ];
+  if (!q) return;
+  document.getElementById('q-num').textContent = `Question ${currentQ+1} of ${mcqQuestions.length}`;
+  document.getElementById('q-text').textContent = q.question_text || q.question;
+  document.getElementById('q-counter').textContent = `${Object.keys(mcqAnswers).length}/${mcqQuestions.length}`;
+  document.getElementById('q-answered').textContent = `${Object.keys(mcqAnswers).length} answered`;
+  const opts = q.options || {a:q.option_a,b:q.option_b,c:q.option_c,d:q.option_d};
+  document.getElementById('q-options').innerHTML = Object.entries(opts).map(([k,v])=>`
+    <div class="opt ${mcqAnswers[currentQ]===k?'selected':''}" onclick="selectOpt('${k}')">
+      <div class="opt-letter">${k.toUpperCase()}</div>
+      <span>${v}</span>
+    </div>`).join('');
+  document.querySelectorAll('.qdot').forEach((d,i)=>{
+    d.className = 'qdot';
+    if (mcqAnswers[i]) d.classList.add('ans');
+    if (i===currentQ) d.classList.add('curr');
+  });
+  document.getElementById('btn-prev').style.opacity = currentQ>0?1:0.3;
+  document.getElementById('btn-next').textContent = currentQ<mcqQuestions.length-1?'Next →':'Review';
+}
+
+function selectOpt(k) { mcqAnswers[currentQ] = k; renderQ(); }
+function navQ(dir) { goQ(currentQ+dir); }
+function goQ(idx) { if (idx<0||idx>=mcqQuestions.length) return; currentQ=idx; renderQ(); }
+function confirmSubmitMCQ() {
+  const unanswered = mcqQuestions.length - Object.keys(mcqAnswers).length;
+  if (unanswered>0 && !confirm(`${unanswered} question(s) unanswered. Submit anyway?`)) return;
+  submitExam('mcq');
+}
+
+// ── AI INTERVIEW ───────────────────────────────────────────────────────────────
+async function startAIInterview() {
+  document.getElementById('ai-area').style.display = 'block';
+  document.getElementById('ai-loading').style.display = 'flex';
+  document.getElementById('ai-q-box').style.display = 'none';
+  document.getElementById('ai-answer-area').style.display = 'none';
+  document.getElementById('ai-error-box').style.display = 'none';
+  setAIStatus('Connecting to AI engine…');
+
+  await loadAIQuestions();
+}
+
+async function loadAIQuestions() {
+  try {
+    document.getElementById('ai-load-detail').textContent = 'Generating personalized questions for ' + sessionData.job_role + '…';
+
+    const res = await fetch('/api/ai-generate-questions', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({job_role: sessionData.job_role})
+    });
+
+    const data = await res.json();
+    aiQuestions = data.questions || [];
+
+    if (!aiQuestions.length) {
+      throw new Error('No questions returned from server');
+    }
+
+    // Success — hide loader, show interview
+    document.getElementById('ai-loading').style.display = 'none';
+    document.getElementById('ai-q-box').style.display = 'block';
+    document.getElementById('ai-answer-area').style.display = 'block';
+    setAIStatus('Alex is ready. Listen carefully…');
+    updateAIProgress();
+
+    // Small delay so user sees Alex before question types
+    setTimeout(() => typeQuestion(aiQuestions[0]), 800);
+
+  } catch(err) {
+    console.error('AI question load error:', err);
+
+    // Use fallback questions so the interview still works
+    const fallbackKey = sessionData.job_role in FALLBACK_QUESTIONS
+      ? sessionData.job_role : 'default';
+    aiQuestions = FALLBACK_QUESTIONS[fallbackKey] || FALLBACK_QUESTIONS.default;
+
+    document.getElementById('ai-loading').style.display = 'none';
+    document.getElementById('ai-error-box').style.display = 'block';
+    document.getElementById('ai-error-msg').textContent =
+      'AI engine not connected (API key may not be set). Using standard questions instead. Set ANTHROPIC_API_KEY and restart for full AI experience.';
+
+    // Still start the interview with fallback questions after 3 seconds
+    setTimeout(() => {
+      document.getElementById('ai-error-box').style.display = 'none';
+      document.getElementById('ai-q-box').style.display = 'block';
+      document.getElementById('ai-answer-area').style.display = 'block';
+      setAIStatus('Starting with standard questions…');
+      updateAIProgress();
+      typeQuestion(aiQuestions[0]);
+    }, 3000);
+  }
+}
+
+function retryLoadQuestions() {
+  document.getElementById('ai-error-box').style.display = 'none';
+  document.getElementById('ai-loading').style.display = 'flex';
+  aiQuestions = []; aiCurrentQ = 0; aiTranscript = []; aiTotalScore = 0;
+  loadAIQuestions();
+}
+
+// ── TYPE ANIMATION — Alex types like a human ──────────────────────────────────
+function typeQuestion(q) {
+  const qtext = q.question || q.question_text || '';
+  const el = document.getElementById('ai-q-text');
+  document.getElementById('ai-q-num').textContent = `Question ${aiCurrentQ+1} of ${aiQuestions.length}`;
+  document.getElementById('ai-answer').value = '';
+  document.getElementById('feedback-box').style.display = 'none';
+  document.getElementById('send-btn').disabled = true;  // disable until typing done
+
+  setAIStatus('Alex is asking…');
+  setAvatarSpeaking(true);
+  el.innerHTML = '<span class="cursor"></span>';
+
+  let i = 0;
+  // Variable typing speed — feels more human
+  function typeNext() {
+    if (i >= qtext.length) {
+      // Done typing
+      el.innerHTML = qtext;
+      setAvatarSpeaking(false);
+      setAIStatus('Your turn to answer');
+      document.getElementById('send-btn').disabled = false;
+      document.getElementById('ai-answer').focus();
+
+      // Speak the question out loud
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(qtext);
+        utt.rate = 0.92;
+        utt.pitch = 1.05;
+        utt.volume = 1;
+        // Try to use a natural voice
+        const voices = speechSynthesis.getVoices();
+        const preferred = voices.find(v =>
+          v.name.includes('Google') || v.name.includes('Daniel') ||
+          v.name.includes('Samantha') || v.name.includes('Alex')
+        );
+        if (preferred) utt.voice = preferred;
+        speechSynthesis.speak(utt);
+      }
+      return;
+    }
+
+    el.innerHTML = qtext.substring(0, i+1) + '<span class="cursor"></span>';
+    i++;
+
+    // Vary speed: slower at punctuation (feels natural), faster in middle of words
+    const ch = qtext[i-1];
+    const delay = (ch === '.' || ch === '?' || ch === '!') ? 280
+                : (ch === ',') ? 120
+                : (ch === ' ') ? 45
+                : 22 + Math.random() * 15;
+    setTimeout(typeNext, delay);
+  }
+
+  // Short pause before Alex starts typing (like a human thinking)
+  setTimeout(typeNext, 600);
+}
+
+function setAvatarSpeaking(s) {
+  document.getElementById('ai-avatar').classList.toggle('speaking', s);
+}
+
+function setAIStatus(txt) {
+  document.getElementById('ai-status').textContent = txt;
+}
+
+function updateAIProgress() {
+  const pct = (aiCurrentQ / Math.max(aiQuestions.length, 1)) * 100;
+  document.getElementById('ai-progress').style.width = pct + '%';
+}
+
+// ── SUBMIT AI ANSWER ──────────────────────────────────────────────────────────
+async function submitAIAnswer() {
+  const answer = document.getElementById('ai-answer').value.trim();
+  if (!answer) return alert('Please write your answer before submitting.');
+
+  if (isRecording) toggleVoice(); // stop recording first
+
+  document.getElementById('send-btn').disabled = true;
+  setAIStatus('Alex is evaluating your answer…');
+  setAvatarSpeaking(true);
+
+  const q = aiQuestions[aiCurrentQ];
+  let evData = {score: 5, feedback: 'Good answer. Keep being specific with examples.', follow_up: null};
+
+  try {
+    const res = await fetch('/api/ai-evaluate-answer', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        question: q.question || q.question_text,
+        answer,
+        job_role: sessionData.job_role,
+        expected_keywords: q.expected_keywords || []
+      })
+    });
+    evData = await res.json();
+  } catch(e) {
+    // Fallback scoring by keyword match
+    const keywords = q.expected_keywords || [];
+    const matches = keywords.filter(kw => answer.toLowerCase().includes(kw.toLowerCase())).length;
+    evData.score = Math.min(10, 4 + Math.round((matches / Math.max(keywords.length,1)) * 6));
+    evData.feedback = `You scored ${evData.score}/10. ${matches} of ${keywords.length} key concepts mentioned.`;
+  }
+
+  setAvatarSpeaking(false);
+  aiTotalScore += evData.score || 5;
+  aiTranscript.push({
+    question: q.question || q.question_text,
+    answer,
+    score: evData.score,
+    feedback: evData.feedback
+  });
+
+  // Show feedback
+  document.getElementById('feedback-box').style.display = 'block';
+  document.getElementById('fb-score').textContent = `${evData.score}/10`;
+  document.getElementById('fb-text').textContent = evData.feedback || '';
+
+  // Speak feedback
+  if ('speechSynthesis' in window && evData.feedback) {
+    speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(evData.feedback);
+    utt.rate = 1.0;
+    speechSynthesis.speak(utt);
+  }
+
+  // Decide next step
+  const hasFollowUp = evData.follow_up && typeof evData.follow_up === 'string' && evData.follow_up.trim();
+  aiCurrentQ++;
+  updateAIProgress();
+
+  if (aiCurrentQ >= aiQuestions.length && !hasFollowUp) {
+    setTimeout(finishAIInterview, 2500);
+  } else {
+    if (hasFollowUp) {
+      // Insert follow-up at current position
+      aiQuestions.splice(aiCurrentQ, 0, {
+        question: evData.follow_up,
+        expected_keywords: []
+      });
+    }
+    setTimeout(() => {
+      document.getElementById('send-btn').disabled = false;
+      typeQuestion(aiQuestions[aiCurrentQ]);
+    }, 3000);
+  }
+}
+
+async function finishAIInterview() {
+  setAIStatus('Generating your full evaluation report…');
+  setAvatarSpeaking(true);
+
+  let evalData = {
+    overall_score: Math.round((aiTotalScore / Math.max(aiTranscript.length,1)) * 10),
+    summary: 'Interview completed. Good effort overall.',
+    recommendation: 'Maybe'
+  };
+
+  try {
+    const res = await fetch('/api/ai-final-evaluation', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({transcript: aiTranscript, job_role: sessionData.job_role})
+    });
+    evalData = await res.json();
+  } catch(e) {
+    console.warn('Final evaluation fallback used');
+  }
+
+  setAvatarSpeaking(false);
+  const aiOverallScore = evalData.overall_score || Math.round((aiTotalScore/Math.max(aiTranscript.length,1))*10);
+  submitExam('ai_interview', aiOverallScore, evalData);
+}
+
+// ── VOICE INPUT ────────────────────────────────────────────────────────────────
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    return alert('Speech recognition not supported. Please type your answer instead.');
+  }
+  if (isRecording) {
+    speechRec?.stop();
+    isRecording = false;
+    document.getElementById('voice-btn').className = 'btn-voice';
+    document.getElementById('voice-btn').innerHTML = '🎤 Start Recording';
+  } else {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    speechRec = new SR();
+    speechRec.continuous = true;
+    speechRec.interimResults = true;
+    speechRec.onresult = e => {
+      let t = '';
+      for (let i=e.resultIndex;i<e.results.length;i++) t += e.results[i][0].transcript;
+      document.getElementById('ai-answer').value = t;
+    };
+    speechRec.onerror = () => { isRecording=false; document.getElementById('voice-btn').className='btn-voice'; };
+    speechRec.start();
+    isRecording = true;
+    document.getElementById('voice-btn').className = 'btn-voice recording';
+    document.getElementById('voice-btn').innerHTML = '⏹ Stop Recording';
+  }
+}
+
+// ── LIVE RECRUITER ─────────────────────────────────────────────────────────────
+async function startLiveInterview(iceServers) {
+  document.getElementById('live-area').style.display = 'block';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+    document.getElementById('local-video').srcObject = stream;
+    peerConn = new RTCPeerConnection({iceServers});
+    stream.getTracks().forEach(t => peerConn.addTrack(t, stream));
+    peerConn.ontrack = e => { document.getElementById('remote-video').srcObject = e.streams[0]; };
+    peerConn.onicecandidate = e => {
+      if (e.candidate) socket?.emit('webrtc_ice_candidate', {candidate:e.candidate, room:sessionData.room_code});
+    };
+    const offer = await peerConn.createOffer();
+    await peerConn.setLocalDescription(offer);
+    socket?.emit('webrtc_offer', {sdp:offer, room:sessionData.room_code});
+  } catch(e) { console.error('WebRTC error:', e); }
+}
+
+// ── SOCKETIO ───────────────────────────────────────────────────────────────────
+function initSocket() {
+  socket = io();
+  socket.on('connect', ()=>{ socket.emit('join_room_event', {room:sessionData?.room_code, role:'candidate'}); });
+  socket.on('webrtc_offer', async data=>{ if(!peerConn) return; await peerConn.setRemoteDescription(data.sdp); const ans=await peerConn.createAnswer(); await peerConn.setLocalDescription(ans); socket.emit('webrtc_answer',{sdp:ans,room:sessionData.room_code}); });
+  socket.on('webrtc_answer', async data=>{ await peerConn?.setRemoteDescription(data.sdp); });
+  socket.on('webrtc_ice_candidate', async data=>{ await peerConn?.addIceCandidate(new RTCIceCandidate(data.candidate)); });
+  socket.on('recruiter_message', data=>{
+    const box=document.getElementById('recruiter-msgs');
+    const msg=document.createElement('div');
+    msg.className='rmsg recruiter';
+    msg.innerHTML=`<div class="rmsg-from">Recruiter</div>${data.message}`;
+    box.appendChild(msg); box.scrollTop=box.scrollHeight;
+  });
+  socket.on('interview_ended', ()=>{ alert('The recruiter has ended the interview.'); submitExam('live_recruiter'); });
+}
+
+// ── TIMER ──────────────────────────────────────────────────────────────────────
+function startTimer() {
+  let left = 45*60;
+  timerInterval = setInterval(()=>{
+    const m=Math.floor(left/60), s=left%60;
+    const el=document.getElementById('timer');
+    el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if (left<=300) el.classList.add('warn');
+    if (left===0) { clearInterval(timerInterval); submitExam(sessionData?.mode||'mcq'); }
+    left--;
+  },1000);
+}
+
+// ── SUBMIT ─────────────────────────────────────────────────────────────────────
+async function submitExam(mode, aiScore=0, aiFeedback={}) {
+  clearInterval(timerInterval);
+  if (camStream) camStream.getTracks().forEach(t=>t.stop());
+  if (speechSynthesis) speechSynthesis.cancel();
+
+  const answers = {};
+  if (mode==='mcq') {
+    Object.entries(mcqAnswers).forEach(([idx,val])=>{ answers[`q${parseInt(idx)+1}`]=val; });
+  }
+
+  const duration = Math.floor((Date.now()-examStartTime)/1000);
+  const body = {
+    session_id: sessionData?.id,
+    job_role: sessionData?.job_role || 'General',
+    mode, answers,
+    duration_seconds: duration,
+    ai_overall_score: aiScore,
+    ai_feedback: aiFeedback,
+  };
+
+  try {
+    const res = await fetch('/submit-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data = await res.json();
+    if (data.success) window.location.href = data.redirect;
+    else alert('Submission error: ' + (data.error||'Unknown'));
+  } catch(e) { alert('Network error submitting exam'); }
+}
+
+// ── VIOLATION MONITORS ─────────────────────────────────────────────────────────
+function setupViolationMonitors() {
+  document.addEventListener('visibilitychange', ()=>{ if(examStarted&&document.hidden) logVio('tab_switch'); });
+  document.addEventListener('contextmenu', e=>{ if(examStarted){e.preventDefault();logVio('right_click');} });
+  document.addEventListener('copy', e=>{ if(examStarted){e.preventDefault();logVio('copy_attempt');} });
+  document.addEventListener('paste', e=>{ if(examStarted){e.preventDefault();logVio('paste_attempt');} });
+  document.addEventListener('keydown', e=>{
+    if (!examStarted) return;
+    if (e.keyCode===123||(e.ctrlKey&&e.shiftKey&&[73,74].includes(e.keyCode))||(e.ctrlKey&&e.keyCode===85)) {
+      e.preventDefault(); logVio('devtools');
+    }
+    if (e.key==='PrintScreen'||(e.metaKey&&e.shiftKey&&['3','4','5','s'].includes(e.key))) {
+      e.preventDefault(); logVio('screenshot_attempt');
+    }
+  });
+  document.addEventListener('fullscreenchange', ()=>{
+    if (!examStarted) return;
+    if (!document.fullscreenElement) {
+      logVio('exit_fullscreen');
+      setTimeout(()=>{ if(confirm('⚠️ You exited fullscreen. Click OK to re-enter.')) document.documentElement.requestFullscreen(); }, 400);
+    }
+  });
+  window.addEventListener('beforeunload', e=>{ if(examStarted){e.preventDefault();e.returnValue='';} });
+}
+
+// Load voices after page ready (needed for some browsers)
+if ('speechSynthesis' in window) {
+  speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+}
+
+init();
+</script>
+</body>
+</html>

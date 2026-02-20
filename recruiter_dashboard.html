@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recruiter Dashboard — RecruitAI</title>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--s:#13131a;--s2:#1c1c28;--border:#2a2a3d;--accent:#6c63ff;--accent2:#a78bfa;--green:#10b981;--red:#f43f5e;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.brand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.topbar-right{display:flex;align-items:center;gap:16px;font-size:14px;color:var(--muted);}
+.logout-btn{padding:8px 18px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s;text-decoration:none;}
+.logout-btn:hover{border-color:var(--accent);color:var(--accent);}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px);}
+.sidebar{background:var(--s);border-right:1px solid var(--border);padding:24px 0;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 24px;cursor:pointer;color:var(--muted);font-size:14px;transition:all .2s;border-left:3px solid transparent;}
+.nav-item:hover{color:var(--text);background:rgba(108,99,255,.06);}
+.nav-item.active{color:var(--accent2);background:rgba(108,99,255,.1);border-left-color:var(--accent);}
+.nav-icon{font-size:18px;width:24px;text-align:center;}
+.main{padding:32px;overflow-y:auto;}
+.page{display:none;animation:fadeIn .3s ease;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.page-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;}
+.page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;}
+.stat{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat.blue::before{background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.stat.green::before{background:linear-gradient(90deg,#10b981,#34d399);}
+.stat.yellow::before{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
+.stat.red::before{background:linear-gradient(90deg,#f43f5e,#fb7185);}
+.stat-val{font-family:'Syne',sans-serif;font-size:36px;font-weight:700;margin-bottom:4px;}
+.stat-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+/* CREATE SESSION PANEL */
+.card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px;}
+.card-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.mode-card{border:2px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;text-align:center;}
+.mode-card:hover{border-color:var(--accent);background:rgba(108,99,255,.05);}
+.mode-card.selected{border-color:var(--accent);background:rgba(108,99,255,.1);box-shadow:0 0 0 4px rgba(108,99,255,.1);}
+.mode-icon{font-size:36px;margin-bottom:10px;}
+.mode-name{font-weight:600;font-size:15px;margin-bottom:4px;}
+.mode-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.fg label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600;}
+.fg select,.fg input{width:100%;padding:11px 14px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
+.fg select:focus,.fg input:focus{border-color:var(--accent);}
+.fg select option{background:var(--s2);}
+.btn-primary{padding:12px 28px;background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .25s;font-family:'Inter',sans-serif;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(108,99,255,.35);}
+.btn-sm{padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:all .2s;}
+.btn-green{background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);}
+.btn-green:hover{background:rgba(16,185,129,.25);}
+.btn-red{background:rgba(244,63,94,.15);color:#fda4af;border:1px solid rgba(244,63,94,.3);}
+.btn-red:hover{background:rgba(244,63,94,.25);}
+.btn-blue{background:rgba(108,99,255,.15);color:var(--accent2);border:1px solid rgba(108,99,255,.3);}
+.btn-blue:hover{background:rgba(108,99,255,.25);}
+/* TABLE */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:11px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);font-weight:600;}
+td{padding:13px 14px;font-size:13px;border-bottom:1px solid rgba(42,42,61,.6);}
+tr:hover td{background:rgba(108,99,255,.03);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-green{background:rgba(16,185,129,.15);color:#6ee7b7;}
+.badge-red{background:rgba(244,63,94,.15);color:#fda4af;}
+.badge-yellow{background:rgba(245,158,11,.15);color:#fcd34d;}
+.badge-blue{background:rgba(108,99,255,.15);color:var(--accent2);}
+/* LIVE MONITOR */
+.live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.live-card{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;}
+.live-card .pulse{width:10px;height:10px;border-radius:50%;background:var(--green);position:absolute;top:20px;right:20px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4);}50%{box-shadow:0 0 0 8px rgba(16,185,129,0);}}
+.live-name{font-weight:600;font-size:15px;margin-bottom:4px;}
+.live-role{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.live-scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ls{background:var(--s2);border-radius:8px;padding:10px;text-align:center;}
+.ls-val{font-size:22px;font-weight:700;}
+.ls-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
+/* ALERT */
+.alert-toast{position:fixed;top:80px;right:24px;background:var(--s);border:1px solid var(--red);border-radius:12px;padding:16px 20px;max-width:340px;z-index:999;display:none;animation:slideIn .3s ease;}
+@keyframes slideIn{from{transform:translateX(360px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.alert-toast.show{display:block;}
+.empty{text-align:center;padding:48px;color:var(--muted);font-size:14px;}
+.room-code{font-family:monospace;font-size:18px;font-weight:700;background:var(--s2);padding:8px 14px;border-radius:8px;border:1px solid var(--border);color:var(--accent2);letter-spacing:.12em;}
+.copy-btn{cursor:pointer;font-size:11px;color:var(--muted);margin-left:10px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">🤖 RecruitAI</div>
+  <div class="topbar-right">
+    <span>Welcome, <strong id="admin-name">…</strong></span>
+    <a href="/logout" class="logout-btn">Logout</a>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="nav-item active" onclick="showPage('overview')"><span class="nav-icon">📊</span>Overview</div>
+    <div class="nav-item" onclick="showPage('create')"><span class="nav-icon">➕</span>Create Interview</div>
+    <div class="nav-item" onclick="showPage('sessions')"><span class="nav-icon">📋</span>Sessions</div>
+    <div class="nav-item" onclick="showPage('live')"><span class="nav-icon">🔴</span>Live Monitor</div>
+    <div class="nav-item" onclick="showPage('candidates')"><span class="nav-icon">👥</span>Candidates</div>
+  </div>
+
+  <div class="main">
+
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="page-title">Dashboard Overview</div>
+      <div class="page-sub">Real-time recruiting intelligence</div>
+      <div class="stats">
+        <div class="stat blue"><div class="stat-val" id="s-candidates">—</div><div class="stat-lbl">Candidates</div></div>
+        <div class="stat green"><div class="stat-val" id="s-submissions">—</div><div class="stat-lbl">Submissions</div></div>
+        <div class="stat yellow"><div class="stat-val" id="s-violations">—</div><div class="stat-lbl">Violations</div></div>
+        <div class="stat red"><div class="stat-val" id="s-active">—</div><div class="stat-lbl">Active Sessions</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Recent Submissions</div>
+        <div id="recent-table" class="table-wrap"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- CREATE INTERVIEW -->
+    <div class="page" id="page-create">
+      <div class="page-title">Create Interview Session</div>
+      <div class="page-sub">Choose mode, role, and candidate — then send the room code</div>
+
+      <div class="card">
+        <div class="card-title">🎯 Select Interview Mode</div>
+        <div class="mode-grid">
+          <div class="mode-card selected" id="mode-mcq" onclick="selectMode('mcq')">
+            <div class="mode-icon">📝</div>
+            <div class="mode-name">MCQ Exam</div>
+            <div class="mode-desc">10 role-specific multiple choice questions. Auto-graded with credibility monitoring.</div>
+          </div>
+          <div class="mode-card" id="mode-ai_interview" onclick="selectMode('ai_interview')">
+            <div class="mode-icon">🤖</div>
+            <div class="mode-name">AI Interviewer</div>
+            <div class="mode-desc">Animated AI avatar asks open-ended questions. Claude evaluates each answer in real-time.</div>
+          </div>
+          <div class="mode-card" id="mode-live_recruiter" onclick="selectMode('live_recruiter')">
+            <div class="mode-icon">🎥</div>
+            <div class="mode-name">Live Recruiter</div>
+            <div class="mode-desc">You interview directly via WebRTC video. Full proctoring runs in the background.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="fg">
+            <label>Candidate Username</label>
+            <input type="text" id="c-candidate" placeholder="Enter candidate's username">
+          </div>
+          <div class="fg">
+            <label>Job Role</label>
+            <select id="c-role">
+              <option value="">Loading roles…</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="createSession()">🚀 Create Session &amp; Get Room Code</button>
+        <div id="session-result" style="display:none;margin-top:20px;padding:20px;background:var(--s2);border-radius:12px;border:1px solid var(--border);">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Room Code (share with candidate):</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="room-code" id="created-code">—</div>
+            <span class="copy-btn" onclick="copyCode()">📋 Copy</span>
+          </div>
+          <div style="margin-top:12px;font-size:13px;color:var(--muted);">
+            Candidate joins at: <code style="color:var(--accent2);" id="join-url">—</code>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;">
+            <button class="btn-sm btn-green" onclick="openRecruiterRoom()">Join as Recruiter →</button>
+            <button class="btn-sm btn-blue" onclick="resetCreateForm()">Create Another</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div class="page" id="page-sessions">
+      <div class="page-title">All Sessions</div>
+      <div class="page-sub">History of all interview sessions</div>
+      <div class="card">
+        <div id="sessions-table" class="table-wrap"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- LIVE MONITOR -->
+    <div class="page" id="page-live">
+      <div class="page-title">🔴 Live Monitor</div>
+      <div class="page-sub">Active exam sessions — updates in real time</div>
+      <div class="live-grid" id="live-grid"><div class="empty" style="grid-column:1/-1">No active sessions right now</div></div>
+    </div>
+
+    <!-- CANDIDATES -->
+    <div class="page" id="page-candidates">
+      <div class="page-title">Candidates</div>
+      <div class="page-sub">All registered candidates</div>
+      <div class="card">
+        <div id="candidates-table" class="table-wrap"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Violation toast -->
+<div class="alert-toast" id="vtoa">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+    <span style="font-size:20px;">🚨</span>
+    <strong style="color:var(--red);">Violation Detected</strong>
+  </div>
+  <div id="vtoa-msg" style="font-size:13px;color:var(--muted);"></div>
+</div>
+
+<script>
+let socket, selectedMode = 'mcq', lastCreatedSession = null;
+
+async function init() {
+  const auth = await fetch('/api/check-auth').then(r=>r.json());
+  if (!auth.authenticated || !auth.is_admin) return window.location.href = 'index.html';
+  document.getElementById('admin-name').textContent = auth.full_name || auth.username;
+  await loadRoles();
+  await loadDashboard();
+  await loadCandidates();
+  initSocket();
+}
+
+async function loadRoles() {
+  const data = await fetch('/api/job-roles').then(r=>r.json());
+  const sel  = document.getElementById('c-role');
+  sel.innerHTML = data.roles.map(r=>`<option value="${r}">${r}</option>`).join('');
+}
+
+async function loadDashboard() {
+  const data = await fetch('/api/dashboard-stats').then(r=>r.json());
+  if (!data.success) return;
+  document.getElementById('s-candidates').textContent  = data.stats.total_candidates;
+  document.getElementById('s-submissions').textContent = data.stats.total_submissions;
+  document.getElementById('s-violations').textContent  = data.stats.total_violations;
+  document.getElementById('s-active').textContent      = data.stats.active_sessions;
+
+  renderSubmissionsTable(data.recent_submissions, 'recent-table');
+  renderSessionsTable(data.recent_submissions, 'sessions-table');
+  renderLive(data.active_sessions_list || []);
+}
+
+async function loadCandidates() {
+  const data = await fetch('/api/candidates').then(r=>r.json());
+  if (!data.success) return;
+  const container = document.getElementById('candidates-table');
+  if (!data.candidates.length) { container.innerHTML = '<div class="empty">No candidates yet</div>'; return; }
+  container.innerHTML = `<table><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Submissions</th></tr></thead><tbody>
+  ${data.candidates.map(c=>`<tr><td><strong>${c.full_name||c.username}</strong></td><td>${c.username}</td><td>${c.email}</td><td>${c.submissions}</td></tr>`).join('')}
+  </tbody></table>`;
+}
+
+function renderSubmissionsTable(subs, containerId) {
+  const el = document.getElementById(containerId);
+  if (!subs || !subs.length) { el.innerHTML = '<div class="empty">No submissions yet</div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Interview</th><th>Violations</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+  ${subs.map(s=>`<tr>
+    <td><strong>${s.full_name||s.username}</strong></td>
+    <td>${s.job_role||'—'}</td>
+    <td><span class="badge badge-blue">${(s.mode||'mcq').replace('_',' ')}</span></td>
+    <td><strong style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</strong></td>
+    <td><strong>${s.interview_score||0}</strong></td>
+    <td>${s.total_violations}</td>
+    <td>${s.passed?'<span class="badge badge-green">PASSED</span>':'<span class="badge badge-red">FAILED</span>'}</td>
+    <td style="color:var(--muted);font-size:12px;">${s.submitted_at}</td>
+    <td><button class="btn-sm btn-blue" onclick="window.location.href='results.html?id=${s.id}'">Report</button></td>
+  </tr>`).join('')}
+  </tbody></table>`;
+}
+
+function renderSessionsTable(subs, containerId) {
+  renderSubmissionsTable(subs, containerId);
+}
+
+function renderLive(sessions) {
+  const el = document.getElementById('live-grid');
+  if (!sessions.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1">No active sessions</div>'; return; }
+  el.innerHTML = sessions.map(s=>`
+    <div class="live-card">
+      <div class="pulse"></div>
+      <div class="live-name">${s.candidate_name}</div>
+      <div class="live-role">${s.job_role} · ${s.mode.replace('_',' ')}</div>
+      <div class="live-scores">
+        <div class="ls"><div class="ls-val" style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</div><div class="ls-lbl">Credibility</div></div>
+        <div class="ls"><div class="ls-val">${s.interview_score}</div><div class="ls-lbl">Interview</div></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        ${s.mode==='live_recruiter'?`<button class="btn-sm btn-green" onclick="joinLiveSession('${s.room_code}')">Join Session</button>`:''}
+        <button class="btn-sm btn-blue" onclick="showPage('candidates')">Monitor</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function scoreColor(s) {
+  if (s >= 80) return '#10b981';
+  if (s >= 60) return '#f59e0b';
+  return '#f43f5e';
+}
+
+function selectMode(mode) {
+  selectedMode = mode;
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('mode-' + mode).classList.add('selected');
+}
+
+async function createSession() {
+  const candidate = document.getElementById('c-candidate').value.trim();
+  const jobRole   = document.getElementById('c-role').value;
+  if (!candidate) return alert('Please enter a candidate username');
+  if (!jobRole)   return alert('Please select a job role');
+
+  const data = await fetch('/api/create-session', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode})
+  }).then(r=>r.json());
+
+  if (!data.success) return alert(data.message || 'Error creating session');
+  lastCreatedSession = data.session;
+
+  document.getElementById('created-code').textContent = data.room_code;
+  document.getElementById('join-url').textContent     = `${window.location.origin}/interview_room.html?room=${data.room_code}`;
+  document.getElementById('session-result').style.display = 'block';
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(document.getElementById('created-code').textContent);
+  alert('Room code copied!');
+}
+
+function openRecruiterRoom() {
+  if (!lastCreatedSession) return;
+  window.open(`/recruiter_room.html?room=${lastCreatedSession.room_code}`, '_blank');
+}
+
+function joinLiveSession(code) {
+  window.open(`/recruiter_room.html?room=${code}`, '_blank');
+}
+
+function resetCreateForm() {
+  document.getElementById('session-result').style.display = 'none';
+  document.getElementById('c-candidate').value = '';
+  lastCreatedSession = null;
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'overview' || name === 'sessions') loadDashboard();
+  if (name === 'candidates') loadCandidates();
+}
+
+function initSocket() {
+  socket = io();
+  socket.on('connect', () => socket.emit('join_dashboard'));
+  socket.on('violation_alert', data => {
+    document.getElementById('vtoa-msg').textContent =
+      `${data.username} — ${data.violation_type.replace(/_/g,' ')} · Score: ${data.new_credibility}`;
+    const t = document.getElementById('vtoa');
+    t.classList.add('show');
+    // Update live board count
+    const sv = document.getElementById('s-violations');
+    sv.textContent = parseInt(sv.textContent || '0') + 1;
+    setTimeout(() => t.classList.remove('show'), 5000);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
