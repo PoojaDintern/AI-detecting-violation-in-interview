@@ -5,13 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard — RecruitAI</title>
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0a0a0f;--s:#13131a;--s2:#1c1c28;--border:#2a2a3d;--accent:#6c63ff;--accent2:#a78bfa;--green:#10b981;--red:#f43f5e;--yellow:#f59e0b;--text:#e2e8f0;--muted:#64748b;}
+:root {
+  --bg: #0f1117;
+  --bg2: #161b27;
+  --s: #1a2035;
+  --s2: #1e2640;
+  --border: #2a3350;
+  --border2: #334066;
+  --accent: #4f8ef7;
+  --accent2: #6aa3ff;
+  --accent-light: rgba(79,142,247,0.12);
+  --accent-glow: rgba(79,142,247,0.2);
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --text: #e8edf5;
+  --text2: #c5cde0;
+  --muted: #7a88a8;
+  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
+}
+
+
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);}
 .topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;}
-.brand{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.brand{font-family:'Plus Jakarta Sans', 'Playfair Display', sans-serif;font-size:20px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .topbar-right{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--muted);}
 .logout-link{padding:8px 18px;border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;text-decoration:none;transition:all .2s;}
 .logout-link:hover{border-color:var(--accent);color:var(--accent2);}
@@ -25,29 +46,125 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
 .stat.red::before{background:linear-gradient(90deg,#f43f5e,#fb7185);}
 .stat.purple::before{background:linear-gradient(90deg,#8b5cf6,#a78bfa);}
 .stat.teal::before{background:linear-gradient(90deg,#14b8a6,#2dd4bf);}
-.stat-val{font-family:'Syne',sans-serif;font-size:34px;font-weight:700;margin-bottom:4px;}
+.stat-val{font-family:'Playfair Display', serif;font-size:34px;font-weight:700;margin-bottom:4px;}
 .stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;}
-.card-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-title{font-family:'Playfair Display', serif;font-size:17px;font-weight:700;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 table{width:100%;border-collapse:collapse;}
 th{padding:11px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);font-weight:600;}
 td{padding:13px 14px;font-size:13px;border-bottom:1px solid rgba(42,42,61,.5);}
-tr:hover td{background:rgba(108,99,255,.025);}
+tr:hover td{background:rgba(13,31,60,0.025);}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
-.bg{background:rgba(16,185,129,.12);color:#6ee7b7;}
-.br{background:rgba(244,63,94,.12);color:#fda4af;}
-.bb{background:rgba(108,99,255,.12);color:var(--accent2);}
-.by{background:rgba(245,158,11,.12);color:#fcd34d;}
+.bg{background:rgba(16,185,129,.15);color:#34d399;}
+.br{background:rgba(239,68,68,.15);color:#fca5a5;}
+.bb{background:rgba(13,31,60,0.08);color:var(--accent2);}
+.by{background:rgba(245,158,11,.15);color:#fcd34d;}
 .sv-low{color:#10b981;font-weight:700;}
 .sv-med{color:#f59e0b;font-weight:700;}
 .sv-hi{color:#f43f5e;font-weight:700;}
-.btn-sm{padding:7px 14px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:rgba(108,99,255,.15);color:var(--accent2);transition:all .2s;}
-.btn-sm:hover{background:rgba(108,99,255,.3);}
-.vio-toast{position:fixed;top:76px;right:22px;background:var(--s);border:1px solid var(--red);border-radius:12px;padding:14px 18px;max-width:340px;z-index:999;display:none;animation:slideIn .3s ease;}
-@keyframes slideIn{from{transform:translateX(360px);opacity:0}to{transform:translateX(0);opacity:1}}
-.vio-toast.show{display:block;}
+.btn-sm{padding:7px 14px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:rgba(79,142,247,.1);color:var(--accent2);transition:all .2s;}
+.btn-sm:hover{background:rgba(13,31,60,0.2);}
+
 .empty{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
 .overflow{overflow-x:auto;}
+
+
+.brand { color: var(--accent); -webkit-text-fill-color: var(--accent); }
+.brand-name { color: var(--text); -webkit-text-fill-color: var(--text); }
+
+
+
+/* Subtle background texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle at 20% 20%, rgba(13,31,60,0.05) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(37,99,235,0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Cards elevated */
+.card, .stat, .join-card, .result-header, .score-card, .modal-card {
+  box-shadow: 0 1px 3px rgba(15,30,60,0.06), 0 4px 16px rgba(15,30,60,0.08);
+  transition: box-shadow 0.2s ease;
+}
+.card:hover, .stat:hover {
+  box-shadow: 0 2px 8px rgba(15,30,60,0.08), 0 8px 24px rgba(15,30,60,0.1);
+}
+
+/* Topbar elevated */
+.topbar {
+  box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(15,30,60,0.06);
+  backdrop-filter: blur(10px);
+}
+
+/* Table styling */
+table {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15,30,60,0.06);
+}
+
+/* Stat top bar glow */
+.stat.blue::before { background: linear-gradient(90deg, var(--accent), #4a6fa5); }
+.stat.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+.stat.yellow::before { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
+.stat.red::before { background: linear-gradient(90deg, var(--red), #fc8181); }
+.stat.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.stat.teal::before { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
+
+/* Proctoring sidebar brighter */
+.proctoring-sidebar {
+  background: var(--s);
+  border-left: 1px solid var(--border);
+}
+
+/* Section titles */
+.page-title, .card-title, .section-title, .join-title {
+  color: var(--text);
+  font-family: 'Playfair Display', serif;
+}
+.page-sub, .join-desc { color: var(--muted); }
+
+/* Main wrapper bg */
+.main, .container { position: relative; z-index: 1; }
+.layout { position: relative; z-index: 1; }
+
+
+/* Dark background with subtle gradient */
+body {
+  background: var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+}
+
+/* Subtle dark background decoration */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    radial-gradient(ellipse at 15% 25%, rgba(13,31,60,0.06) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 75%, rgba(13,31,60,0.03) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Background grid - subtle on dark */
+
+
+
+
+/* handled via JS scoreColor function updates */
+
+
+/* Dark scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
 </style>
 </head>
 <body>
@@ -56,7 +173,7 @@ tr:hover td{background:rgba(108,99,255,.025);}
   <div class="topbar-right">
     <span>Welcome, <strong id="admin-name">…</strong></span>
     <a href="/logout" class="logout-link">Logout</a>
-    <a href="recruiter_dashboard.html" class="logout-link" style="color:var(--accent2);border-color:rgba(108,99,255,.4);">Recruiter Panel →</a>
+    <a href="recruiter_dashboard.html" class="logout-link" style="color:var(--accent2);border-color:rgba(13,31,60,0.3);">Recruiter Panel →</a>
   </div>
 </div>
 
@@ -81,10 +198,6 @@ tr:hover td{background:rgba(108,99,255,.025);}
   </div>
 </div>
 
-<div class="vio-toast" id="vtoa">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-    <span style="font-size:18px;">🚨</span><strong style="color:var(--red);font-size:13px;">Violation Detected</strong>
-  </div>
   <div id="vtoa-msg" style="font-size:12px;color:var(--muted);"></div>
 </div>
 
@@ -150,10 +263,7 @@ function initSocket() {
   socket=io();
   socket.on('connect',()=>socket.emit('join_dashboard'));
   socket.on('violation_alert',data=>{
-    document.getElementById('vtoa-msg').textContent=`${data.username} — ${fmt(data.violation_type)} · Score: ${data.new_credibility}`;
     const t=document.getElementById('vtoa');
-    t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),5000);
     // Prepend to table
     const tbody=document.getElementById('vio-tbody');
     if (tbody) {

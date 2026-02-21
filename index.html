@@ -3,326 +3,330 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Recruiting System — Login</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>RecruitAI — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0a0a0f;
-  --surface: #13131a;
-  --surface2: #1c1c28;
-  --border: #2a2a3d;
-  --accent: #6c63ff;
-  --accent2: #a78bfa;
-  --green: #10b981;
-  --red: #f43f5e;
-  --text: #e2e8f0;
-  --muted: #64748b;
-  --glow: rgba(108,99,255,0.15);
+:root{
+  --bg:#0f1117;
+  --bg2:#161b27;
+  --s:#1a2035;
+  --s2:#1e2640;
+  --border:#2a3350;
+  --border2:#334066;
+  --accent:#4f8ef7;
+  --accent2:#6aa3ff;
+  --accent-light:rgba(79,142,247,0.12);
+  --accent-glow:rgba(79,142,247,0.2);
+  --green:#10b981;
+  --red:#ef4444;
+  --yellow:#f59e0b;
+  --text:#e8edf5;
+  --text2:#c5cde0;
+  --muted:#7a88a8;
+  --muted2:#4a5568;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.4),0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md:0 4px 14px rgba(0,0,0,0.4),0 2px 6px rgba(0,0,0,0.3);
+  --shadow-lg:0 24px 64px rgba(0,0,0,0.6),0 8px 24px rgba(0,0,0,0.4);
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  font-family: 'Inter', sans-serif;
-  background: var(--bg);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  color: var(--text);
-  overflow: hidden;
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  color:var(--text);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 20% 20%, rgba(79,142,247,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 80% 80%, rgba(79,142,247,0.04) 0%, transparent 60%);
 }
-.bg-grid {
-  position: fixed; inset: 0; z-index: 0;
-  background-image: linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
-  background-size: 40px 40px;
+
+/* Dark scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+.wrapper{
+  position:relative;z-index:1;
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  max-width:1020px;width:100%;
+  background:var(--s);
+  border:1px solid var(--border);
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:var(--shadow-lg);
+  animation:up 0.4s cubic-bezier(0.22,1,0.36,1);
 }
-.bg-orb {
-  position: fixed; border-radius: 50%; filter: blur(80px); z-index: 0; pointer-events: none;
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── LEFT: Dark navy gradient panel ── */
+.left{
+  padding:56px 48px;
+  background:linear-gradient(155deg, #0d1f3c 0%, #162d50 55%, #1e3a65 100%);
+  display:flex;flex-direction:column;justify-content:center;
+  position:relative;overflow:hidden;
 }
-.orb1 { width: 500px; height: 500px; background: rgba(108,99,255,0.12); top: -150px; left: -100px; }
-.orb2 { width: 400px; height: 400px; background: rgba(167,139,250,0.08); bottom: -100px; right: -80px; }
-.wrapper {
-  position: relative; z-index: 1;
-  display: grid; grid-template-columns: 1fr 1fr;
-  max-width: 960px; width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(108,99,255,0.1);
+.left::before{
+  content:'';position:absolute;
+  top:-120px;right:-80px;
+  width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle, rgba(79,142,247,0.08) 0%, transparent 70%);
+  pointer-events:none;
 }
-/* LEFT PANEL */
-.left {
-  padding: 56px 48px;
-  background: linear-gradient(135deg, #0d0d1a 0%, #111128 100%);
-  display: flex; flex-direction: column; justify-content: center;
-  position: relative; overflow: hidden;
+.left::after{
+  content:'';position:absolute;
+  bottom:-100px;left:-60px;
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+  pointer-events:none;
 }
-.left::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, rgba(108,99,255,0.12) 0%, transparent 70%);
+.deco{position:absolute;border-radius:50%;pointer-events:none;border:1px solid rgba(255,255,255,0.06);}
+.deco1{width:200px;height:200px;top:20px;right:20px;}
+.deco2{width:320px;height:320px;top:-40px;right:-40px;}
+
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:52px;position:relative;z-index:1;}
+.brand-logo{
+  width:42px;height:42px;border-radius:11px;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.3);
 }
-.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; position: relative; }
-.brand-icon {
-  width: 48px; height: 48px; border-radius: 14px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex; align-items: center; justify-content: center; font-size: 22px;
-  box-shadow: 0 8px 24px rgba(108,99,255,0.4);
+.brand-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;font-weight:800;color:#fff;letter-spacing:-0.02em;}
+
+.left h1{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:32px;font-weight:800;line-height:1.25;
+  margin-bottom:14px;
+  position:relative;z-index:1;
+  color:#fff;letter-spacing:-0.03em;
 }
-.brand-name { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); }
-.left h1 {
-  font-family: 'Syne', sans-serif;
-  font-size: 38px; font-weight: 800; line-height: 1.15;
-  margin-bottom: 16px; position: relative;
-  background: linear-gradient(135deg, #fff 40%, var(--accent2));
-  background-clip:text;-webkit-background-clip: text; -webkit-text-fill-color: transparent;
+.left h1 em{font-style:normal;color:rgba(255,255,255,0.45);}
+
+.left p{font-size:14px;line-height:1.8;color:rgba(255,255,255,0.4);margin-bottom:44px;position:relative;z-index:1;}
+
+.features{list-style:none;position:relative;z-index:1;}
+.features li{
+  display:flex;align-items:center;gap:13px;
+  margin-bottom:15px;font-size:13.5px;
+  color:rgba(255,255,255,0.65);
 }
-.left p { color: var(--muted); font-size: 15px; line-height: 1.7; margin-bottom: 36px; position: relative; }
-.features { list-style: none; position: relative; }
-.features li {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 14px; font-size: 14px; color: #94a3b8;
+.feat-icon{
+  width:31px;height:31px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.1);
 }
-.feat-dot {
-  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 13px;
-  background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3);
+
+.trust{
+  margin-top:44px;position:relative;z-index:1;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 16px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:100px;
+  font-size:12px;color:rgba(255,255,255,0.4);
 }
-/* RIGHT PANEL */
-.right { padding: 48px 44px; }
-.tabs {
-  display: flex; gap: 4px;
-  background: var(--surface2); border-radius: 12px; padding: 4px;
-  margin-bottom: 32px;
+.trust-dot{width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,0.25);}
+
+/* ── RIGHT: Dark form panel ── */
+.right{
+  padding:48px 44px;
+  background:var(--s);
+  border-left:1px solid var(--border);
 }
-.tab {
-  flex: 1; padding: 10px; text-align: center; cursor: pointer;
-  border-radius: 9px; font-size: 14px; font-weight: 500;
-  color: var(--muted); transition: all 0.25s;
+
+.panel-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;margin-bottom:5px;color:var(--text);letter-spacing:-0.025em;}
+.panel-sub{font-size:13.5px;color:var(--muted);margin-bottom:28px;}
+
+.tabs{
+  display:flex;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:10px;padding:4px;
+  margin-bottom:26px;
 }
-.tab.active { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(108,99,255,0.4); }
-.form { display: none; animation: fadeUp 0.3s ease; }
-.form.active { display: block; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-.form-group { margin-bottom: 18px; }
-.form-group label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
-.form-group input, .form-group select {
-  width: 100%; padding: 13px 16px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 10px; font-size: 14px; color: var(--text);
-  font-family: 'Inter', sans-serif; transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none; appearance: none;
+.tab{flex:1;padding:9px 16px;text-align:center;cursor:pointer;border-radius:7px;font-size:13.5px;font-weight:500;color:var(--muted);transition:all 0.18s;}
+.tab.active{
+  background:var(--accent);
+  color:#fff;font-weight:600;
+  box-shadow:0 2px 8px var(--accent-glow);
 }
-.form-group input:focus, .form-group select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
+
+.form{display:none;animation:fs 0.22s ease;}
+.form.active{display:block;}
+@keyframes fs{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:7px;}
+.form-group input{
+  width:100%;padding:12px 14px;
+  background:var(--s2);
+  border:1.5px solid var(--border);
+  border-radius:9px;
+  font-size:14px;color:var(--text);
+  font-family:'Outfit',sans-serif;
+  transition:all 0.18s;outline:none;
+  box-shadow:var(--shadow-sm);
 }
-.form-group select option { background: var(--surface2); }
-.role-picker {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+.form-group input:hover{border-color:var(--border2);}
+.form-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light);}
+.form-group input::placeholder{color:var(--muted2);}
+
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:17px;}
+.role-card{
+  padding:15px 12px;
+  border:1.5px solid var(--border);
+  border-radius:11px;cursor:pointer;text-align:center;
+  transition:all 0.18s;background:var(--s2);
+  box-shadow:var(--shadow-sm);
 }
-.role-btn {
-  padding: 14px 12px; border: 2px solid var(--border); border-radius: 12px;
-  cursor: pointer; text-align: center; transition: all 0.2s; background: var(--surface2);
+.role-card:hover{border-color:var(--border2);box-shadow:var(--shadow-md);}
+.role-card.active{
+  border-color:var(--accent);
+  background:var(--accent-light);
+  box-shadow:0 0 0 3px var(--accent-glow);
 }
-.role-btn:hover { border-color: var(--accent); }
-.role-btn.active { border-color: var(--accent); background: rgba(108,99,255,0.1); }
-.role-btn .rb-icon { font-size: 26px; margin-bottom: 6px; }
-.role-btn .rb-label { font-size: 13px; font-weight: 600; color: var(--text); }
-.role-btn .rb-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.btn {
-  width: 100%; padding: 14px;
-  background: linear-gradient(135deg, var(--accent), #8b5cf6);
-  border: none; border-radius: 10px; color: #fff;
-  font-size: 15px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif;
-  transition: all 0.25s; box-shadow: 0 8px 24px rgba(108,99,255,0.3);
+.role-card .rc-icon{font-size:26px;margin-bottom:7px;}
+.role-card .rc-label{font-size:13px;font-weight:600;color:var(--text);}
+.role-card .rc-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.btn-main{
+  width:100%;padding:13px;
+  background:var(--accent);
+  border:none;border-radius:9px;
+  color:#fff;font-size:14.5px;font-weight:600;
+  cursor:pointer;font-family:'Outfit',sans-serif;
+  transition:all 0.2s;
+  box-shadow:0 4px 14px var(--accent-glow);
+  letter-spacing:0.01em;
 }
-.btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(108,99,255,0.45); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.msg { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 13px; display: none; }
-.msg.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
-.msg.error   { background: rgba(244,63,94,0.1);  border: 1px solid rgba(244,63,94,0.3);  color: #fda4af; }
-.demo-box {
-  margin-top: 24px; padding: 14px; border-radius: 10px;
-  background: var(--surface2); border: 1px solid var(--border); font-size: 12px;
+.btn-main:hover:not(:disabled){background:var(--accent2);transform:translateY(-1px);box-shadow:0 8px 22px var(--accent-glow);}
+.btn-main:active:not(:disabled){transform:translateY(0);}
+.btn-main:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+.msg{margin-top:12px;padding:11px 13px;border-radius:8px;font-size:13px;display:none;}
+.msg.success{background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#34d399;}
+.msg.error{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;}
+
+.demo-box{
+  margin-top:20px;padding:15px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:11px;
 }
-.demo-box h4 { color: var(--accent2); margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-.demo-box p { color: var(--muted); margin: 4px 0; }
-.demo-box strong { color: var(--text); }
-@media(max-width:768px) {
-  .wrapper { grid-template-columns: 1fr; }
-  .left { padding: 40px 28px; }
-  .right { padding: 36px 28px; }
+.demo-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:11px;}
+.demo-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
+.demo-row:last-child{border-bottom:none;padding-bottom:0;}
+.demo-role{color:var(--muted);font-size:11.5px;}
+.demo-creds{
+  color:var(--text2);font-family:monospace;font-size:12px;font-weight:500;
+  background:var(--s);border:1px solid var(--border);
+  padding:2px 8px;border-radius:5px;
+}
+
+@media(max-width:768px){
+  .wrapper{grid-template-columns:1fr;}
+  .left{padding:36px 28px;}
+  .right{padding:32px 28px;}
+  .left h1{font-size:26px;}
+  .deco1,.deco2{display:none;}
 }
 </style>
 </head>
 <body>
-<div class="bg-grid"></div>
-<div class="bg-orb orb1"></div>
-<div class="bg-orb orb2"></div>
-
 <div class="wrapper">
-  <!-- LEFT -->
   <div class="left">
+    <div class="deco deco1"></div>
+    <div class="deco deco2"></div>
     <div class="brand">
-      <div class="brand-icon">🤖</div>
+      <div class="brand-logo">🤖</div>
       <span class="brand-name">RecruitAI</span>
     </div>
-    <h1>Smart Recruiting,<br>Verified Integrity</h1>
-    <p>AI-powered interviews with real-time proctoring, gaze detection, and intelligent scoring.</p>
+    <h1>Hire smarter with<br><em>AI-powered</em> interviews</h1>
+    <p>Real-time proctoring, gaze detection, and intelligent scoring — all in one platform built for modern recruiting teams.</p>
     <ul class="features">
-      <li><div class="feat-dot">👁️</div> Real-time gaze & face monitoring</li>
-      <li><div class="feat-dot">📱</div> Phone & device detection</li>
-      <li><div class="feat-dot">🧠</div> AI animated interviewer</li>
-      <li><div class="feat-dot">🎥</div> Live recruiter video calls</li>
-      <li><div class="feat-dot">📊</div> Dual score: credibility + interview</li>
+      <li><div class="feat-icon">👁️</div> Real-time gaze &amp; face monitoring</li>
+      <li><div class="feat-icon">📱</div> Phone &amp; secondary device detection</li>
+      <li><div class="feat-icon">🧠</div> AI animated interviewer (Alex)</li>
+      <li><div class="feat-icon">🎥</div> Live recruiter WebRTC video calls</li>
+      <li><div class="feat-icon">📊</div> Dual scoring: credibility + interview</li>
     </ul>
+    <div class="trust"><div class="trust-dot"></div> Trusted by 500+ recruiting teams worldwide</div>
   </div>
 
-  <!-- RIGHT -->
   <div class="right">
+    <div class="panel-title">Welcome back</div>
+    <div class="panel-sub">Sign in to your account or create a new one</div>
     <div class="tabs">
-      <div class="tab active" id="tab-login" onclick="switchTab('login')">Login</div>
-      <div class="tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</div>
+      <div class="tab active" id="tab-login" onclick="switchTab('login')">Sign In</div>
+      <div class="tab" id="tab-signup" onclick="switchTab('signup')">Create Account</div>
     </div>
 
-    <!-- LOGIN FORM -->
     <div id="login-form" class="form active">
-      <div class="form-group">
-        <label>Username</label>
-        <input type="text" id="l-username" placeholder="Enter username" autocomplete="username">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="l-password" placeholder="Enter password" autocomplete="current-password">
-      </div>
-      <button class="btn" id="login-btn">Login →</button>
+      <div class="form-group"><label>Username</label><input type="text" id="l-username" placeholder="Enter your username" autocomplete="username"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="l-password" placeholder="Enter your password" autocomplete="current-password"></div>
+      <button class="btn-main" id="login-btn">Sign In →</button>
       <div id="login-msg" class="msg"></div>
       <div class="demo-box">
-        <h4>Demo Accounts</h4>
-        <p><strong>Admin/Recruiter:</strong> recruiter / recruiter123</p>
-        <p><strong>Candidate:</strong> student / student123</p>
-        <p><strong>Admin:</strong> admin / admin123</p>
+        <div class="demo-title">Demo Accounts</div>
+        <div class="demo-row"><span class="demo-role">Admin / Recruiter</span><span class="demo-creds">recruiter / recruiter123</span></div>
+        <div class="demo-row"><span class="demo-role">Candidate</span><span class="demo-creds">student / student123</span></div>
+        <div class="demo-row"><span class="demo-role">Admin</span><span class="demo-creds">admin / admin123</span></div>
       </div>
     </div>
 
-    <!-- SIGNUP FORM -->
     <div id="signup-form" class="form">
       <div class="form-group"><label>Full Name</label><input type="text" id="s-name" placeholder="Your full name"></div>
-      <div class="form-group"><label>Email</label><input type="email" id="s-email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="s-email" placeholder="you@company.com" autocomplete="email"></div>
       <div class="form-group"><label>Username</label><input type="text" id="s-username" placeholder="Choose a username"></div>
-      <div class="form-group"><label>Password</label><input type="password" id="s-password" placeholder="Min 6 characters"></div>
-
+      <div class="form-group"><label>Password</label><input type="password" id="s-password" placeholder="Minimum 6 characters"></div>
       <div class="form-group"><label>I am a…</label></div>
-      <div class="role-picker">
-        <div class="role-btn active" id="rb-candidate" onclick="selectRole('candidate')">
-          <div class="rb-icon">🎓</div>
-          <div class="rb-label">Candidate</div>
-          <div class="rb-sub">Taking interviews</div>
-        </div>
-        <div class="role-btn" id="rb-recruiter" onclick="selectRole('recruiter')">
-          <div class="rb-icon">🏢</div>
-          <div class="rb-label">Recruiter</div>
-          <div class="rb-sub">Conducting interviews</div>
-        </div>
+      <div class="role-grid">
+        <div class="role-card active" id="rb-candidate" onclick="selectRole('candidate')"><div class="rc-icon">🎓</div><div class="rc-label">Candidate</div><div class="rc-sub">Taking interviews</div></div>
+        <div class="role-card" id="rb-recruiter" onclick="selectRole('recruiter')"><div class="rc-icon">🏢</div><div class="rc-label">Recruiter</div><div class="rc-sub">Conducting interviews</div></div>
       </div>
-
-      <button class="btn" id="signup-btn">Create Account →</button>
+      <button class="btn-main" id="signup-btn">Create Account →</button>
       <div id="signup-msg" class="msg"></div>
     </div>
   </div>
 </div>
-
 <script>
-let selectedRole = 'candidate';
-
-function selectRole(role) {
-  selectedRole = role;
-  document.getElementById('rb-candidate').classList.toggle('active', role === 'candidate');
-  document.getElementById('rb-recruiter').classList.toggle('active', role === 'recruiter');
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  document.getElementById(tab + '-form').classList.add('active');
-  document.querySelectorAll('.msg').forEach(m => { m.style.display = 'none'; });
-}
-
-function showMsg(id, type, text) {
-  const el = document.getElementById(id);
-  el.className = 'msg ' + type;
-  el.textContent = text;
-  el.style.display = 'block';
-}
-
-// LOGIN
-document.getElementById('login-btn').addEventListener('click', async () => {
-  const username = document.getElementById('l-username').value.trim();
-  const password = document.getElementById('l-password').value;
-  if (!username || !password) return showMsg('login-msg', 'error', 'Please fill all fields');
-
-  document.getElementById('login-btn').disabled = true;
-  showMsg('login-msg', 'success', 'Logging in…');
-
-  try {
-    const res  = await fetch('/login', { method:'POST', headers:{'Content-Type':'application/json'},
-                              body: JSON.stringify({username, password}), credentials:'same-origin' });
-    const data = await res.json();
-    if (data.success) {
-      showMsg('login-msg', 'success', 'Success! Redirecting…');
-      setTimeout(() => window.location.href = data.redirect, 800);
-    } else {
-      showMsg('login-msg', 'error', data.message || 'Login failed');
-      document.getElementById('login-btn').disabled = false;
-    }
-  } catch(e) {
-    showMsg('login-msg', 'error', 'Network error');
-    document.getElementById('login-btn').disabled = false;
+let selectedRole='candidate';
+function selectRole(r){selectedRole=r;document.getElementById('rb-candidate').classList.toggle('active',r==='candidate');document.getElementById('rb-recruiter').classList.toggle('active',r==='recruiter');}
+function switchTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.form').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');document.getElementById(t+'-form').classList.add('active');document.querySelectorAll('.msg').forEach(m=>m.style.display='none');}
+function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;el.style.display='block';}
+document.getElementById('login-btn').addEventListener('click',async()=>{
+  const username=document.getElementById('l-username').value.trim(),password=document.getElementById('l-password').value;
+  if(!username||!password)return showMsg('login-msg','error','Please fill all fields');
+  document.getElementById('login-btn').disabled=true;showMsg('login-msg','success','Signing in…');
+  try{const res=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password}),credentials:'same-origin'});const data=await res.json();
+  if(data.success){
+    showMsg('login-msg','success','Success! Redirecting…');
+    setTimeout(()=>{
+      const intendedUrl = sessionStorage.getItem('redirect_after_login');
+      if(intendedUrl){ sessionStorage.removeItem('redirect_after_login'); window.location.href=intendedUrl; }
+      else { window.location.href=data.redirect; }
+    },800);
   }
+  else{showMsg('login-msg','error',data.message||'Login failed');document.getElementById('login-btn').disabled=false;}}
+  catch(e){showMsg('login-msg','error','Network error');document.getElementById('login-btn').disabled=false;}
 });
-
-// SIGNUP
-document.getElementById('signup-btn').addEventListener('click', async () => {
-  const full_name = document.getElementById('s-name').value.trim();
-  const email     = document.getElementById('s-email').value.trim();
-  const username  = document.getElementById('s-username').value.trim();
-  const password  = document.getElementById('s-password').value;
-  if (!full_name || !email || !username || !password)
-    return showMsg('signup-msg', 'error', 'Please fill all fields');
-  if (password.length < 6) return showMsg('signup-msg', 'error', 'Password min 6 chars');
-
-  document.getElementById('signup-btn').disabled = true;
-  try {
-    const res  = await fetch('/signup', { method:'POST', headers:{'Content-Type':'application/json'},
-                              body: JSON.stringify({full_name, email, username, password, role: selectedRole}),
-                              credentials:'same-origin' });
-    const data = await res.json();
-    if (data.success) {
-      showMsg('signup-msg', 'success', data.message);
-      setTimeout(() => { switchTab('login'); document.getElementById('l-username').value = username; }, 2000);
-    } else {
-      showMsg('signup-msg', 'error', data.message);
-      document.getElementById('signup-btn').disabled = false;
-    }
-  } catch(e) {
-    showMsg('signup-msg', 'error', 'Network error');
-    document.getElementById('signup-btn').disabled = false;
-  }
+document.getElementById('signup-btn').addEventListener('click',async()=>{
+  const full_name=document.getElementById('s-name').value.trim(),email=document.getElementById('s-email').value.trim(),username=document.getElementById('s-username').value.trim(),password=document.getElementById('s-password').value;
+  if(!full_name||!email||!username||!password)return showMsg('signup-msg','error','Please fill all fields');
+  if(password.length<6)return showMsg('signup-msg','error','Password must be at least 6 characters');
+  document.getElementById('signup-btn').disabled=true;
+  try{const res=await fetch('/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({full_name,email,username,password,role:selectedRole}),credentials:'same-origin'});const data=await res.json();
+  if(data.success){showMsg('signup-msg','success',data.message);setTimeout(()=>{switchTab('login');document.getElementById('l-username').value=username;},2000);}
+  else{showMsg('signup-msg','error',data.message);document.getElementById('signup-btn').disabled=false;}}
+  catch(e){showMsg('signup-msg','error','Network error');document.getElementById('signup-btn').disabled=false;}
 });
-
-// Enter key
-document.querySelectorAll('input').forEach(inp => {
-  inp.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      const activeForm = document.querySelector('.form.active').id;
-      document.getElementById(activeForm === 'login-form' ? 'login-btn' : 'signup-btn').click();
-    }
-  });
-});
+document.querySelectorAll('input').forEach(inp=>inp.addEventListener('keypress',e=>{if(e.key==='Enter'){const af=document.querySelector('.form.active').id;document.getElementById(af==='login-form'?'login-btn':'signup-btn').click();}}));
 </script>
 </body>
 </html>
