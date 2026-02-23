@@ -469,9 +469,273 @@ body::before {
 ::-webkit-scrollbar-track{background:var(--bg2)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* ══════════════════════════════════════════════════════════════════
+   PRE-EXAM SETUP + ROOM SCAN OVERLAY
+═══════════════════════════════════════════════════════════════════ */
+.setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:10001;display:flex;align-items:center;justify-content:center;}
+.setup-modal{background:#0f1623;border:1px solid rgba(255,255,255,.08);border-radius:22px;width:min(860px,96vw);max-height:94vh;overflow-y:auto;display:flex;flex-direction:column;}
+
+/* Step indicator */
+.setup-steps{display:flex;align-items:center;justify-content:center;gap:0;padding:28px 36px 0;}
+.step-item{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;max-width:120px;}
+.step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:all .3s;border:2px solid rgba(255,255,255,.12);color:rgba(255,255,255,.3);}
+.step-dot.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 16px rgba(79,142,247,.5);}
+.step-dot.done{background:#10b981;border-color:#10b981;color:#fff;}
+.step-label{font-size:10px;color:rgba(255,255,255,.3);text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.step-label.active{color:var(--accent2);}
+.step-label.done{color:#10b981;}
+.step-connector{flex:1;height:2px;background:rgba(255,255,255,.08);margin-bottom:16px;max-width:60px;}
+.step-connector.done{background:#10b981;}
+
+/* Step panels */
+.setup-panel{display:none;padding:28px 36px 0;}
+.setup-panel.active{display:block;}
+.setup-panel-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;margin-bottom:6px;}
+.setup-panel-sub{color:rgba(255,255,255,.45);font-size:13px;margin-bottom:22px;line-height:1.6;}
+
+/* Camera check panel */
+.cam-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.cam-preview-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;border:2px solid rgba(255,255,255,.1);}
+.cam-preview-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+.cam-face-status{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;transition:all .3s;}
+.cam-face-status.ok{background:rgba(16,185,129,.85);color:#fff;}
+.cam-face-status.bad{background:rgba(239,68,68,.85);color:#fff;}
+.cam-face-status.warn{background:rgba(245,158,11,.85);color:#000;}
+
+/* Rules grid */
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rule-card{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:10px;font-size:12px;line-height:1.5;}
+.rule-card.ok{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);}
+.rule-card.bad{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);}
+.rule-card.info{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);}
+.rule-icon{font-size:16px;flex-shrink:0;}
+.rule-text strong{display:block;font-weight:600;margin-bottom:1px;}
+.rule-text span{color:rgba(255,255,255,.45);font-size:11px;}
+
+/* Checklist */
+.checklist{display:flex;flex-direction:column;gap:7px;margin-top:16px;}
+.chk-item{display:flex;align-items:center;gap:10px;padding:9px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;font-size:13px;}
+.chk-ico{font-size:15px;width:18px;text-align:center;}
+.chk-lbl{flex:1;}
+.chk-st{font-size:11px;font-weight:700;}
+.chk-st.ok{color:#10b981;} .chk-st.bad{color:#ef4444;} .chk-st.pending{color:rgba(255,255,255,.3);}
+
+/* ── Room Scan Panel ──────────────────────────────────────────── */
+.scan-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+.scan-cam-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;border:2px solid rgba(255,255,255,.1);}
+.scan-cam-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+.scan-cam-wrap.scanning{border-color:rgba(79,142,247,.7);box-shadow:0 0 24px rgba(79,142,247,.3);}
+.scan-cam-wrap.ok{border-color:rgba(16,185,129,.7);box-shadow:0 0 24px rgba(16,185,129,.2);}
+.scan-cam-wrap.bad{border-color:rgba(239,68,68,.7);box-shadow:0 0 24px rgba(239,68,68,.3);}
+
+.scan-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;border-radius:12px;}
+.scan-flash.flash{animation:scanFlash .25s ease;}
+@keyframes scanFlash{0%{opacity:.7}100%{opacity:0}}
+
+.scan-overlay-label{position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;background:rgba(0,0,0,.7);color:#fff;border:1px solid rgba(255,255,255,.15);}
+
+/* Direction wheel */
+.scan-directions{display:flex;flex-direction:column;gap:10px;}
+.dir-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);transition:all .25s;}
+.dir-item.active{background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.4);}
+.dir-item.done-ok{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3);}
+.dir-item.done-warn{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);}
+.dir-arrow{font-size:26px;width:36px;text-align:center;flex-shrink:0;}
+.dir-body{flex:1;}
+.dir-title{font-size:13px;font-weight:700;margin-bottom:2px;}
+.dir-desc{font-size:11px;color:rgba(255,255,255,.4);}
+.dir-result{font-size:12px;font-weight:700;margin-left:auto;flex-shrink:0;}
+.dir-result.ok{color:#10b981;} .dir-result.warn{color:#ef4444;} .dir-result.pending{color:rgba(255,255,255,.25);}
+
+/* Scan countdown ring */
+.scan-countdown-wrap{position:absolute;bottom:10px;right:10px;}
+.scan-ring{transform:rotate(-90deg);}
+.scan-ring-bg{fill:none;stroke:rgba(255,255,255,.15);stroke-width:4;}
+.scan-ring-fill{fill:none;stroke:var(--accent);stroke-width:4;stroke-dasharray:88;stroke-dashoffset:88;transition:stroke-dashoffset .9s linear;}
+.scan-ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;}
+
+/* Scan result banner */
+.scan-result-banner{margin-top:16px;padding:14px 18px;border-radius:12px;font-size:13px;display:none;}
+.scan-result-banner.clear{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;}
+.scan-result-banner.flagged{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+
+/* Devices found table */
+.devices-found{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.device-row{display:flex;align-items:center;gap:10px;padding:9px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;}
+.device-row .dev-icon{font-size:16px;}
+.device-row .dev-info{flex:1;}
+.device-row .dev-conf{font-size:11px;color:rgba(255,255,255,.4);}
+
+/* Footer */
+.setup-footer{padding:20px 36px 28px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:20px;}
+.setup-hint{font-size:12px;color:rgba(255,255,255,.3);max-width:340px;line-height:1.6;}
+.btn-setup-next{padding:13px 36px;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .25s;}
+.btn-setup-next.primary{background:linear-gradient(135deg,var(--accent),#2563eb);color:#fff;}
+.btn-setup-next.primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(79,142,247,.4);}
+.btn-setup-next.locked{background:rgba(255,255,255,.07);color:rgba(255,255,255,.25);pointer-events:none;}
+.btn-setup-next.danger{background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;}
+.btn-setup-next.danger:hover{transform:translateY(-2px);}
+
+/* Violation TOAST */
+#vio-toast-container{position:fixed;top:72px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;width:300px;}
+.vio-toast{display:flex;align-items:flex-start;gap:12px;border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;pointer-events:auto;animation:toastSlideIn .35s cubic-bezier(.34,1.56,.64,1) forwards;box-shadow:0 4px 24px rgba(0,0,0,.6);}
+.vio-toast.vio-red{background:#1c0a0a;border:1px solid rgba(239,68,68,.55);border-left:4px solid #ef4444;}
+.vio-toast.vio-yellow{background:#1a1200;border:1px solid rgba(245,158,11,.5);border-left:4px solid #f59e0b;}
+.vio-toast.dismissing{animation:toastSlideOut .28s ease forwards;}
+@keyframes toastSlideIn{from{opacity:0;transform:translateX(80px) scale(.9);}to{opacity:1;transform:translateX(0) scale(1);}}
+@keyframes toastSlideOut{from{opacity:1;transform:translateX(0);max-height:100px;}to{opacity:0;transform:translateX(80px);max-height:0;padding:0;}}
+.vio-toast-icon{font-size:20px;flex-shrink:0;margin-top:1px;}
+.vio-toast-body{flex:1;min-width:0;}
+.vio-toast-title{font-size:13px;font-weight:700;margin-bottom:2px;}
+.vio-red .vio-toast-title{color:#fca5a5;}
+.vio-yellow .vio-toast-title{color:#fcd34d;}
+.vio-toast-msg{font-size:11px;color:rgba(255,255,255,.5);line-height:1.45;}
+.vio-toast-x{font-size:14px;color:rgba(255,255,255,.3);cursor:pointer;flex-shrink:0;}
+.vio-toast-x:hover{color:rgba(255,255,255,.7);}
+.vio-toast-timer{position:absolute;bottom:0;left:0;height:3px;border-radius:0 0 12px 12px;animation:timerBar var(--dur,5s) linear forwards;}
+.vio-red .vio-toast-timer{background:rgba(239,68,68,.5);}
+.vio-yellow .vio-toast-timer{background:rgba(245,158,11,.5);}
+@keyframes timerBar{from{width:100%;}to{width:0;}}
+
 </style>
 </head>
 <body>
+
+<!-- VIOLATION TOAST CONTAINER -->
+<div id="vio-toast-container"></div>
+
+<!-- ══ PRE-EXAM SETUP + ROOM SCAN OVERLAY ══════════════════════════════════ -->
+<div class="setup-overlay" id="setup-overlay" style="display:none;">
+  <div class="setup-modal">
+
+    <!-- Step progress -->
+    <div class="setup-steps">
+      <div class="step-item">
+        <div class="step-dot active" id="sdot-1">1</div>
+        <div class="step-label active" id="slbl-1">Rules</div>
+      </div>
+      <div class="step-connector" id="scon-1"></div>
+      <div class="step-item">
+        <div class="step-dot" id="sdot-2">2</div>
+        <div class="step-label" id="slbl-2">Camera</div>
+      </div>
+      <div class="step-connector" id="scon-2"></div>
+      <div class="step-item">
+        <div class="step-dot" id="sdot-3">3</div>
+        <div class="step-label" id="slbl-3">Room Scan</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: Rules Acknowledgement ── -->
+    <div class="setup-panel active" id="step-1">
+      <div class="setup-panel-title">📋 Exam Rules</div>
+      <div class="setup-panel-sub">Read and acknowledge these rules before starting. Violations are recorded and affect your credibility score.</div>
+      <div class="rules-grid">
+        <div class="rule-card ok"><div class="rule-icon">✅</div><div class="rule-text"><strong>Stay on this tab the entire time</strong><span>Tab switches are logged instantly</span></div></div>
+        <div class="rule-card bad"><div class="rule-icon">🚫</div><div class="rule-text"><strong>No other people allowed</strong><span>Multiple faces = immediate violation</span></div></div>
+        <div class="rule-card ok"><div class="rule-icon">✅</div><div class="rule-text"><strong>Keep your face visible at all times</strong><span>3 missed checks (~9s) = violation</span></div></div>
+        <div class="rule-card bad"><div class="rule-icon">🚫</div><div class="rule-text"><strong>No phones, tablets or earphones</strong><span>Device detection is active throughout</span></div></div>
+        <div class="rule-card ok"><div class="rule-icon">✅</div><div class="rule-text"><strong>Stay in fullscreen mode</strong><span>Exiting fullscreen is flagged</span></div></div>
+        <div class="rule-card bad"><div class="rule-icon">🚫</div><div class="rule-text"><strong>No copy/paste</strong><span>Both are blocked and logged</span></div></div>
+        <div class="rule-card info"><div class="rule-icon">⏱️</div><div class="rule-text"><strong>20-second warmup after start</strong><span>No violations logged during this window</span></div></div>
+        <div class="rule-card info"><div class="rule-icon">🔁</div><div class="rule-text"><strong>No retakes unless recruiter assigns one</strong><span>Once submitted, session is locked</span></div></div>
+      </div>
+      <div style="margin-top:18px;padding:14px 18px;background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);border-radius:10px;font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;">
+        By clicking <strong style="color:#fff">I Understand, Continue</strong> you confirm that you have read and understood all rules above.
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Camera & Face Check ── -->
+    <div class="setup-panel" id="step-2">
+      <div class="setup-panel-title">📷 Camera & Lighting Check</div>
+      <div class="setup-panel-sub">Make sure your face is clearly visible before we begin. Adjust your position, lighting, and camera angle now.</div>
+      <div class="cam-check-grid">
+        <div>
+          <div class="cam-preview-wrap">
+            <video id="setup-cam-video" autoplay muted playsinline></video>
+            <div class="cam-face-status warn" id="setup-face-badge">🔄 Checking…</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.3);margin-bottom:10px;">Sitting Tips</div>
+          <div class="rules-grid">
+            <div class="rule-card ok"><div class="rule-icon">💡</div><div class="rule-text"><strong>Face a light source</strong><span>Avoid sitting with a window behind you</span></div></div>
+            <div class="rule-card ok"><div class="rule-icon">👤</div><div class="rule-text"><strong>Camera at eye level</strong><span>Raise your laptop if needed</span></div></div>
+            <div class="rule-card ok"><div class="rule-icon">📏</div><div class="rule-text"><strong>50–80 cm away</strong><span>Not too close, not too far</span></div></div>
+            <div class="rule-card ok"><div class="rule-icon">🧍</div><div class="rule-text"><strong>Sit upright</strong><span>Face forward, shoulders relaxed</span></div></div>
+          </div>
+          <div class="checklist">
+            <div class="chk-item"><div class="chk-ico">📷</div><div class="chk-lbl">Camera working</div><div class="chk-st pending" id="chk-cam">Checking…</div></div>
+            <div class="chk-item"><div class="chk-ico">👤</div><div class="chk-lbl">Face clearly detected</div><div class="chk-st pending" id="chk-face">Waiting…</div></div>
+            <div class="chk-item"><div class="chk-ico">💡</div><div class="chk-lbl">Sufficient lighting</div><div class="chk-st pending" id="chk-light">Checking…</div></div>
+            <div class="chk-item"><div class="chk-ico">🧍</div><div class="chk-lbl">Only one person visible</div><div class="chk-st pending" id="chk-alone">Waiting…</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: 360° Room Scan ── -->
+    <div class="setup-panel" id="step-3">
+      <div class="setup-panel-title">🔍 360° Room Scan</div>
+      <div class="setup-panel-sub">Hold your camera and slowly rotate to show each area of your room. Our system will scan for any electronic devices. <strong style="color:rgba(255,255,255,.7)">This is mandatory.</strong></div>
+      <div class="scan-layout">
+        <div>
+          <div class="scan-cam-wrap" id="scan-cam-wrap">
+            <video id="scan-cam-video" autoplay muted playsinline></video>
+            <div class="scan-overlay-label" id="scan-dir-label">Press Start to begin</div>
+            <div class="scan-flash" id="scan-flash"></div>
+            <div class="scan-countdown-wrap" id="scan-countdown-wrap" style="display:none;">
+              <svg class="scan-ring" width="40" height="40" viewBox="0 0 40 40">
+                <circle class="scan-ring-bg" cx="20" cy="20" r="14"/>
+                <circle class="scan-ring-fill" id="scan-ring-fill" cx="20" cy="20" r="14"/>
+              </svg>
+              <div class="scan-ring-num" id="scan-ring-num">5</div>
+            </div>
+          </div>
+        </div>
+        <div class="scan-directions" id="scan-dirs">
+          <div class="dir-item" id="dir-front">
+            <div class="dir-arrow">👤</div>
+            <div class="dir-body"><div class="dir-title">Face Forward</div><div class="dir-desc">Show your face and immediate surroundings</div></div>
+            <div class="dir-result pending" id="dir-front-result">—</div>
+          </div>
+          <div class="dir-item" id="dir-left">
+            <div class="dir-arrow">⬅️</div>
+            <div class="dir-body"><div class="dir-title">Turn Camera Left</div><div class="dir-desc">Show what's to your left side</div></div>
+            <div class="dir-result pending" id="dir-left-result">—</div>
+          </div>
+          <div class="dir-item" id="dir-right">
+            <div class="dir-arrow">➡️</div>
+            <div class="dir-body"><div class="dir-title">Turn Camera Right</div><div class="dir-desc">Show what's to your right side</div></div>
+            <div class="dir-result pending" id="dir-right-result">—</div>
+          </div>
+          <div class="dir-item" id="dir-desk">
+            <div class="dir-arrow">⬇️</div>
+            <div class="dir-body"><div class="dir-title">Show Your Desk</div><div class="dir-desc">Tilt down to show your desk surface</div></div>
+            <div class="dir-result pending" id="dir-desk-result">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="scan-result-banner" id="scan-banner"></div>
+      <div class="devices-found" id="devices-found"></div>
+      <div id="scan-start-wrap" style="text-align:center;margin-top:18px;">
+        <button id="scan-start-btn" onclick="startRoomScan()" style="padding:13px 36px;background:linear-gradient(135deg,var(--accent),#2563eb);border:none;border-radius:11px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .25s;">▶ Start Room Scan</button>
+      </div>
+    </div>
+
+
+
+    <!-- Footer -->
+    <div class="setup-footer">
+      <div class="setup-hint" id="setup-hint">Please read all rules carefully before continuing.</div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-setup-next primary locked" id="setup-next-btn" onclick="setupNext()">Continue →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <!-- FULLSCREEN GATE -->
 <div class="fs-overlay" id="fs-overlay">
@@ -708,12 +972,43 @@ const FALLBACK_QUESTIONS = {
 async function init() {
   const auth = await fetch('/api/check-auth').then(r=>r.json());
   if (!auth.authenticated) return window.location.href='index.html';
+  // Recruiters/admins must never land on the candidate interview page
+  if (auth.is_admin) return window.location.href='recruiter_dashboard.html';
   currentUser = auth;
   document.getElementById('user-name').textContent = auth.full_name || auth.username;
   await loadRoles();
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('room')) document.getElementById('room-code-input').value = params.get('room').toUpperCase();
   setupViolationMonitors();
+  // Auto-join if room code passed via URL from test.html
+  const params = new URLSearchParams(window.location.search);
+  const roomCode = params.get('room');
+  if (roomCode && roomCode.length >= 6) {
+    await autoJoinByCode(roomCode.toUpperCase());
+  }
+}
+
+async function autoJoinByCode(code) {
+  const inp = document.getElementById('room-code-input');
+  if (inp) inp.value = code;
+  const data = await fetch('/api/join-session/' + code).then(r=>r.json());
+  if (!data.success) {
+    if (data.message === 'already_submitted') return showAlreadySubmitted();
+    // Show a clear error in the UI — wrong room or not their session
+    document.getElementById('mode-selector').innerHTML = `
+      <div style="text-align:center;padding:60px 20px;">
+        <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
+        <h2 style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;margin-bottom:12px;">Cannot Join Session</h2>
+        <p style="color:var(--muted);font-size:14px;max-width:420px;margin:0 auto 24px;line-height:1.7;">
+          ${data.message || 'Session not found or not assigned to your account.'}
+        </p>
+        <button onclick="window.location.href='test.html'" style="padding:12px 28px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
+          ← Back to Dashboard
+        </button>
+      </div>`;
+    return;
+  }
+  sessionData = data.session;
+  if (data.voice_config) sessionData.voice_config = data.voice_config;
+  await showSetupScreen(data);
 }
 
 async function loadRoles() {
@@ -740,15 +1035,400 @@ document.getElementById('fs-btn').addEventListener('click', async () => {
 });
 
 // ── JOIN / START ───────────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  PRE-EXAM SETUP + 360° ROOM SCAN
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let setupStep        = 1;           // current step (1=cam, 2=scan, 3=rules)
+let setupCamStream   = null;        // camera stream shared across setup steps
+let setupFaceOk      = false;       // step 1: face clearly detected
+let scanComplete     = false;       // step 2: all 4 directions scanned
+let scanDevicesFound = [];          // devices flagged during room scan
+let pendingJoinData  = null;        // holds join API response until exam starts
+
+const SCAN_DIRECTIONS = [
+  { id: 'front', label: 'Face Forward',        icon: '👤', desc: 'Look straight at the camera' },
+  { id: 'left',  label: 'Turn Camera Left',    icon: '⬅️', desc: 'Slowly pan to your left'    },
+  { id: 'right', label: 'Turn Camera Right',   icon: '➡️', desc: 'Slowly pan to your right'   },
+  { id: 'desk',  label: 'Show Your Desk',      icon: '⬇️', desc: 'Tilt down to show desk'     },
+];
+let scanDirIndex     = -1;   // which direction we're on (-1 = not started)
+let scanCountTimer   = null;
+let scanAutoInterval = null;
+
+// ── Entry point called from joinOrStart ────────────────────────────────────────
+async function showSetupScreen(joinData) {
+  pendingJoinData = joinData;
+  document.getElementById('setup-overlay').style.display = 'flex';
+  setupStep = 1;
+  renderSetupStep();
+  // Step 1 is Rules — no camera needed yet. Camera starts when user proceeds to step 2.
+  document.getElementById('setup-next-btn').classList.remove('locked');
+  document.getElementById('setup-next-btn').textContent = 'I Understand, Continue →';
+  document.getElementById('setup-hint').textContent = 'Please read all rules carefully before continuing.';
+}
+
+// ── Camera init (shared for step 1 & 2) ───────────────────────────────────────
+async function startSetupCamera() {
+  try {
+    setupCamStream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:false});
+    // Feed into both step 1 and step 2 video elements
+    const v1 = document.getElementById('setup-cam-video');
+    const v2 = document.getElementById('scan-cam-video');
+    if (v1) v1.srcObject = setupCamStream;
+    if (v2) v2.srcObject = setupCamStream;
+    document.getElementById('chk-cam').textContent = '✓ Working';
+    document.getElementById('chk-cam').className   = 'chk-st ok';
+    // Start polling face check
+    startSetupFacePoll();
+  } catch(e) {
+    document.getElementById('chk-cam').textContent = '✗ Denied';
+    document.getElementById('chk-cam').className   = 'chk-st bad';
+    document.getElementById('setup-face-badge').textContent = '❌ Camera denied';
+    document.getElementById('setup-face-badge').className   = 'cam-face-status bad';
+  }
+}
+
+// ── Step 1: Live face check polling ───────────────────────────────────────────
+let facePollTimer = null;
+function startSetupFacePoll() {
+  clearInterval(facePollTimer);
+  facePollTimer = setInterval(runSetupFaceCheck, 1800);
+  setTimeout(runSetupFaceCheck, 600);
+}
+
+async function runSetupFaceCheck() {
+  if (setupStep !== 2) return;
+  const video = document.getElementById('setup-cam-video');
+  if (!video || !video.videoWidth) return;
+
+  // Brightness check
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+  const px = ctx.getImageData(0, 0, c.width, c.height).data;
+  let bright = 0;
+  for (let i = 0; i < px.length; i += 4) bright += (px[i]+px[i+1]+px[i+2])/3;
+  bright /= px.length / 4;
+  const goodLight = bright > 38;
+  const el_light  = document.getElementById('chk-light');
+  el_light.textContent = goodLight ? '✓ Good' : '✗ Too dark — add more light';
+  el_light.className   = 'chk-st ' + (goodLight ? 'ok' : 'bad');
+
+  // Face detection via backend
+  const img = c.toDataURL('image/jpeg', 0.7);
+  try {
+    const res = await fetch('/detect-face', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image: img, session_id: null})
+    }).then(r=>r.json());
+
+    const badge  = document.getElementById('setup-face-badge');
+    const chkF   = document.getElementById('chk-face');
+    const chkA   = document.getElementById('chk-alone');
+
+    if (res.face_detected) {
+      setupFaceOk = true;
+      badge.textContent = '✅ Face detected!';
+      badge.className   = 'cam-face-status ok';
+      chkF.textContent  = '✓ Detected'; chkF.className = 'chk-st ok';
+      chkA.textContent  = '✓ Only you'; chkA.className = 'chk-st ok';
+    } else if (res.num_faces > 1) {
+      setupFaceOk = false;
+      badge.textContent = '⚠️ Multiple faces!';
+      badge.className   = 'cam-face-status bad';
+      chkF.textContent  = '✗ Multiple'; chkF.className = 'chk-st bad';
+      chkA.textContent  = '✗ Others visible'; chkA.className = 'chk-st bad';
+    } else {
+      setupFaceOk = false;
+      badge.textContent = '👤 Adjust position…';
+      badge.className   = 'cam-face-status warn';
+      chkF.textContent  = '✗ Not detected'; chkF.className = 'chk-st bad';
+      chkA.textContent  = 'Waiting…';       chkA.className = 'chk-st pending';
+    }
+
+    // Unlock next button when face + light are good
+    const ready = setupFaceOk && goodLight;
+    const btn   = document.getElementById('setup-next-btn');
+    if (ready) {
+      btn.classList.remove('locked');
+      document.getElementById('setup-hint').textContent = 'Looking good! Click Continue to proceed to the 360° room scan.';
+    } else {
+      btn.classList.add('locked');
+      document.getElementById('setup-hint').textContent = setupFaceOk
+        ? 'Add more light to your room to continue.'
+        : 'Position your face clearly in the camera to continue.';
+    }
+  } catch(e) {}
+}
+
+// ── Step navigation ────────────────────────────────────────────────────────────
+function renderSetupStep() {
+  [1,2,3].forEach(n => {
+    document.getElementById('step-'+n).classList.toggle('active', n === setupStep);
+    const dot = document.getElementById('sdot-'+n);
+    const lbl = document.getElementById('slbl-'+n);
+    if (n < setupStep)       { dot.classList.add('done'); dot.classList.remove('active'); dot.textContent='✓'; lbl.classList.add('done'); lbl.classList.remove('active'); }
+    else if (n === setupStep){ dot.classList.add('active'); dot.classList.remove('done'); dot.textContent=n; lbl.classList.add('active'); lbl.classList.remove('done'); }
+    else                     { dot.classList.remove('active','done'); dot.textContent=n; lbl.classList.remove('active','done'); }
+    if (n < 3) {
+      const con = document.getElementById('scon-'+n);
+      con.classList.toggle('done', n < setupStep);
+    }
+  });
+}
+
+function setupNext() {
+  const btn = document.getElementById('setup-next-btn');
+  if (btn.classList.contains('locked')) return;
+  if (setupStep === 1) {
+    // Rules → Camera
+    setupStep = 2;
+    renderSetupStep();
+    btn.classList.add('locked');
+    btn.textContent = 'Continue →';
+    document.getElementById('setup-hint').textContent = 'Your face must be clearly detected before continuing.';
+    // Now start the camera
+    startSetupCamera();
+  } else if (setupStep === 2) {
+    // Camera → Room Scan
+    setupStep = 3;
+    renderSetupStep();
+    setStep2UI();
+    document.getElementById('setup-hint').textContent = 'Click "Start Room Scan" to begin the 360° scan.';
+    btn.classList.add('locked');
+    btn.textContent = 'Begin Interview →';
+  } else if (setupStep === 3) {
+    beginExam();
+  }
+}
+
+// ── Step 3: Room Scan ──────────────────────────────────────────────────────────
+function setStep2UI() {
+  clearInterval(facePollTimer); // Stop face polling when entering room scan
+  // Reset direction items
+  SCAN_DIRECTIONS.forEach(d => {
+    const el = document.getElementById('dir-'+d.id);
+    el.className = 'dir-item';
+    document.getElementById('dir-'+d.id+'-result').textContent = '—';
+    document.getElementById('dir-'+d.id+'-result').className   = 'dir-result pending';
+  });
+  document.getElementById('scan-banner').style.display = 'none';
+  document.getElementById('devices-found').innerHTML   = '';
+  scanDirIndex     = -1;
+  scanComplete     = false;
+  scanDevicesFound = [];
+  document.getElementById('scan-dir-label').textContent = 'Press Start Scan below';
+  document.getElementById('scan-countdown-wrap').style.display = 'none';
+  // Show the start scan button again
+  const startWrap = document.getElementById('scan-start-wrap');
+  if (startWrap) startWrap.style.display = 'block';
+}
+
+async function startRoomScan() {
+  // Hide the start button
+  const startWrap = document.getElementById('scan-start-wrap');
+  if (startWrap) startWrap.style.display = 'none';
+  document.getElementById('setup-hint').textContent = 'Scanning in progress…';
+  scanDirIndex = 0;
+  await runNextScanDirection();
+}
+
+async function runNextScanDirection() {
+  if (scanDirIndex >= SCAN_DIRECTIONS.length) {
+    finishRoomScan();
+    return;
+  }
+  const dir = SCAN_DIRECTIONS[scanDirIndex];
+
+  // Mark current as active
+  SCAN_DIRECTIONS.forEach((d,i) => {
+    document.getElementById('dir-'+d.id).className = i === scanDirIndex ? 'dir-item active' : 'dir-item';
+  });
+
+  // Update label
+  document.getElementById('scan-dir-label').textContent = dir.icon + ' ' + dir.label;
+  document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap scanning';
+
+  // Show countdown (5 seconds for user to position)
+  await runScanCountdown(5, dir);
+}
+
+function runScanCountdown(seconds, dir) {
+  return new Promise(resolve => {
+    let remaining = seconds;
+    const numEl  = document.getElementById('scan-ring-num');
+    const fillEl = document.getElementById('scan-ring-fill');
+    const wrap   = document.getElementById('scan-countdown-wrap');
+    const circumference = 88; // 2π×14
+
+    wrap.style.display = 'block';
+    numEl.textContent   = remaining;
+    fillEl.style.strokeDashoffset = circumference;
+
+    const tick = setInterval(async () => {
+      remaining--;
+      numEl.textContent = remaining;
+      fillEl.style.strokeDashoffset = circumference * (remaining / seconds);
+
+      if (remaining <= 0) {
+        clearInterval(tick);
+        wrap.style.display = 'none';
+        // Capture frame and analyse
+        await captureAndAnalyseScan(dir);
+        resolve();
+      }
+    }, 1000);
+  });
+}
+
+async function captureAndAnalyseScan(dir) {
+  // Flash effect
+  const flash = document.getElementById('scan-flash');
+  flash.classList.add('flash');
+  setTimeout(() => flash.classList.remove('flash'), 300);
+
+  const video = document.getElementById('scan-cam-video');
+  if (!video || !video.videoWidth) {
+    markDirResult(dir.id, false, null);
+    proceedScan();
+    return;
+  }
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video, 0, 0);
+  const img = c.toDataURL('image/jpeg', 0.75);
+
+  try {
+    const res = await fetch('/detect-device', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image: img, session_id: null})
+    }).then(r=>r.json());
+
+    const deviceFound = res.success && res.phone_detected;
+    markDirResult(dir.id, deviceFound, res.device_type, res.confidence);
+
+    if (deviceFound) {
+      scanDevicesFound.push({
+        direction: dir.label,
+        device_type: res.device_type,
+        confidence: res.confidence
+      });
+    }
+  } catch(e) {
+    markDirResult(dir.id, false, null);
+  }
+
+  proceedScan();
+}
+
+function markDirResult(dirId, flagged, deviceType, confidence) {
+  const el  = document.getElementById('dir-'+dirId);
+  const res = document.getElementById('dir-'+dirId+'-result');
+  if (flagged) {
+    el.className      = 'dir-item done-warn';
+    const icons = {phone:'📱',tablet:'📟',laptop:'💻',earphones:'🎧',bluetooth_earpiece:'🎧'};
+    const lbl   = deviceType ? (deviceType.replace(/_/g,' ')) : 'device';
+    res.textContent   = (icons[deviceType]||'⚠️') + ' ' + lbl + ' found';
+    res.className     = 'dir-result warn';
+    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap bad';
+  } else {
+    el.className      = 'dir-item done-ok';
+    res.textContent   = '✓ Clear';
+    res.className     = 'dir-result ok';
+    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap ok';
+  }
+}
+
+function proceedScan() {
+  scanDirIndex++;
+  setTimeout(runNextScanDirection, 800);
+}
+
+function finishRoomScan() {
+  scanComplete = true;
+  const banner  = document.getElementById('scan-banner');
+  const devList = document.getElementById('devices-found');
+
+  if (scanDevicesFound.length === 0) {
+    banner.textContent = `✅ Room scan complete — no devices detected. You're good to proceed!`;
+    banner.className   = 'scan-result-banner clear';
+    banner.style.display = 'block';
+    document.getElementById('setup-next-btn').classList.remove('locked');
+    document.getElementById('setup-hint').textContent = 'All clear! Click Begin Interview to start.';
+    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap ok';
+  } else {
+    banner.innerHTML   = `⚠️ <strong>${scanDevicesFound.length} device(s) detected</strong> during room scan. Please remove them before continuing.`;
+    banner.className   = 'scan-result-banner flagged';
+    banner.style.display = 'block';
+    devList.innerHTML  = scanDevicesFound.map(d => {
+      const icons = {phone:'📱',tablet:'📟',laptop:'💻',earphones:'🎧',bluetooth_earpiece:'🎧'};
+      return `<div class="device-row">
+        <div class="dev-icon">${icons[d.device_type]||'⚠️'}</div>
+        <div class="dev-info"><strong>${(d.device_type||'device').replace(/_/g,' ')}</strong> — seen during "${d.direction}"</div>
+        <div class="dev-conf">${Math.round((d.confidence||0)*100)}% confidence</div>
+      </div>`;
+    }).join('');
+    // Still allow continue — we flag it but don't block (recruiter will see it)
+    document.getElementById('setup-next-btn').classList.remove('locked');
+    document.getElementById('setup-next-btn').className = 'btn-setup-next danger';
+    document.getElementById('setup-hint').textContent = '⚠️ Devices found. Remove them, then continue.';
+    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap bad';
+  }
+}
+
+// ── Step 3: Begin exam ────────────────────────────────────────────────────────
+function beginExam() {
+  clearInterval(facePollTimer);
+  if (setupCamStream) { setupCamStream.getTracks().forEach(t=>t.stop()); setupCamStream=null; }
+  document.getElementById('setup-overlay').style.display = 'none';
+  // Log any devices found during scan as pre-exam violations
+  if (scanDevicesFound.length > 0) {
+    scanDevicesFound.forEach(d => {
+      fetch('/log-violation', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          violation_type: 'device_detected_pre_exam',
+          session_id: sessionData?.id,
+          device_data: d
+        })
+      });
+    });
+  }
+  startSession(pendingJoinData);
+  initCamera();
+}
+
+// ── Patch joinOrStart to show setup screen ─────────────────────────────────────
+
+function showAlreadySubmitted() {
+  document.getElementById('mode-selector').innerHTML = `
+    <div style="text-align:center;padding:60px 20px;">
+      <div style="font-size:64px;margin-bottom:16px;">🔒</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:800;margin-bottom:12px;">Interview Already Submitted</h2>
+      <p style="color:var(--muted);font-size:14px;max-width:400px;margin:0 auto;line-height:1.7;">
+        Your recruiter is reviewing your performance.<br>
+        Retakes are only possible if your recruiter assigns a new session.
+      </p>
+    </div>`;
+}
+
 async function joinOrStart() {
   const code = document.getElementById('room-code-input').value.trim().toUpperCase();
   const role = document.getElementById('role-select').value;
 
   if (code.length >= 6) {
     const data = await fetch(`/api/join-session/${code}`).then(r=>r.json());
-    if (!data.success) return alert(data.message || 'Session not found');
+    if (!data.success) {
+      if (data.message === 'already_submitted') return showAlreadySubmitted();
+      return alert(data.message || 'Session not found');
+    }
     sessionData = data.session;
-    startSession(data);
+    if (data.voice_config) sessionData.voice_config = data.voice_config;
+    await showSetupScreen(data);
   } else {
     if (!role) return alert('Please select a job role');
     const data = await fetch('/api/create-session', {
@@ -758,7 +1438,8 @@ async function joinOrStart() {
     if (!data.success) return alert(data.message || 'Error creating session');
     sessionData = data.session;
     const joined = await fetch(`/api/join-session/${data.room_code}`).then(r=>r.json());
-    startSession(joined);
+    if (joined.voice_config) sessionData.voice_config = joined.voice_config;
+    await showSetupScreen(joined);
   }
 }
 
@@ -768,6 +1449,8 @@ function startSession(data) {
   examStarted = true;
   examStartTime = Date.now();
   fetch(`/api/start-session/${sessionData.id}`, {method:'POST'});
+  // Start device detection only now — exam has begun
+  setTimeout(() => { setInterval(runDeviceCheck, 6000); }, 3000);
 
   if (sessionData.mode === 'mcq') {
     mcqQuestions = data.questions || [];
@@ -796,10 +1479,12 @@ async function initCamera() {
   }
 }
 
+let proctoringWarmup = true;
 function startProctoring() {
+  setTimeout(() => { proctoringWarmup = false; }, 20000);
   setInterval(runFaceCheck, 3000);
   setInterval(runGazeCheck, 4000);
-  setInterval(runDeviceCheck, 6000);
+  // Device detection is started separately in startSession() after exam begins
   setInterval(updateScore, 5000);
 }
 
@@ -812,16 +1497,32 @@ async function captureFrame() {
   return canvas.toDataURL('image/jpeg', 0.7);
 }
 
+let faceMissStreak = 0;
+const FACE_MISS_THRESHOLD = 3;
 async function runFaceCheck() {
   const img = await captureFrame(); if (!img) return;
   const res = await fetch('/detect-face', {method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
   if (!res) return;
-  if (res.face_detected) setStatus('face-status','ok','✅ Face detected');
-  else if (res.num_faces===0) setStatus('face-status','warn','⚠️ No face visible');
-  else setStatus('face-status','bad','🚫 Multiple faces');
+  if (res.face_detected) {
+    faceMissStreak = 0;
+    setStatus('face-status','ok','✅ Face detected');
+  } else if (res.num_faces > 1) {
+    faceMissStreak = 0;
+    logVio('multiple_faces');
+    setStatus('face-status','bad','🚫 Multiple faces detected!');
+  } else {
+    faceMissStreak++;
+    if (faceMissStreak === FACE_MISS_THRESHOLD) logVio('no_face');
+    const lbl = faceMissStreak >= FACE_MISS_THRESHOLD
+      ? '⚠️ Face not visible — re-centre yourself'
+      : `👤 Face unclear… (${faceMissStreak}/${FACE_MISS_THRESHOLD})`;
+    setStatus('face-status', faceMissStreak >= FACE_MISS_THRESHOLD ? 'bad' : 'warn', lbl);
+  }
 }
 
+let gazeStreak = 0;
+const GAZE_THRESHOLD = 3;
 async function runGazeCheck() {
   const img = await captureFrame(); if (!img) return;
   const res = await fetch('/analyze-gaze', {method:'POST',headers:{'Content-Type':'application/json'},
@@ -829,10 +1530,11 @@ async function runGazeCheck() {
   if (!res?.success) return;
   const g = res.gaze;
   if (g.looking_away) {
-    gazeAlerts++;
-    document.getElementById('gaze-count').textContent = gazeAlerts;
-    setStatus('gaze-status','bad',`👁️ Looking ${g.direction}`);
-} else {
+    gazeStreak++;
+    if (gazeStreak === GAZE_THRESHOLD) { gazeAlerts++; document.getElementById('gaze-count').textContent = gazeAlerts; showVioToast('gaze_away'); }
+    setStatus('gaze-status','bad',`👁️ Looking ${g.direction} — face the screen`);
+  } else {
+    gazeStreak = 0;
     setStatus('gaze-status','ok','👁️ Gaze: On screen');
   }
 }
@@ -843,9 +1545,13 @@ async function runDeviceCheck() {
     body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
   if (!res) return;
   if (res.phone_detected) {
-    setStatus('device-status','bad',`📱 Phone detected! (${Math.round(res.confidence*100)}%)`);
-} else {
-    setStatus('device-status','ok','📱 No device detected');
+    const icon  = DEVICE_TYPE_ICONS[res.device_type] || '⚠️';
+    const label = DEVICE_TYPE_NAMES[res.device_type] || (res.device_type||'Device');
+    setStatus('device-status','bad',`${icon} ${label} detected! (${Math.round(res.confidence*100)}%)`);
+    showVioToast('device_detected', res.device_type);
+    logVio('device_detected');
+  } else {
+    setStatus('device-status','ok','✅ No devices detected');
   }
 }
 
@@ -866,8 +1572,54 @@ function setStatus(id, type, text) {
   el.textContent = text;
 }
 
+
+// ── VIOLATION TOASTS ───────────────────────────────────────────────────────────
+const VIO_CFG = {
+  no_face:           {icon:'👤', title:'Face Not Detected',           msg:'Re-centre yourself in front of the camera.',    sev:'red'},
+  multiple_faces:    {icon:'👥', title:'Multiple Faces Detected',     msg:'Only you must be visible on camera.',           sev:'red'},
+  gaze_away:         {icon:'👁️', title:'Looking Away',               msg:'Keep your eyes on the screen.',                 sev:'yellow'},
+  tab_switch:        {icon:'🔀', title:'Tab Switch Detected',         msg:'Do not leave the exam window.',                 sev:'red'},
+  exit_fullscreen:   {icon:'⛶',  title:'Fullscreen Exited',           msg:'Stay in fullscreen for the entire exam.',       sev:'red'},
+  right_click:       {icon:'🖱️', title:'Right Click Blocked',         msg:'Right-clicking is not allowed.',               sev:'yellow'},
+  copy_attempt:      {icon:'📋', title:'Copy Attempt',                msg:'Copying is disabled during the exam.',          sev:'yellow'},
+  paste_attempt:     {icon:'📋', title:'Paste Attempt',               msg:'Pasting is disabled during the exam.',          sev:'yellow'},
+  devtools:          {icon:'🔧', title:'DevTools Detected',           msg:'Developer tools are not allowed.',              sev:'red'},
+  screenshot_attempt:{icon:'📸', title:'Screenshot Attempt',          msg:'Screenshots are not allowed.',                  sev:'red'},
+  camera_denied:     {icon:'📷', title:'Camera Denied',               msg:'Camera access is required for proctoring.',     sev:'red'},
+  device_detected:   {icon:'⚠️', title:'Device Detected',             msg:'An electronic device was detected.',            sev:'red'},
+};
+const DEVICE_TYPE_ICONS = {phone:'📱',tablet:'📟',laptop:'💻',earphones:'🎧',bluetooth_earpiece:'🎧'};
+const DEVICE_TYPE_NAMES = {phone:'Phone',tablet:'Tablet',laptop:'Laptop / Screen',earphones:'Earphones',bluetooth_earpiece:'Bluetooth Earpiece'};
+
+function showVioToast(type, deviceType) {
+  let cfg = VIO_CFG[type] || {icon:'⚠️', title:type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()), msg:'Violation recorded.', sev:'red'};
+  if ((type === 'device_detected') && deviceType && DEVICE_TYPE_NAMES[deviceType]) {
+    cfg = {...cfg, icon: DEVICE_TYPE_ICONS[deviceType], title: DEVICE_TYPE_NAMES[deviceType] + ' Detected'};
+  }
+  const dur = 5000;
+  const container = document.getElementById('vio-toast-container');
+  if (!container) return;
+  const existing = container.querySelectorAll('.vio-toast');
+  if (existing.length >= 5) existing[0].remove();
+  const el = document.createElement('div');
+  el.className = 'vio-toast vio-' + (cfg.sev||'red');
+  el.innerHTML = `<div class="vio-toast-icon">${cfg.icon}</div>
+    <div class="vio-toast-body"><div class="vio-toast-title">⚠️ ${cfg.title}</div><div class="vio-toast-msg">${cfg.msg}</div></div>
+    <div class="vio-toast-x" onclick="dismissToast(this.parentElement)">✕</div>
+    <div class="vio-toast-timer" style="--dur:${dur}ms"></div>`;
+  container.appendChild(el);
+  setTimeout(() => dismissToast(el), dur);
+}
+function dismissToast(el) {
+  if (!el||el.classList.contains('dismissing')) return;
+  el.classList.add('dismissing');
+  setTimeout(() => el.remove(), 300);
+}
+
 function logVio(type) {
+  if (typeof proctoringWarmup!=='undefined'&&proctoringWarmup) return;
   violations++;
+  showVioToast(type);
   fetch('/log-violation',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({violation_type:type,session_id:sessionData?.id})});
   const log = document.getElementById('vio-log');
@@ -1022,37 +1774,20 @@ function typeQuestion(q) {
       document.getElementById('send-btn').disabled = false;
       document.getElementById('ai-answer').focus();
 
-      // Speak the question out loud
+      // Speak the question out loud using configured voice
       if ('speechSynthesis' in window) {
         speechSynthesis.cancel();
+        const cfg = getVoiceConfig();
         const utt = new SpeechSynthesisUtterance(qtext);
-        utt.rate = 0.92;
-        utt.pitch = 1.05;
+        utt.rate   = cfg.speed;
+        utt.pitch  = cfg.pitch;
         utt.volume = 1;
-        // Use Indian English female voice
+        utt.lang   = cfg.accent;
         const voices = speechSynthesis.getVoices();
-        const preferred = voices.find(v =>
-          (v.lang === 'en-IN' && v.name.toLowerCase().includes('female')) ||
-          v.name.includes('Google हिन्दी') ||
-          (v.lang === 'en-IN') ||
-          v.name.includes('Veena') ||
-          v.name.includes('Raveena') ||
-          v.name.includes('Heera') ||
-          (v.name.toLowerCase().includes('google') && v.lang.startsWith('en') && v.name.toLowerCase().includes('india'))
-        );
-        if (preferred) {
-          utt.voice = preferred;
-        } else {
-          // Fallback: pick any female-sounding voice and simulate Indian accent via lang
-          utt.lang = 'en-IN';
-          const fallback = voices.find(v => v.lang === 'en-IN') ||
-                           voices.find(v => v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Moira'));
-          if (fallback) utt.voice = fallback;
-        }
-        utt.pitch = 1.15;
-        utt.rate = 0.88;
+        const picked = pickVoiceForConfig(voices, cfg);
+        if (picked) utt.voice = picked;
         utt.onstart = () => setAvatarSpeaking(true);
-        utt.onend = () => setAvatarSpeaking(false);
+        utt.onend   = () => setAvatarSpeaking(false);
         utt.onerror = () => setAvatarSpeaking(false);
         speechSynthesis.speak(utt);
       }
@@ -1371,10 +2106,67 @@ function setupViolationMonitors() {
   });
   }
 
-// Load voices after page ready (needed for some browsers)
-if ('speechSynthesis' in window) {
-  speechSynthesis.getVoices();
-  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+// ── VOICE CONFIG ───────────────────────────────────────────────────────────────
+// Default voice settings (used if recruiter didn't configure or for non-AI modes)
+const DEFAULT_VOICE_CFG = {
+  gender: 'female',
+  accent: 'en-IN',
+  tone: 'professional',
+  speed: 0.90,
+  pitch: 1.05
+};
+
+// Tone → speech parameter adjustments
+const TONE_PARAMS = {
+  professional: {speedMod: 0,     pitchMod: 0},
+  friendly:     {speedMod: 0.10,  pitchMod: 0.10},
+  formal:       {speedMod: -0.08, pitchMod: -0.10},
+  energetic:    {speedMod: 0.25,  pitchMod: 0.15},
+  calm:         {speedMod: -0.12, pitchMod: -0.07}
+};
+
+function getVoiceConfig() {
+  // Read from localStorage (set by recruiter dashboard when creating session)
+  const roomCode = new URLSearchParams(window.location.search).get('room') || '';
+  let cfg = { ...DEFAULT_VOICE_CFG };
+  try {
+    const stored = localStorage.getItem('voice_cfg_' + roomCode);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      cfg = { ...DEFAULT_VOICE_CFG, ...parsed };
+    }
+  } catch(e) {}
+  // Apply tone modifiers on top of base speed/pitch
+  const toneMod = TONE_PARAMS[cfg.tone] || TONE_PARAMS.professional;
+  cfg.speed = Math.max(0.5, Math.min(1.8, cfg.speed + toneMod.speedMod));
+  cfg.pitch = Math.max(0.5, Math.min(2.0, cfg.pitch + toneMod.pitchMod));
+  return cfg;
+}
+
+function pickVoiceForConfig(voices, cfg) {
+  const femaleName = /zira|female|samantha|victoria|karen|moira|fiona|alice|kate|susan|catherine|heera|veena|raveena|aria|jenny|sonia|ava|nicky/i;
+  const maleName   = /david|mark|daniel|james|richard|ryan|tom|guy|lee|rishi|george|fred|william/i;
+
+  // 1. Try exact lang match
+  let pool = voices.filter(v => v.lang === cfg.accent);
+  // 2. Try language family (en-IN → en-*)
+  if (!pool.length) pool = voices.filter(v => v.lang.startsWith(cfg.accent.split('-')[0]));
+  // 3. Fallback: all voices
+  if (!pool.length) pool = voices;
+  if (!pool.length) return null;
+
+  if (cfg.gender === 'female') {
+    // Prefer named female voice, then any from pool
+    return pool.find(v => femaleName.test(v.name))
+        || pool.find(v => !maleName.test(v.name))
+        || pool[0];
+  }
+  if (cfg.gender === 'male') {
+    return pool.find(v => maleName.test(v.name))
+        || pool[pool.length - 1];
+  }
+  // neutral
+  return pool[0];
 }
 
 init();

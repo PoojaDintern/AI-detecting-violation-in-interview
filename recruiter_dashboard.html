@@ -283,6 +283,96 @@ body::before {
           </div>
         </div>
 
+        <!-- AI VOICE CONFIGURATION -->
+        <div id="ai-voice-config" style="display:none;margin-bottom:24px;">
+          <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <span>🎙️</span> AI Interviewer Voice Settings
+          </div>
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:20px;">
+
+            <!-- Gender Row -->
+            <div style="margin-bottom:18px;">
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:10px;">Voice Gender</div>
+              <div style="display:flex;gap:10px;">
+                <div class="voice-opt-card selected" id="vgender-female" onclick="setVoiceGender('female')" style="flex:1;padding:14px;border:2px solid var(--accent);border-radius:11px;cursor:pointer;text-align:center;background:rgba(79,142,247,.08);transition:all .2s;">
+                  <div style="font-size:26px;margin-bottom:4px;">👩</div>
+                  <div style="font-size:13px;font-weight:600;">Female</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">Warm & professional</div>
+                </div>
+                <div class="voice-opt-card" id="vgender-male" onclick="setVoiceGender('male')" style="flex:1;padding:14px;border:2px solid var(--border);border-radius:11px;cursor:pointer;text-align:center;background:transparent;transition:all .2s;">
+                  <div style="font-size:26px;margin-bottom:4px;">👨</div>
+                  <div style="font-size:13px;font-weight:600;">Male</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">Deep & authoritative</div>
+                </div>
+                <div class="voice-opt-card" id="vgender-neutral" onclick="setVoiceGender('neutral')" style="flex:1;padding:14px;border:2px solid var(--border);border-radius:11px;cursor:pointer;text-align:center;background:transparent;transition:all .2s;">
+                  <div style="font-size:26px;margin-bottom:4px;">🤖</div>
+                  <div style="font-size:13px;font-weight:600;">Neutral</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">System default</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accent Row -->
+            <div style="margin-bottom:18px;">
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:10px;">Accent / Language</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+                <div class="accent-chip selected" id="vaccent-en-IN" onclick="setAccent('en-IN','🇮🇳 Indian')" style="padding:9px 10px;border:2px solid var(--accent);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;background:rgba(79,142,247,.08);transition:all .2s;">🇮🇳 Indian</div>
+                <div class="accent-chip" id="vaccent-en-US" onclick="setAccent('en-US','🇺🇸 American')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇺🇸 American</div>
+                <div class="accent-chip" id="vaccent-en-GB" onclick="setAccent('en-GB','🇬🇧 British')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇬🇧 British</div>
+                <div class="accent-chip" id="vaccent-en-AU" onclick="setAccent('en-AU','🇦🇺 Australian')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇦🇺 Australian</div>
+                <div class="accent-chip" id="vaccent-en-CA" onclick="setAccent('en-CA','🇨🇦 Canadian')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇨🇦 Canadian</div>
+                <div class="accent-chip" id="vaccent-en-ZA" onclick="setAccent('en-ZA','🇿🇦 S. African')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇿🇦 S. African</div>
+                <div class="accent-chip" id="vaccent-en-NZ" onclick="setAccent('en-NZ','🇳🇿 NZ Eng')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇳🇿 NZ Eng</div>
+                <div class="accent-chip" id="vaccent-en-SG" onclick="setAccent('en-SG','🇸🇬 Singaporean')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇸🇬 Singaporean</div>
+              </div>
+            </div>
+
+            <!-- Tone Row -->
+            <div style="margin-bottom:18px;">
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:10px;">Interview Tone</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <div class="tone-chip selected" id="vtone-professional" onclick="setTone('professional','Professional')" style="padding:8px 16px;border:2px solid var(--accent);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;background:rgba(79,142,247,.08);transition:all .2s;">💼 Professional</div>
+                <div class="tone-chip" id="vtone-friendly" onclick="setTone('friendly','Friendly')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">😊 Friendly</div>
+                <div class="tone-chip" id="vtone-formal" onclick="setTone('formal','Formal')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">🎩 Formal</div>
+                <div class="tone-chip" id="vtone-energetic" onclick="setTone('energetic','Energetic')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">⚡ Energetic</div>
+                <div class="tone-chip" id="vtone-calm" onclick="setTone('calm','Calm')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">🌿 Calm</div>
+              </div>
+            </div>
+
+            <!-- Speed & Pitch Sliders -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                  <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Speaking Speed</div>
+                  <div style="font-size:12px;color:var(--accent2);font-weight:700;" id="speed-val">Normal (0.9x)</div>
+                </div>
+                <input type="range" id="voice-speed" min="0.5" max="1.5" step="0.1" value="0.9"
+                  oninput="updateSpeedLabel(this.value)"
+                  style="width:100%;accent-color:var(--accent);cursor:pointer;">
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;"><span>Slow</span><span>Normal</span><span>Fast</span></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                  <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Voice Pitch</div>
+                  <div style="font-size:12px;color:var(--accent2);font-weight:700;" id="pitch-val">Normal (1.05)</div>
+                </div>
+                <input type="range" id="voice-pitch" min="0.5" max="2.0" step="0.05" value="1.05"
+                  oninput="updatePitchLabel(this.value)"
+                  style="width:100%;accent-color:var(--accent);cursor:pointer;">
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;"><span>Deep</span><span>Normal</span><span>High</span></div>
+              </div>
+            </div>
+
+            <!-- Preview Button -->
+            <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+              <button onclick="previewVoice()" style="padding:9px 20px;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(79,142,247,.2)'" onmouseout="this.style.background='rgba(79,142,247,.12)'">
+                🔊 Preview Voice
+              </button>
+              <div style="font-size:12px;color:var(--muted);" id="voice-preview-status"></div>
+            </div>
+          </div>
+        </div>
+
         <button class="btn-primary" onclick="createSession()">🚀 Create Session &amp; Get Room Code</button>
         <div id="session-result" style="display:none;margin-top:20px;padding:20px;background:var(--s2);border-radius:12px;border:1px solid var(--border);">
           <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Room Code (share with candidate):</div>
@@ -423,28 +513,152 @@ function scoreColor(s) {
   return '#f43f5e';
 }
 
+// ── VOICE CONFIG STATE ─────────────────────────────────────────────────────────
+let voiceConfig = {
+  gender: 'female',
+  accent: 'en-IN',
+  accentLabel: '🇮🇳 Indian',
+  tone: 'professional',
+  toneLabel: 'Professional',
+  speed: 0.9,
+  pitch: 1.05
+};
+
 function selectMode(mode) {
   selectedMode = mode;
   document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('mode-' + mode).classList.add('selected');
+  // Show voice config only for AI Interview mode
+  document.getElementById('ai-voice-config').style.display =
+    mode === 'ai_interview' ? 'block' : 'none';
+}
+
+function setVoiceGender(gender) {
+  voiceConfig.gender = gender;
+  document.querySelectorAll('.voice-opt-card').forEach(el => {
+    el.style.border = '2px solid var(--border)';
+    el.style.background = 'transparent';
+  });
+  const sel = document.getElementById('vgender-' + gender);
+  sel.style.border = '2px solid var(--accent)';
+  sel.style.background = 'rgba(79,142,247,.08)';
+}
+
+function setAccent(lang, label) {
+  voiceConfig.accent = lang;
+  voiceConfig.accentLabel = label;
+  document.querySelectorAll('.accent-chip').forEach(el => {
+    el.style.border = '2px solid var(--border)';
+    el.style.background = 'transparent';
+  });
+  const sel = document.getElementById('vaccent-' + lang);
+  if (sel) { sel.style.border = '2px solid var(--accent)'; sel.style.background = 'rgba(79,142,247,.08)'; }
+}
+
+function setTone(tone, label) {
+  voiceConfig.tone = tone;
+  voiceConfig.toneLabel = label;
+  document.querySelectorAll('.tone-chip').forEach(el => {
+    el.style.border = '2px solid var(--border)';
+    el.style.background = 'transparent';
+  });
+  const sel = document.getElementById('vtone-' + tone);
+  if (sel) { sel.style.border = '2px solid var(--accent)'; sel.style.background = 'rgba(79,142,247,.08)'; }
+  // Adjust speed/pitch defaults based on tone
+  const tonePresets = {
+    professional: {speed: 0.90, pitch: 1.05},
+    friendly:     {speed: 1.00, pitch: 1.15},
+    formal:       {speed: 0.82, pitch: 0.95},
+    energetic:    {speed: 1.15, pitch: 1.20},
+    calm:         {speed: 0.78, pitch: 0.98}
+  };
+  if (tonePresets[tone]) {
+    const p = tonePresets[tone];
+    document.getElementById('voice-speed').value = p.speed;
+    document.getElementById('voice-pitch').value = p.pitch;
+    updateSpeedLabel(p.speed);
+    updatePitchLabel(p.pitch);
+  }
+}
+
+function updateSpeedLabel(val) {
+  voiceConfig.speed = parseFloat(val);
+  const label = val < 0.75 ? 'Slow' : val < 0.95 ? 'Normal' : val < 1.2 ? 'Fast' : 'Very Fast';
+  document.getElementById('speed-val').textContent = `${label} (${parseFloat(val).toFixed(1)}x)`;
+}
+
+function updatePitchLabel(val) {
+  voiceConfig.pitch = parseFloat(val);
+  const label = val < 0.85 ? 'Deep' : val < 1.15 ? 'Normal' : val < 1.6 ? 'High' : 'Very High';
+  document.getElementById('pitch-val').textContent = `${label} (${parseFloat(val).toFixed(2)})`;
+}
+
+function previewVoice() {
+  if (!('speechSynthesis' in window)) {
+    document.getElementById('voice-preview-status').textContent = '⚠️ Speech synthesis not supported in this browser';
+    return;
+  }
+  speechSynthesis.cancel();
+  const previewTexts = {
+    professional: "Hello, I'm Alex, your AI interviewer today. Let's begin the interview.",
+    friendly: "Hi there! I'm Alex, and I'm excited to chat with you today about this role!",
+    formal: "Good day. I am Alex, the AI interviewer assigned to evaluate your candidacy.",
+    energetic: "Hey! I'm Alex — let's dive right in and have an amazing interview session!",
+    calm: "Welcome. I'm Alex, and I'm here to guide you through today's interview at your pace."
+  };
+  const text = previewTexts[voiceConfig.tone] || previewTexts.professional;
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = voiceConfig.speed;
+  utt.pitch = voiceConfig.pitch;
+  utt.lang = voiceConfig.accent;
+  const voices = speechSynthesis.getVoices();
+  const picked = pickVoice(voices, voiceConfig.gender, voiceConfig.accent);
+  if (picked) utt.voice = picked;
+  const statusEl = document.getElementById('voice-preview-status');
+  statusEl.textContent = picked ? `🎙️ Using: ${picked.name}` : '🎙️ Using browser default voice';
+  utt.onend = () => { statusEl.textContent = '✅ Preview done'; setTimeout(()=>statusEl.textContent='', 3000); };
+  speechSynthesis.speak(utt);
+}
+
+function pickVoice(voices, gender, lang) {
+  // Filter by language first
+  const langVoices = voices.filter(v => v.lang === lang || v.lang.startsWith(lang.split('-')[0]));
+  const pool = langVoices.length ? langVoices : voices.filter(v => v.lang.startsWith('en'));
+  if (!pool.length) return null;
+
+  const femaleName = /zira|female|samantha|victoria|karen|moira|fiona|alice|kate|susan|catherine|heera|veena|raveena|aria|jenny|sonia|ava|nicky/i;
+  const maleName   = /david|mark|daniel|james|richard|ryan|tom|guy|lee|rishi|george|fred|william/i;
+
+  if (gender === 'female') return pool.find(v => femaleName.test(v.name)) || pool[0];
+  if (gender === 'male')   return pool.find(v => maleName.test(v.name))   || pool[pool.length-1];
+  return pool[0]; // neutral — first available
 }
 
 async function createSession() {
   const candidate = document.getElementById('c-candidate').value.trim();
   const jobRole   = document.getElementById('c-role').value;
-  if (!candidate) return;
-  if (!jobRole)   return;
+  if (!candidate) return alert('Please enter a candidate username');
+  if (!jobRole)   return alert('Please select a job role');
+
+  const payload = {
+    candidate_username: candidate,
+    job_role: jobRole,
+    mode: selectedMode,
+    voice_config: selectedMode === 'ai_interview' ? voiceConfig : null
+  };
 
   const data = await fetch('/api/create-session', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode})
+    body: JSON.stringify(payload)
   }).then(r=>r.json());
 
-  if (!data.success) return;
+  if (!data.success) return alert(data.error || 'Failed to create session');
   lastCreatedSession = data.session;
+  // Voice config is now stored server-side in the session record — no localStorage needed
 
   document.getElementById('created-code').textContent = data.room_code;
-  document.getElementById('join-url').textContent     = `${window.location.origin}/interview_room.html?room=${data.room_code}`;
+  const baseUrl = `${window.location.origin}/interview_room.html?room=${data.room_code}`;
+  document.getElementById('join-url').textContent = baseUrl;
   document.getElementById('session-result').style.display = 'block';
 }
 

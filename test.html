@@ -259,8 +259,8 @@ async function init() {
 async function loadPast() {
   const el = document.getElementById('past-list');
   try {
-    const data = await fetch('/api/dashboard-stats').then(r => r.json());
-    const mine = (data.recent_submissions || []).filter(s => s.username === currentUser.username);
+    const data = await fetch('/api/my-submissions').then(r => r.json());
+    const mine = data.submissions || [];
     if (!mine.length) {
       el.innerHTML = '<div class="empty">No previous attempts yet. Join an interview using your room code above!</div>';
       return;
@@ -275,18 +275,7 @@ async function loadPast() {
           </div>
           <div class="sub-meta">${s.submitted_at} · Attempt #${s.attempt_number || 1}</div>
         </div>
-        <div class="sub-scores">
-          <div class="ss">
-            <div class="ss-val" style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</div>
-            <div class="ss-lbl">Credibility</div>
-          </div>
-          <div class="ss">
-            <div class="ss-val">${s.interview_score || 0}</div>
-            <div class="ss-lbl">Interview</div>
-          </div>
-        </div>
-        <span class="badge ${s.passed ? 'badge-green' : 'badge-red'}">${s.passed ? 'PASSED' : 'FAILED'}</span>
-        <button class="btn-view" onclick="window.location.href='results.html?id=${s.id}'">View Report</button>
+        <span style="font-size:13px;color:var(--muted);font-style:italic;">⏳ Under review by recruiter</span>
       </div>`).join('');
   } catch(e) {
     el.innerHTML = '<div class="empty">Could not load history.</div>';

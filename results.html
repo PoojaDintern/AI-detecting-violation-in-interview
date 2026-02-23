@@ -238,6 +238,117 @@ async function init() {
   const auth = await fetch('/api/check-auth').then(r=>r.json());
   if (!auth.authenticated) return window.location.href='index.html';
   currentUser = auth;
+
+  // ── CANDIDATES: blocked from viewing scores/report entirely ──────────────────
+  if (!auth.is_admin) {
+    document.getElementById('results-content').innerHTML = `
+      <div style="max-width:580px;margin:0 auto;padding:20px 0 60px;">
+
+        <!-- Success animation -->
+        <div style="text-align:center;margin-bottom:36px;">
+          <div style="display:inline-flex;align-items:center;justify-content:center;
+                      width:90px;height:90px;border-radius:50%;
+                      background:rgba(16,185,129,.12);border:2px solid rgba(16,185,129,.35);
+                      font-size:44px;margin-bottom:20px;
+                      animation:confirmPop .55s cubic-bezier(.34,1.56,.64,1) both;">✅</div>
+          <h1 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:800;
+                     margin-bottom:10px;">Interview Submitted!</h1>
+          <p style="color:var(--muted);font-size:15px;line-height:1.7;">
+            Your session has been <strong style="color:var(--text)">securely recorded</strong> and sent to your recruiter for evaluation.
+          </p>
+        </div>
+
+        <!-- Confidentiality notice -->
+        <div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.28);
+                    border-radius:13px;padding:16px 20px;margin-bottom:20px;
+                    display:flex;align-items:flex-start;gap:13px;">
+          <div style="font-size:22px;flex-shrink:0;">🔒</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#fcd34d;margin-bottom:4px;">
+              Results are confidential
+            </div>
+            <div style="font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.6;">
+              Your scores, credibility report, and detailed evaluation are <strong style="color:rgba(255,255,255,.7)">only visible to your recruiter and hiring team</strong>. 
+              This is to ensure a fair and unbiased review process.
+            </div>
+          </div>
+        </div>
+
+        <!-- What happens next timeline -->
+        <div style="background:var(--s);border:1px solid var(--border);border-radius:16px;
+                    padding:24px;margin-bottom:20px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                      color:var(--muted);margin-bottom:18px;">What happens next</div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            ${[
+              ['🎙️','Interview Recorded','Your answers, video feed, and proctoring data have all been captured.','done'],
+              ['🔍','Recruiter Review','Your recruiter will evaluate your answers and integrity score at their end.','active'],
+              ['📬','You\'ll Be Contacted','The hiring team will reach out with next steps via email or phone.','pending'],
+            ].map(([icon,title,desc,state],i,arr)=>`
+              <div style="display:flex;gap:14px;${i<arr.length-1?'padding-bottom:20px;':''}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
+                  <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                              display:flex;align-items:center;justify-content:center;font-size:16px;
+                              background:${state==='done'?'rgba(16,185,129,.15)':state==='active'?'rgba(79,142,247,.15)':'rgba(255,255,255,.05)'};
+                              border:1.5px solid ${state==='done'?'rgba(16,185,129,.4)':state==='active'?'rgba(79,142,247,.4)':'rgba(255,255,255,.1)'};">
+                    ${icon}
+                  </div>
+                  ${i<arr.length-1?`<div style="width:2px;flex:1;min-height:16px;margin-top:4px;
+                    background:${state==='done'?'rgba(16,185,129,.25)':'rgba(255,255,255,.07)'};"></div>`:''}
+                </div>
+                <div style="padding-top:6px;padding-bottom:${i<arr.length-1?'0':''};">
+                  <div style="font-size:13px;font-weight:700;margin-bottom:3px;
+                              color:${state==='done'?'#6ee7b7':state==='active'?'var(--accent2)':'rgba(255,255,255,.4)'}">
+                    ${title}
+                  </div>
+                  <div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5;">${desc}</div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Tips while you wait -->
+        <div style="background:var(--s);border:1px solid var(--border);border-radius:14px;
+                    padding:20px 22px;margin-bottom:28px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                      color:var(--muted);margin-bottom:12px;">While you wait</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            ${[
+              ['📧','Check your email','Keep an eye on your inbox for any follow-up from the recruiter.'],
+              ['📞','Be reachable','Ensure your phone number is up to date in case they call.'],
+              ['📝','Reflect on answers','Think about areas you did well and ones to strengthen.'],
+              ['🕐','Be patient','Evaluation can take 1–5 business days depending on the role.'],
+            ].map(([icon,title,desc])=>`
+              <div style="padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+                          border-radius:10px;">
+                <div style="font-size:18px;margin-bottom:5px;">${icon}</div>
+                <div style="font-size:12px;font-weight:700;margin-bottom:3px;">${title}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:1.45;">${desc}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <div style="text-align:center;">
+          <a href="test.html" style="display:inline-flex;align-items:center;gap:8px;
+             padding:13px 30px;background:var(--s);border:1px solid var(--border);
+             border-radius:10px;color:var(--text);font-size:14px;font-weight:600;
+             text-decoration:none;transition:all .2s;"
+             onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent2)'"
+             onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text)'">
+            ← Back to Dashboard
+          </a>
+        </div>
+
+        <style>
+          @keyframes confirmPop {
+            from { transform:scale(0.2); opacity:0; }
+            to   { transform:scale(1);   opacity:1; }
+          }
+        </style>
+      </div>`;
+    return;
+  }
+
   await loadRoles();
   await loadResults();
 }

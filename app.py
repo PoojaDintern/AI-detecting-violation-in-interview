@@ -743,10 +743,26 @@ def join_session(room_code):
     sess = InterviewSession.query.filter_by(room_code=room_code).first()
     if not sess:
         return jsonify({'success': False, 'message': 'Session not found'}), 404
+
+    # Guard 1: recruiters/admins must NOT join as candidates
+    if current_user.is_admin:
+        return jsonify({'success': False,
+                        'message': 'Recruiters cannot join a candidate session. Use the Recruiter Room instead.'}), 403
+
+    # Guard 2: only the assigned candidate may join this session
+    if sess.candidate_id != current_user.id:
+        return jsonify({'success': False,
+                        'message': 'This session was not assigned to your account.'}), 403
+
+    # Guard 3: prevent rejoining a completed session
+    if sess.status == 'completed':
+        return jsonify({'success': False, 'message': 'already_submitted'}), 400
+
     questions = []
     if sess.mode == 'mcq' and sess.question_ids:
         ids = json.loads(sess.question_ids)
-        questions = [ExamQuestion.query.get(i).to_dict() for i in ids if ExamQuestion.query.get(i)]
+        questions = [ExamQuestion.query.get(i).to_dict() for i in ids
+                     if ExamQuestion.query.get(i)]
     return jsonify({'success': True, 'session': sess.to_dict(),
                     'questions': questions, 'ice_servers': app.config['WEBRTC_ICE_SERVERS']})
 
@@ -853,47 +869,131 @@ def detect_device():
         session_id = data.get('session_id')
         img_b64    = data['image'].split(',')[1]
         frame      = cv2.imdecode(np.frombuffer(base64.b64decode(img_b64), np.uint8), cv2.IMREAD_COLOR)
-        gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        edges   = cv2.Canny(blurred, 50, 150)
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        phone_detected = False
-        confidence = 0.0
-        device_type = None
         fh, fw = frame.shape[:2]
         frame_area = fw * fh
-        faces = face_cascade.detectMultiScale(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 1.3, 5)
-        face_regions = [(x, y, x+w, y+h) for (x,y,w,h) in faces]
 
+        # Pre-processing
+        gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        eq_gray = cv2.equalizeHist(gray)
+        blurred = cv2.GaussianBlur(eq_gray, (5, 5), 0)
+        edges   = cv2.Canny(blurred, 40, 120)
+        kernel  = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        edges   = cv2.dilate(edges, kernel, iterations=1)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Face regions to exclude
+        eq_full  = cv2.equalizeHist(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+        faces    = face_cascade.detectMultiScale(eq_full, 1.2, 5, minSize=(60, 60))
+        face_regions = [(x, y, x+w, y+h) for (x, y, w, h) in faces]
+
+        def in_face(cx, cy):
+            return any(fx1 < cx < fx2 and fy1 < cy < fy2 for (fx1, fy1, fx2, fy2) in face_regions)
+
+        # Bright-screen mask (screens emit bright, low-saturation light)
+        hsv         = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        screen_mask = cv2.inRange(hsv, (0, 0, 160), (180, 60, 255))
+        screen_mask = cv2.morphologyEx(screen_mask, cv2.MORPH_CLOSE, kernel, iterations=3)
+        screen_cnts, _ = cv2.findContours(screen_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        detected    = False
+        confidence  = 0.0
+        device_type = None
+
+        # ── Device shape profiles ──────────────────────────────────────────────
+        # (label, min_area_ratio, max_area_ratio, min_aspect, max_aspect, base_conf)
+        # Tightened aspect ratios & raised base confidence to cut false positives.
+        # A phone is tall/narrow (aspect >= 1.6), tablets are squarish (1.2–1.9),
+        # laptops are very wide (>= 2.2). This prevents walls/shirts being flagged.
+        PROFILES = [
+            ('phone',     0.004, 0.22,  1.6, 3.5,  0.74),
+            ('tablet',    0.09,  0.42,  1.2, 1.9,  0.73),
+            ('laptop',    0.12,  0.60,  2.2, 4.5,  0.71),
+            ('earphones', 0.0004, 0.010, 0.6, 1.6, 0.66),
+        ]
+        MIN_DETECT_CONF = 0.72  # minimum confidence to actually log a violation
+
+        def check_rect(x, y, w, h, area):
+            nonlocal detected, confidence, device_type
+            aspect   = max(w, h) / max(min(w, h), 1)
+            area_rat = area / frame_area
+            cx, cy   = x + w // 2, y + h // 2
+            if in_face(cx, cy):
+                return
+            for label, min_ar, max_ar, min_asp, max_asp, base_c in PROFILES:
+                if min_ar <= area_rat <= max_ar and min_asp <= aspect <= max_asp:
+                    fill = (area_rat - min_ar) / max(max_ar - min_ar, 1e-6)
+                    conf = min(0.95, base_c + fill * 0.18)
+                    if conf > confidence:
+                        confidence, device_type = conf, label
+                        detected = conf >= MIN_DETECT_CONF
+
+        # Scan edge contours (shape-based)
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area < 3000 or area > frame_area * 0.4: continue
-            peri  = cv2.arcLength(cnt, True)
-            approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
-            if len(approx) == 4:
+            if area < frame_area * 0.0004: continue
+            peri   = cv2.arcLength(cnt, True)
+            approx = cv2.approxPolyDP(cnt, 0.025 * peri, True)
+            if 4 <= len(approx) <= 6:
                 x, y, w, h = cv2.boundingRect(approx)
-                aspect = max(w, h) / max(min(w, h), 1)
-                if 1.4 <= aspect <= 2.8 and area < frame_area * 0.25:
-                    cx, cy = x + w//2, y + h//2
-                    in_face = any(fx1 < cx < fx2 and fy1 < cy < fy2 for (fx1,fy1,fx2,fy2) in face_regions)
-                    if not in_face:
-                        conf = min(0.95, 0.5 + (area / (frame_area * 0.25)) * 0.45)
-                        if conf > confidence:
-                            confidence = conf
-                            phone_detected = conf >= app.config['PHONE_DETECTION_CONFIDENCE']
-                            device_type = 'phone'
+                check_rect(x, y, w, h, area)
 
-        if phone_detected:
+        # Scan bright-screen contours — only flag if VERY screen-like
+        # Raised min aspect to 2.0 and area threshold to avoid walls / white shirts
+        for cnt in screen_cnts:
+            area = cv2.contourArea(cnt)
+            if area < frame_area * 0.025: continue   # was 0.012 — too small
+            x, y, w, h = cv2.boundingRect(cnt)
+            aspect   = max(w, h) / max(min(w, h), 1)
+            area_rat = area / frame_area
+            cx, cy   = x + w // 2, y + h // 2
+            if in_face(cx, cy): continue
+            # Only flag clearly rectangular, wide, moderately-sized screens
+            # Aspect >= 1.4 avoids square walls; area cap 0.50 avoids filling the whole frame
+            if 1.4 <= aspect <= 4.0 and 0.025 <= area_rat <= 0.50:
+                label = 'laptop' if aspect >= 2.2 else 'tablet'
+                conf  = min(0.90, 0.68 + area_rat * 0.25)
+                if conf > confidence and conf >= MIN_DETECT_CONF:
+                    confidence, device_type, detected = conf, label, True
+
+        # ── Bluetooth / earpiece detection ─────────────────────────────────────
+        # Improved: uses a larger ear zone (top 60% of frame), lower circularity
+        # threshold (0.25 instead of 0.40) to catch bean-shaped earpieces,
+        # and considers both contour shape and relative size to ear region.
+        ear_zones = [(0, 0, fw//3, int(fh*0.65)), (fw*2//3, 0, fw, int(fh*0.65))]
+        for (ex1, ey1, ex2, ey2) in ear_zones:
+            roi   = blurred[ey1:ey2, ex1:ex2]
+            # Use softer Canny edges so partially-hidden earpieces are found
+            r_edg = cv2.Canny(roi, 20, 70)
+            r_edg = cv2.dilate(r_edg, kernel, iterations=1)
+            ecnts, _ = cv2.findContours(r_edg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            for cnt in ecnts:
+                area = cv2.contourArea(cnt)
+                zone_area = max((ex2-ex1)*(ey2-ey1), 1)
+                ea_ratio  = area / zone_area
+                # Wider size window — small BT earpieces can be tiny in frame
+                if not 0.003 <= ea_ratio <= 0.15: continue
+                peri = cv2.arcLength(cnt, True)
+                circ = 4 * np.pi * area / max(peri ** 2, 1)
+                aprx = cv2.approxPolyDP(cnt, 0.04 * peri, True)
+                # Accept rounder shapes (circ > 0.25) OR compact polygons (4-8 sides)
+                if circ > 0.25 or 4 <= len(aprx) <= 8:
+                    bx, by, bw, bh = cv2.boundingRect(cnt)
+                    cx2, cy2 = ex1+bx+bw//2, ey1+by+bh//2
+                    if not in_face(cx2, cy2):
+                        conf = min(0.88, 0.62 + ea_ratio * 1.8)
+                        if conf > confidence and conf >= 0.65:
+                            confidence, device_type, detected = conf, 'bluetooth_earpiece', True
+
+        if detected:
             _, buf = cv2.imencode('.jpg', cv2.resize(frame, (160, 120)))
-            thumb = base64.b64encode(buf).decode('utf-8')
+            thumb  = base64.b64encode(buf).decode('utf-8')
             da = DeviceAlert(user_id=current_user.id, session_id=session_id,
                              device_type=device_type, confidence=confidence, image_b64=thumb)
             db.session.add(da); db.session.commit()
-            log_violation_db(current_user.id, session_id, 'phone_detected',
+            log_violation_db(current_user.id, session_id, 'device_detected',
                              device_data={'device_type': device_type, 'confidence': round(confidence, 2)})
 
-        return jsonify({'success': True, 'phone_detected': phone_detected,
+        return jsonify({'success': True, 'phone_detected': detected,
                         'device_type': device_type, 'confidence': round(confidence, 2)})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -1071,9 +1171,13 @@ Based on all answers, provide a final evaluation. Return ONLY this JSON (no mark
 def submit_test():
     data       = request.get_json() or {}
     session_id = data.get('session_id')
-    job_role   = data.get('job_role', 'General')
-    mode       = data.get('mode', 'mcq')
     cred_score = calc_credibility(session_id) if session_id else 100
+
+    # Always read mode and job_role from the DB session — never trust the client
+    # This prevents a candidate from submitting under the wrong mode
+    db_sess = db.session.get(InterviewSession, session_id) if session_id else None
+    mode     = db_sess.mode     if db_sess else data.get('mode', 'mcq')
+    job_role = db_sess.job_role if db_sess else data.get('job_role', 'General')
 
     interview_score = 0
     if mode == 'mcq':
