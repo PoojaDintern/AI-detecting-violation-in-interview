@@ -7,7 +7,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from config import Config
-import cv2, base64, numpy as np, json, os, random, string, secrets
+import cv2, base64, numpy as np, json, os, random, string, secrets, re
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas as pdf_canvas
@@ -19,30 +19,66 @@ app = Flask(__name__, static_folder='.')
 app.config.from_object(Config)
 Config.init_app(app)
 
-CORS(app, resources={"/*": {"origins": "*", "supports_credentials": True}})
+# Dynamically allow ngrok URL if set
+_allowed_origins = ["http://localhost:5000", "http://127.0.0.1:5000"]
+_base_url = os.environ.get("BASE_URL", "")
+if _base_url and _base_url not in _allowed_origins:
+    _allowed_origins.append(_base_url)
+CORS(app, supports_credentials=True, origins=_allowed_origins)
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+_socketio_origins = ['http://localhost:5000','http://127.0.0.1:5000']
+_sio_base = os.environ.get('BASE_URL','')
+if _sio_base and _sio_base not in _socketio_origins:
+    _socketio_origins.append(_sio_base)
+socketio = SocketIO(app, cors_allowed_origins=_socketio_origins, async_mode='eventlet', allow_upgrades=True, ping_timeout=60, ping_interval=25)
 login_manager = LoginManager(app)
 login_manager.login_view = 'serve_index'
 login_manager.session_protection = 'strong'
+
+# ── Global Error Handlers (ensures API routes always return JSON, never HTML) ───
+@app.errorhandler(500)
+def handle_500(e):
+    import traceback
+    traceback.print_exc()
+    return jsonify({'success': False, 'message': f'Internal server error: {str(e)}'}), 500
+
+@app.errorhandler(404)
+def handle_404(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'success': False, 'message': 'Endpoint not found'}), 404
+    return send_from_directory('.', 'index.html')
+
+@app.errorhandler(401)
+def handle_401(e):
+    return jsonify({'success': False, 'message': 'Authentication required'}), 401
+
+@app.errorhandler(403)
+def handle_403(e):
+    return jsonify({'success': False, 'message': 'Forbidden'}), 403
 
 # ── Models ─────────────────────────────────────────────────────────────────────
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
-    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username      = db.Column(db.String(80),  unique=True, nullable=False, index=True)
-    email         = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(512), nullable=False)
-    full_name     = db.Column(db.String(150))
-    role          = db.Column(db.String(20), default='candidate')
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    id               = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username         = db.Column(db.String(80),  unique=True, nullable=False, index=True)
+    email            = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash    = db.Column(db.String(512), nullable=False)
+    full_name        = db.Column(db.String(150))
+    role             = db.Column(db.String(20), default='candidate')
+    created_at       = db.Column(db.DateTime, default=datetime.utcnow)
+    smtp_email       = db.Column(db.String(120))   # recruiter's Gmail used for sending
+    smtp_app_password= db.Column(db.String(256))   # Gmail App Password (stored as-is)
 
     violations  = db.relationship('Violation',      backref='user', lazy='dynamic', cascade='all,delete-orphan')
     submissions = db.relationship('TestSubmission', backref='user', lazy='dynamic', cascade='all,delete-orphan')
 
     @property
     def is_admin(self):
+        return self.role in ('admin', 'recruiter')
+
+    @property
+    def is_recruiter(self):
         return self.role in ('admin', 'recruiter')
 
     def set_password(self, pw):
@@ -225,6 +261,7 @@ def get_violation_info(vtype):
         'devtools':         {'severity': 2, 'description': 'DevTools attempt'},
         'gaze_away':        {'severity': 2, 'description': 'Looking away from screen'},
         'phone_detected':   {'severity': 3, 'description': 'Phone/device detected'},
+        'device_detected':  {'severity': 3, 'description': 'Unauthorized device detected'},
         'second_screen':    {'severity': 3, 'description': 'Second screen detected'},
     }.get(vtype, {'severity': 1, 'description': 'Unknown violation'})
 
@@ -614,11 +651,38 @@ with app.app_context():
 def serve_index():
     return send_from_directory('.', 'index.html')
 
-for page in ['index.html','test.html','dashboard.html','results.html',
-             'recruiter_dashboard.html','interview_room.html','recruiter_room.html']:
+@app.route('/favicon.ico')
+def favicon():
+    # Return empty 204 so browser stops throwing 404 errors
+    return '', 204
+
+# Public pages
+for page in ['index.html']:
     exec(f"""
 @app.route('/{page}')
 def serve_{page.replace('.','_').replace('-','_')}():
+    return send_from_directory('.', '{page}')
+""")
+
+# Candidate-only pages
+for page in ['test.html','dashboard.html','results.html','interview_room.html','interview_complete.html']:
+    exec(f"""
+@app.route('/{page}')
+@login_required
+def serve_{page.replace('.','_').replace('-','_')}():
+    if current_user.role in ('admin','recruiter'):
+        return redirect('/recruiter_dashboard.html')
+    return send_from_directory('.', '{page}')
+""")
+
+# Recruiter-only pages
+for page in ['recruiter_dashboard.html','recruiter_room.html']:
+    exec(f"""
+@app.route('/{page}')
+@login_required
+def serve_{page.replace('.','_').replace('-','_')}():
+    if current_user.role not in ('admin','recruiter'):
+        return redirect('/test.html')
     return send_from_directory('.', '{page}')
 """)
 
@@ -634,7 +698,9 @@ def login():
     user = User.query.filter_by(username=username).first()
     if not user or not user.check_password(password):
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
-    login_user(user, remember=True)
+    logout_user()
+    session.clear()
+    login_user(user, remember=False)
     redirect = 'test.html' if user.role == 'candidate' else 'recruiter_dashboard.html'
     return jsonify({'success': True, 'redirect': redirect,
                     'role': user.role, 'full_name': user.full_name})
@@ -651,7 +717,23 @@ def signup():
     if not all([username, email, password, full_name]):
         return jsonify({'success': False, 'message': 'All fields required'}), 400
     if len(password) < 6:
-        return jsonify({'success': False, 'message': 'Password min 6 characters'}), 400
+        return jsonify({'success': False, 'message': 'Password must be at least 6 characters'}), 400
+    # Validate email format
+    email_regex = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
+    if not email_regex.match(email):
+        return jsonify({'success': False, 'message': 'Please enter a valid email address'}), 400
+    # Validate email domain has valid TLD (basic check)
+    domain_part = email.split('@')[1]
+    tld = domain_part.split('.')[-1].lower()
+    invalid_tlds = {'invalid','test','localhost','fake','example','local'}
+    if tld in invalid_tlds or len(tld) < 2:
+        return jsonify({'success': False, 'message': 'Email domain appears invalid. Please use a real email.'}), 400
+    # Check for disposable/known-fake domains
+    disposable_domains = {'mailinator.com','guerrillamail.com','temp-mail.org','throwaway.email',
+        'fakeinbox.com','sharklasers.com','guerrillamailblock.com','grr.la','spam4.me',
+        'trashmail.com','yopmail.com','mailnull.com','spamgourmet.com','tempinbox.com'}
+    if domain_part.lower() in disposable_domains:
+        return jsonify({'success': False, 'message': 'Disposable email addresses are not allowed. Please use your real email.'}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({'success': False, 'message': 'Email already registered. Please login.'}), 400
     if User.query.filter_by(username=username).first():
@@ -665,7 +747,17 @@ def signup():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user(); return redirect('/')
+    # End any active interview sessions for this user on logout
+    active_sessions = InterviewSession.query.filter_by(
+        candidate_id=current_user.id, status='active'
+    ).all()
+    for sess in active_sessions:
+        sess.status = 'ended'
+        sess.ended_at = datetime.utcnow()
+    if active_sessions:
+        db.session.commit()
+    logout_user()
+    return redirect('/')
 
 
 @app.route('/api/check-auth')
@@ -673,7 +765,8 @@ def check_auth():
     if current_user.is_authenticated:
         return jsonify({'authenticated': True, 'username': current_user.username,
                         'full_name': current_user.full_name, 'role': current_user.role,
-                        'is_admin': current_user.is_admin})
+                        'is_admin': current_user.is_admin,
+                        'is_recruiter': current_user.is_recruiter})
     return jsonify({'authenticated': False})
 
 
@@ -744,10 +837,15 @@ def join_session(room_code):
     if not sess:
         return jsonify({'success': False, 'message': 'Session not found'}), 404
 
-    # Guard 1: recruiters/admins must NOT join as candidates
+    # Guard 1: recruiters/admins can join as observers (for recruiter room)
     if current_user.is_admin:
-        return jsonify({'success': False,
-                        'message': 'Recruiters cannot join a candidate session. Use the Recruiter Room instead.'}), 403
+        # Recruiter joining their own created session is allowed
+        if sess.recruiter_id and sess.recruiter_id != current_user.id:
+            return jsonify({'success': False,
+                            'message': 'This session belongs to a different recruiter.'}), 403
+        # Return session info for recruiter without candidate guards
+        return jsonify({'success': True, 'session': sess.to_dict(),
+                        'questions': [], 'ice_servers': app.config['WEBRTC_ICE_SERVERS']})
 
     # Guard 2: only the assigned candidate may join this session
     if sess.candidate_id != current_user.id:
@@ -761,8 +859,8 @@ def join_session(room_code):
     questions = []
     if sess.mode == 'mcq' and sess.question_ids:
         ids = json.loads(sess.question_ids)
-        questions = [ExamQuestion.query.get(i).to_dict() for i in ids
-                     if ExamQuestion.query.get(i)]
+        questions = [db.session.get(ExamQuestion, i).to_dict() for i in ids
+                     if db.session.get(ExamQuestion, i)]
     return jsonify({'success': True, 'session': sess.to_dict(),
                     'questions': questions, 'ice_servers': app.config['WEBRTC_ICE_SERVERS']})
 
@@ -781,6 +879,81 @@ def start_session(session_id):
 
 
 # ── Proctoring ─────────────────────────────────────────────────────────────────
+
+@app.route('/api/room-scan', methods=['POST'])
+@login_required
+def room_scan():
+    """Analyse 360 room scan frames for suspicious items/people."""
+    try:
+        data       = request.get_json()
+        session_id = data.get('session_id')
+        frames     = data.get('frames', [])
+        if not frames:
+            return jsonify({'success': True, 'issues': []})
+
+        issues        = []
+        multiple_seen = 0
+        device_seen   = 0
+        no_face_count = 0
+
+        for idx, frame_b64 in enumerate(frames):
+            try:
+                raw   = frame_b64.split(',')[1] if ',' in frame_b64 else frame_b64
+                buf   = np.frombuffer(base64.b64decode(raw), np.uint8)
+                frame = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+                if frame is None:
+                    continue
+                gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+                # ── Face check ────────────────────────────────────────────────
+                faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(40, 40))
+                nf = len(faces)
+                if nf > 1:
+                    multiple_seen += 1
+                elif nf == 0 and idx < 2:
+                    # Only flag no-face on first two frames (rest are scanning away)
+                    no_face_count += 1
+
+                # ── Phone/device check ────────────────────────────────────────
+                h, w = frame.shape[:2]
+                hsv  = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+                lower_b = np.array([100, 50, 50]); upper_b = np.array([130, 255, 255])
+                mask = cv2.inRange(hsv, lower_b, upper_b)
+                cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for c in cnts:
+                    area = cv2.contourArea(c)
+                    if area < 2000: continue
+                    x2, y2, cw, ch = cv2.boundingRect(c)
+                    ratio = float(max(cw, ch)) / float(min(cw, ch) + 1)
+                    frame_ratio = area / float(w * h)
+                    if 1.3 < ratio < 3.0 and frame_ratio < 0.35:
+                        device_seen += 1
+
+            except Exception as fe:
+                print(f"Frame {idx} error: {fe}")
+                continue
+
+        # ── Determine issues ──────────────────────────────────────────────────
+        if multiple_seen >= 2:
+            issues.append("multiple people detected in room")
+            log_violation_db(current_user.id, session_id, "multiple_faces",
+                             gaze_data=f"Room scan: multiple people in {multiple_seen} frames")
+        if device_seen >= 2:
+            issues.append("prohibited device visible")
+            log_violation_db(current_user.id, session_id, "device_detected",
+                             device_data=f"Room scan: device in {device_seen} frames")
+        if no_face_count >= 2:
+            issues.append("candidate not visible at scan start")
+
+        print(f"Room scan [{session_id}]: {len(frames)} frames, issues={issues}")
+        return jsonify({'success': True, 'issues': issues,
+                        'frames_analysed': len(frames)})
+
+    except Exception as e:
+        print(f"Room scan error: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({'success': True, 'issues': []})  # fail open — don't block interview
+
 @app.route('/detect-face', methods=['POST'])
 @login_required
 def detect_face():
@@ -790,12 +963,28 @@ def detect_face():
         img_b64    = data['image'].split(',')[1]
         frame      = cv2.imdecode(np.frombuffer(base64.b64decode(img_b64), np.uint8), cv2.IMREAD_COLOR)
         gray       = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces      = face_cascade.detectMultiScale(gray, 1.3, 5)
+        # FIX: gentler scale factor (1.1) and larger minSize for more reliable detection
+        faces      = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(60, 60))
         n          = len(faces)
-        if n == 0:
-            log_violation_db(current_user.id, session_id, 'no_face')
-        elif n > 1:
-            log_violation_db(current_user.id, session_id, 'multiple_faces')
+
+        # FIX: Only log violations if session is genuinely active AND past the 10-second
+        # warm-up grace period. Previously violations fired immediately on join — before
+        # camera was ready, during the rules page, and during the room scan — causing
+        # candidates to start with 0 credibility before the interview even began.
+        should_log = False
+        if session_id:
+            sess = db.session.get(InterviewSession, session_id)
+            if sess and sess.status == 'active' and sess.started_at:
+                elapsed = (datetime.utcnow() - sess.started_at).total_seconds()
+                if elapsed >= 10:  # 10-second grace period after session starts
+                    should_log = True
+
+        if should_log:
+            if n == 0:
+                log_violation_db(current_user.id, session_id, 'no_face')
+            elif n > 1:
+                log_violation_db(current_user.id, session_id, 'multiple_faces')
+
         return jsonify({'success': True, 'face_detected': n == 1, 'num_faces': n})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -847,7 +1036,15 @@ def analyze_gaze():
                 gaze_result = {'direction': direction, 'confidence': 0.80,
                                'looking_away': looking_away, 'ratio': round(avg_ratio, 3)}
 
-                if looking_away:
+                # FIX: same active+grace-period guard as detect-face
+                should_log_gaze = False
+                if session_id:
+                    sess_g = db.session.get(InterviewSession, session_id)
+                    if sess_g and sess_g.status == 'active' and sess_g.started_at:
+                        if (datetime.utcnow() - sess_g.started_at).total_seconds() >= 10:
+                            should_log_gaze = True
+
+                if looking_away and should_log_gaze:
                     ge = GazeEvent(user_id=current_user.id, session_id=session_id,
                                    direction=direction, confidence=0.80)
                     db.session.add(ge); db.session.commit()
@@ -905,12 +1102,12 @@ def detect_device():
         # A phone is tall/narrow (aspect >= 1.6), tablets are squarish (1.2–1.9),
         # laptops are very wide (>= 2.2). This prevents walls/shirts being flagged.
         PROFILES = [
-            ('phone',     0.004, 0.22,  1.6, 3.5,  0.74),
-            ('tablet',    0.09,  0.42,  1.2, 1.9,  0.73),
-            ('laptop',    0.12,  0.60,  2.2, 4.5,  0.71),
-            ('earphones', 0.0004, 0.010, 0.6, 1.6, 0.66),
+            ('phone',     0.006, 0.20,  1.7, 3.2,  0.82),
+            ('tablet',    0.12,  0.40,  1.3, 1.8,  0.82),
+            ('laptop',    0.15,  0.55,  2.4, 4.2,  0.81),
+            ('earphones', 0.001, 0.008, 0.7, 1.5,  0.80),
         ]
-        MIN_DETECT_CONF = 0.72  # minimum confidence to actually log a violation
+        MIN_DETECT_CONF = 0.84  # raised — only flag very confident detections
 
         def check_rect(x, y, w, h, area):
             nonlocal detected, confidence, device_type
@@ -949,9 +1146,9 @@ def detect_device():
             if in_face(cx, cy): continue
             # Only flag clearly rectangular, wide, moderately-sized screens
             # Aspect >= 1.4 avoids square walls; area cap 0.50 avoids filling the whole frame
-            if 1.4 <= aspect <= 4.0 and 0.025 <= area_rat <= 0.50:
-                label = 'laptop' if aspect >= 2.2 else 'tablet'
-                conf  = min(0.90, 0.68 + area_rat * 0.25)
+            if 1.6 <= aspect <= 3.8 and 0.05 <= area_rat <= 0.45:
+                label = 'laptop' if aspect >= 2.4 else 'tablet'
+                conf  = min(0.92, 0.78 + area_rat * 0.20)
                 if conf > confidence and conf >= MIN_DETECT_CONF:
                     confidence, device_type, detected = conf, label, True
 
@@ -984,7 +1181,16 @@ def detect_device():
                         if conf > confidence and conf >= 0.65:
                             confidence, device_type, detected = conf, 'bluetooth_earpiece', True
 
-        if detected:
+        # FIX: same active+grace-period guard — don't log device violations during
+        # the rules page, room scan, or camera warm-up phase.
+        should_log_device = False
+        if session_id:
+            sess_d = db.session.get(InterviewSession, session_id)
+            if sess_d and sess_d.status == 'active' and sess_d.started_at:
+                if (datetime.utcnow() - sess_d.started_at).total_seconds() >= 10:
+                    should_log_device = True
+
+        if detected and should_log_device:
             _, buf = cv2.imencode('.jpg', cv2.resize(frame, (160, 120)))
             thumb  = base64.b64encode(buf).decode('utf-8')
             da = DeviceAlert(user_id=current_user.id, session_id=session_id,
@@ -1003,7 +1209,20 @@ def detect_device():
 @login_required
 def log_violation_route():
     data = request.get_json() or {}
-    log_violation_db(current_user.id, data.get('session_id'), data.get('violation_type'))
+    session_id = data.get('session_id')
+    vtype = data.get('violation_type')
+
+    # FIX: same active+grace-period guard for browser-side events (tab switch, right-click, copy)
+    # These can fire during the rules page loading phase before the interview truly starts.
+    if session_id:
+        sess = db.session.get(InterviewSession, session_id)
+        if not sess or sess.status != 'active' or not sess.started_at:
+            return jsonify({'success': True, 'skipped': 'session not active yet'})
+        elapsed = (datetime.utcnow() - sess.started_at).total_seconds()
+        if elapsed < 5:  # 5-second grace for fast events like tab_switch
+            return jsonify({'success': True, 'skipped': 'grace period'})
+
+    log_violation_db(current_user.id, session_id, vtype)
     return jsonify({'success': True})
 
 
@@ -1189,7 +1408,7 @@ def submit_test():
                 question_ids = json.loads(sess.question_ids)
         correct = 0
         for i, qid in enumerate(question_ids):
-            q = ExamQuestion.query.get(qid)
+            q = db.session.get(ExamQuestion, qid)
             if q:
                 user_ans = answers.get(f'q{i+1}', answers.get(str(qid), ''))
                 if user_ans == q.correct_answer:
@@ -1198,7 +1417,7 @@ def submit_test():
     elif mode == 'ai_interview':
         interview_score = data.get('ai_overall_score', 0)
 
-    passed      = cred_score >= app.config['CREDIBILITY_PASS_THRESHOLD']
+    passed      = cred_score >= 50 and interview_score >= 50
     attempt_num = TestSubmission.query.filter_by(user_id=current_user.id).count() + 1
 
     sub = TestSubmission(
@@ -1232,7 +1451,9 @@ def submit_test():
 @app.route('/api/results/<int:submission_id>')
 @login_required
 def get_results(submission_id):
-    sub = TestSubmission.query.get_or_404(submission_id)
+    sub = db.session.get(TestSubmission, submission_id)
+    if not sub:
+        return jsonify({"success": False, "message": "Submission not found"}), 404
     if sub.user_id != current_user.id and not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     violations    = Violation.query.filter_by(session_id=sub.session_id).all() if sub.session_id else []
@@ -1313,16 +1534,45 @@ def get_candidates():
 def on_connect():
     print(f'Connected: {request.sid}')
 
+# Track who is in each room
+_room_members = {}
+
 @socketio.on('join_room_event')
 def on_join_room(data):
     room = data.get('room')
     role = data.get('role', 'candidate')
     join_room(room)
+
+    # Track members
+    if room not in _room_members:
+        _room_members[room] = []
+    _room_members[room] = [m for m in _room_members[room] if m['sid'] != request.sid]
+    _room_members[room].append({'sid': request.sid, 'role': role})
+
+    # Tell everyone someone joined
     emit('user_joined', {'role': role, 'sid': request.sid}, room=room)
+
+    if role == 'recruiter':
+        # Tell candidates recruiter arrived
+        emit('recruiter_joined', {'room': room}, room=room, include_self=False)
+        # If candidate already in room, tell recruiter immediately
+        existing = [m for m in _room_members[room] if m['role'] == 'candidate']
+        if existing:
+            emit('candidate_present', {'room': room, 'count': len(existing)})
+            print(f'Recruiter joined {room} - {len(existing)} candidate(s) already present')
+    else:
+        # If recruiter already in room, tell candidate
+        recruiters = [m for m in _room_members[room] if m['role'] == 'recruiter']
+        if recruiters:
+            emit('recruiter_joined', {'room': room})
+            print(f'Candidate joined {room} - recruiter already present')
 
 @socketio.on('leave_room_event')
 def on_leave_room(data):
-    leave_room(data.get('room'))
+    room = data.get('room')
+    leave_room(room)
+    if room in _room_members:
+        _room_members[room] = [m for m in _room_members[room] if m['sid'] != request.sid]
 
 @socketio.on('webrtc_offer')
 def on_offer(data):
@@ -1351,13 +1601,18 @@ def on_join_dashboard():
 @socketio.on('disconnect')
 def on_disconnect():
     print(f'Disconnected: {request.sid}')
+    # Clean up room membership
+    for room in list(_room_members.keys()):
+        _room_members[room] = [m for m in _room_members[room] if m["sid"] != request.sid]
 
 
 # ── PDF Report ─────────────────────────────────────────────────────────────────
 @app.route('/download-report/<int:submission_id>')
 @login_required
 def download_report(submission_id):
-    sub = TestSubmission.query.get_or_404(submission_id)
+    sub = db.session.get(TestSubmission, submission_id)
+    if not sub:
+        return "Not Found", 404
     if sub.user_id != current_user.id and not current_user.is_admin:
         return "Unauthorized", 403
     buf = BytesIO()
@@ -1412,6 +1667,623 @@ def download_report(submission_id):
     return send_file(buf, as_attachment=True,
                      download_name=f'report_{sub.user.username}_{sub.id}.pdf',
                      mimetype='application/pdf')
+
+
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# NEW MODELS — Job Postings, Applications, Scheduled Interviews
+# ════════════════════════════════════════════════════════════════════════════════
+
+class JobPosting(db.Model):
+    __tablename__ = 'job_postings'
+    id                  = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    recruiter_id        = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    job_section         = db.Column(db.String(100), nullable=False)   # e.g. IT, HR, Marketing
+    job_role            = db.Column(db.String(100), nullable=False)
+    job_title           = db.Column(db.String(200))                   # Custom title (e.g. Senior Python Dev)
+    company_name        = db.Column(db.String(150), nullable=False)
+    description         = db.Column(db.Text)
+    skills_required     = db.Column(db.Text)                          # JSON array of skill strings
+    experience_required = db.Column(db.String(50))                    # Fresher, Junior, Mid-Level, Senior, Lead
+    job_type            = db.Column(db.String(50))                    # Full-Time, Part-Time, Contract, etc.
+    is_active           = db.Column(db.Boolean, default=True)
+    created_at          = db.Column(db.DateTime, default=datetime.utcnow)
+
+    recruiter     = db.relationship('User', foreign_keys=[recruiter_id])
+    applications  = db.relationship('JobApplication', backref='posting', lazy='dynamic', cascade='all,delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'recruiter_id': self.recruiter_id,
+            'recruiter_name': self.recruiter.full_name or self.recruiter.username,
+            'job_section': self.job_section,
+            'job_role': self.job_role,
+            'job_title': self.job_title or self.job_role,
+            'company_name': self.company_name,
+            'description': self.description or '',
+            'skills_required': json.loads(self.skills_required) if self.skills_required else [],
+            'experience_required': self.experience_required or '',
+            'job_type': self.job_type or '',
+            'is_active': self.is_active,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'application_count': self.applications.count(),
+        }
+
+
+class JobApplication(db.Model):
+    __tablename__ = 'job_applications'
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    posting_id    = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='CASCADE'), nullable=False)
+    candidate_id  = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    cover_note    = db.Column(db.Text)
+    status        = db.Column(db.String(30), default='applied')  # applied | shortlisted | rejected | interview_scheduled
+    applied_at    = db.Column(db.DateTime, default=datetime.utcnow)
+
+    candidate     = db.relationship('User', foreign_keys=[candidate_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'posting_id': self.posting_id,
+            'job_section': self.posting.job_section,
+            'job_role': self.posting.job_role,
+            'company_name': self.posting.company_name,
+            'recruiter_name': self.posting.recruiter.full_name or self.posting.recruiter.username,
+            'recruiter_email': self.posting.recruiter.email,
+            'candidate_id': self.candidate_id,
+            'candidate_name': self.candidate.full_name or self.candidate.username,
+            'candidate_username': self.candidate.username,
+            'candidate_email': self.candidate.email,
+            'cover_note': self.cover_note or '',
+            'status': self.status,
+            'applied_at': self.applied_at.strftime('%Y-%m-%d %H:%M:%S'),
+        }
+
+
+class ScheduledInterview(db.Model):
+    __tablename__ = 'scheduled_interviews'
+    id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    application_id  = db.Column(db.Integer, db.ForeignKey('job_applications.id', ondelete='CASCADE'), nullable=False)
+    session_id      = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='SET NULL'), nullable=True)
+    recruiter_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    candidate_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    scheduled_at    = db.Column(db.DateTime, nullable=False)
+    interview_mode  = db.Column(db.String(30), default='mcq')
+    calendar_link   = db.Column(db.Text)
+    email_sent      = db.Column(db.Boolean, default=False)
+    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    room_code       = db.Column(db.String(16))
+
+    application = db.relationship('JobApplication', foreign_keys=[application_id])
+    recruiter   = db.relationship('User', foreign_keys=[recruiter_id])
+    candidate   = db.relationship('User', foreign_keys=[candidate_id])
+    session     = db.relationship('InterviewSession', foreign_keys=[session_id])
+
+    def to_dict(self):
+        app = self.application
+        return {
+            'id': self.id,
+            'application_id': self.application_id,
+            'job_role': app.posting.job_role,
+            'job_section': app.posting.job_section,
+            'company_name': app.posting.company_name,
+            'recruiter_name': self.recruiter.full_name or self.recruiter.username,
+            'recruiter_email': self.recruiter.email,
+            'candidate_name': self.candidate.full_name or self.candidate.username,
+            'candidate_email': self.candidate.email,
+            'scheduled_at': self.scheduled_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'interview_mode': self.interview_mode,
+            'calendar_link': self.calendar_link or '',
+            'email_sent': self.email_sent,
+            'room_code': self.room_code or '',
+            'session_id': self.session_id,
+        }
+
+
+# ── Rebuild DB to include new tables ──────────────────────────────────────────
+with app.app_context():
+    db.create_all()
+
+
+# ── Email Helper ───────────────────────────────────────────────────────────────
+def send_interview_email(to_email, to_name, recruiter_name, company_name,
+                         job_role, scheduled_at_str, room_code, calendar_link,
+                         role='candidate', smtp_user=None, smtp_pass=None):
+    """
+    Sends an interview notification email via SMTP.
+    Uses recruiter's own Gmail credentials if provided,
+    otherwise falls back to EMAIL_USER/EMAIL_PASS env vars.
+    """
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    smtp_user = smtp_user or os.environ.get('EMAIL_USER', '')
+    smtp_pass = smtp_pass or os.environ.get('EMAIL_PASS', '')
+
+    subject = f"RecruitAI — Interview Scheduled: {job_role} at {company_name}"
+    base_url = os.environ.get("BASE_URL", "http://localhost:5000")
+    join_url = f"{base_url}/interview_room.html?room={room_code}"
+
+    if role == 'candidate':
+        body_html = f"""
+<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;background:#f9fafb;padding:32px;border-radius:12px;">
+  <div style="background:#0f1117;padding:24px;border-radius:10px;text-align:center;margin-bottom:24px;">
+    <h1 style="color:#6aa3ff;margin:0;font-size:24px;">🤖 RecruitAI</h1>
+    <p style="color:#7a88a8;margin:8px 0 0;">Interview Notification</p>
+  </div>
+  <h2 style="color:#1a2035;margin-bottom:8px;">Hello, {to_name}!</h2>
+  <p style="color:#444;line-height:1.6;">Your interview has been <strong>scheduled</strong>. Here are the details:</p>
+  <table style="width:100%;margin:20px 0;border-collapse:collapse;">
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;width:40%;border-radius:6px 6px 0 0;">Position</td><td style="padding:10px 14px;background:#fff;">{job_role}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Company</td><td style="padding:10px 14px;background:#fff;">{company_name}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Recruiter</td><td style="padding:10px 14px;background:#fff;">{recruiter_name}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Date &amp; Time</td><td style="padding:10px 14px;background:#fff;"><strong>{scheduled_at_str}</strong></td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Room Code</td><td style="padding:10px 14px;background:#fff;"><code style="background:#0f1117;color:#6aa3ff;padding:4px 8px;border-radius:4px;">{room_code}</code></td></tr>
+  </table>
+  <div style="text-align:center;margin:24px 0;">
+    <a href="{join_url}" style="background:#4f8ef7;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">Join Interview →</a>
+  </div>
+  {f'<div style="text-align:center;margin:16px 0;"><a href="{calendar_link}" style="color:#4f8ef7;">📅 Add to Google Calendar</a></div>' if calendar_link else ''}
+  <p style="color:#777;font-size:13px;margin-top:24px;">Please be on time and ensure you are in a quiet, well-lit environment. Any device violations will be monitored.</p>
+  <p style="color:#aaa;font-size:12px;text-align:center;margin-top:32px;">RecruitAI — AI-Powered Recruitment Platform</p>
+</div>
+"""
+    else:  # recruiter
+        body_html = f"""
+<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;background:#f9fafb;padding:32px;border-radius:12px;">
+  <div style="background:#0f1117;padding:24px;border-radius:10px;text-align:center;margin-bottom:24px;">
+    <h1 style="color:#6aa3ff;margin:0;font-size:24px;">🤖 RecruitAI</h1>
+  </div>
+  <h2 style="color:#1a2035;">Interview Scheduled — Recruiter Copy</h2>
+  <p style="color:#444;">You have scheduled an interview. Room code: <code style="background:#0f1117;color:#6aa3ff;padding:4px 8px;border-radius:4px;">{room_code}</code></p>
+  <table style="width:100%;margin:20px 0;border-collapse:collapse;">
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;width:40%;">Candidate</td><td style="padding:10px 14px;background:#fff;">{to_name}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Position</td><td style="padding:10px 14px;background:#fff;">{job_role}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Date &amp; Time</td><td style="padding:10px 14px;background:#fff;"><strong>{scheduled_at_str}</strong></td></tr>
+  </table>
+  {f'<div style="text-align:center;"><a href="{calendar_link}" style="color:#4f8ef7;">📅 Add to Google Calendar</a></div>' if calendar_link else ''}
+</div>
+"""
+
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From']    = smtp_user or 'noreply@recruitai.com'
+    msg['To']      = to_email
+    msg.attach(MIMEText(body_html, 'html'))
+
+    if smtp_user and smtp_pass:
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(smtp_user, [to_email], msg.as_string())
+            print(f"✅ Email sent to {to_email}")
+        except Exception as e:
+            print(f"⚠️  Email failed: {e}")
+    else:
+        print(f"📧 [No SMTP] Would send to {to_email}: {subject}")
+
+    return True
+
+
+def make_google_calendar_link(title, description, start_dt, end_dt=None):
+    """Generates a Google Calendar event creation link."""
+    import urllib.parse
+    if end_dt is None:
+        from datetime import timedelta
+        end_dt = start_dt + timedelta(hours=1)
+    fmt = '%Y%m%dT%H%M%SZ'
+    params = {
+        'action': 'TEMPLATE',
+        'text': title,
+        'details': description,
+        'dates': f"{start_dt.strftime(fmt)}/{end_dt.strftime(fmt)}",
+    }
+    return 'https://calendar.google.com/calendar/render?' + urllib.parse.urlencode(params)
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# JOB SECTION CONSTANTS
+# ════════════════════════════════════════════════════════════════════════════════
+JOB_SECTIONS = [
+    'IT', 'HR', 'Marketing', 'Finance', 'Sales', 'Operations',
+    'Design', 'Product', 'Data & Analytics', 'Legal', 'Customer Support', 'Engineering'
+]
+
+
+@app.route('/api/job-sections')
+def get_job_sections():
+    return jsonify({'success': True, 'sections': JOB_SECTIONS})
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# JOB POSTINGS ROUTES (Recruiter)
+# ════════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/job-postings', methods=['GET'])
+@login_required
+def list_job_postings():
+    """List active job postings — candidates see all active, recruiters/admins see their own."""
+    try:
+        if current_user.is_admin or current_user.role == 'recruiter':
+            postings = JobPosting.query.filter_by(recruiter_id=current_user.id, is_active=True).all()
+        else:
+            postings = JobPosting.query.filter_by(is_active=True).all()
+        return jsonify({'success': True, 'postings': [p.to_dict() for p in postings]})
+    except Exception as e:
+        print(f"ERROR /api/job-postings: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e), 'postings': []}), 500
+
+
+@app.route('/api/job-postings/all', methods=['GET'])
+@login_required
+def list_all_job_postings():
+    """Recruiter/Admin: list all their postings including inactive."""
+    if not (current_user.is_admin or current_user.role == 'recruiter'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    try:
+        postings = JobPosting.query.filter_by(recruiter_id=current_user.id).order_by(JobPosting.created_at.desc()).all()
+        return jsonify({'success': True, 'postings': [p.to_dict() for p in postings]})
+    except Exception as e:
+        print(f"ERROR /api/job-postings/all: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e), 'postings': []}), 500
+
+
+@app.route('/api/job-postings', methods=['POST'])
+@login_required
+def create_job_posting():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    if not all([data.get('job_section'), data.get('job_role'), data.get('company_name')]):
+        return jsonify({'success': False, 'message': 'job_section, job_role, and company_name are required'}), 400
+    # Validate at least one skill
+    skills = data.get('skills_required', [])
+    if not skills:
+        return jsonify({'success': False, 'message': 'At least one skill is required'}), 400
+    p = JobPosting(
+        recruiter_id=current_user.id,
+        job_section=data['job_section'],
+        job_role=data['job_role'],
+        job_title=data.get('job_title', ''),
+        company_name=data['company_name'],
+        description=data.get('description', ''),
+        skills_required=json.dumps(skills),
+        experience_required=data.get('experience_required', ''),
+        job_type=data.get('job_type', ''),
+    )
+    db.session.add(p); db.session.commit()
+    return jsonify({'success': True, 'posting': p.to_dict()}), 201
+
+
+@app.route('/api/job-postings/<int:posting_id>', methods=['DELETE'])
+@login_required
+def delete_job_posting(posting_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    p = db.session.get(JobPosting, posting_id)
+    if not p or p.recruiter_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    p.is_active = False
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/api/applicants-by-role', methods=['GET'])
+@login_required
+def get_applicants_by_role():
+    """Return candidates who applied to any of this recruiter's postings for a given job_role."""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    job_role = request.args.get('job_role', '').strip()
+    if not job_role:
+        return jsonify({'success': False, 'message': 'job_role is required'}), 400
+    try:
+        # Find all postings by this recruiter for that role
+        postings = JobPosting.query.filter_by(recruiter_id=current_user.id, job_role=job_role, is_active=True).all()
+        if not postings:
+            return jsonify({'success': True, 'candidates': [], 'posting_ids': []})
+        posting_ids = [p.id for p in postings]
+        # Get all applications for those postings
+        apps = JobApplication.query.filter(
+            JobApplication.posting_id.in_(posting_ids)
+        ).order_by(JobApplication.applied_at.desc()).all()
+        seen = set()
+        candidates = []
+        for a in apps:
+            if a.candidate_id not in seen:
+                seen.add(a.candidate_id)
+                candidates.append({
+                    'application_id': a.id,
+                    'candidate_id': a.candidate_id,
+                    'candidate_name': a.candidate.full_name or a.candidate.username,
+                    'candidate_username': a.candidate.username,
+                    'candidate_email': a.candidate.email,
+                    'status': a.status,
+                    'applied_at': a.applied_at.strftime('%Y-%m-%d'),
+                    'posting_id': a.posting_id,
+                    'company_name': a.posting.company_name,
+                })
+        return jsonify({'success': True, 'candidates': candidates})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e), 'candidates': []}), 500
+
+
+@app.route('/api/job-postings/<int:posting_id>/applications', methods=['GET'])
+@login_required
+def get_applications_for_posting(posting_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    p = db.session.get(JobPosting, posting_id)
+    if not p or p.recruiter_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    apps = JobApplication.query.filter_by(posting_id=posting_id).order_by(JobApplication.applied_at.desc()).all()
+    return jsonify({'success': True, 'applications': [a.to_dict() for a in apps]})
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# JOB APPLICATION ROUTES (Candidate)
+# ════════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/apply', methods=['POST'])
+@login_required
+def apply_for_job():
+    if current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Recruiters cannot apply'}), 400
+    data = request.get_json() or {}
+    posting_id = data.get('posting_id')
+    if not posting_id:
+        return jsonify({'success': False, 'message': 'posting_id required'}), 400
+    # Check if already applied
+    existing = JobApplication.query.filter_by(posting_id=posting_id, candidate_id=current_user.id).first()
+    if existing:
+        return jsonify({'success': False, 'message': 'Already applied for this position'}), 400
+    app_obj = JobApplication(
+        posting_id=posting_id,
+        candidate_id=current_user.id,
+        cover_note=data.get('cover_note', ''),
+        status='applied',
+    )
+    db.session.add(app_obj); db.session.commit()
+    return jsonify({'success': True, 'application': app_obj.to_dict()})
+
+
+@app.route('/api/my-applications')
+@login_required
+def my_applications():
+    apps = JobApplication.query.filter_by(candidate_id=current_user.id).order_by(JobApplication.applied_at.desc()).all()
+    # Also attach scheduled interview info
+    result = []
+    for a in apps:
+        d = a.to_dict()
+        sched = ScheduledInterview.query.filter_by(application_id=a.id).first()
+        if sched:
+            d['scheduled_interview'] = sched.to_dict()
+        else:
+            d['scheduled_interview'] = None
+        result.append(d)
+    return jsonify({'success': True, 'applications': result})
+
+
+# ── Updated my-submissions to include application info ─────────────────────────
+@app.route('/api/my-submissions')
+@login_required
+def my_submissions():
+    subs = TestSubmission.query.filter_by(user_id=current_user.id).order_by(TestSubmission.submitted_at.desc()).all()
+    return jsonify({'success': True, 'submissions': [s.to_dict() for s in subs]})
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# SCHEDULE INTERVIEW ROUTE (Recruiter)
+# ════════════════════════════════════════════════════════════════════════════════
+
+@app.route('/api/schedule-interview', methods=['POST'])
+@login_required
+def schedule_interview():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    application_id = data.get('application_id')
+    scheduled_at_str = data.get('scheduled_at')  # ISO format: 2025-03-15T14:30
+    interview_mode = data.get('interview_mode', 'mcq')
+
+    if not application_id or not scheduled_at_str:
+        return jsonify({'success': False, 'message': 'application_id and scheduled_at required'}), 400
+
+    app_obj = db.session.get(JobApplication, application_id)
+    if not app_obj:
+        return jsonify({'success': False, 'message': 'Application not found'}), 404
+
+    # Parse scheduled time
+    try:
+        scheduled_dt = datetime.fromisoformat(scheduled_at_str)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Invalid datetime format'}), 400
+
+    posting = app_obj.posting
+    candidate = app_obj.candidate
+    recruiter = current_user
+
+    # Create an interview session
+    question_ids = []
+    if interview_mode == 'mcq':
+        qs = ExamQuestion.query.filter_by(job_role=posting.job_role).all()
+        if len(qs) < 10:
+            qs = ExamQuestion.query.limit(15).all()
+        selected = random.sample(qs, min(10, len(qs)))
+        question_ids = [q.id for q in selected]
+
+    room_code = make_room_code()
+    sess = InterviewSession(
+        candidate_id=candidate.id,
+        recruiter_id=recruiter.id,
+        job_role=posting.job_role,
+        mode=interview_mode,
+        room_code=room_code,
+        status='pending',
+        credibility_score=100,
+        question_ids=json.dumps(question_ids),
+    )
+    db.session.add(sess); db.session.commit()
+
+    # Build Google Calendar links
+    title = f"RecruitAI Interview — {candidate.full_name or candidate.username} with {recruiter.full_name or recruiter.username}"
+    desc = f"Job Role: {posting.job_role} at {posting.company_name}\nRoom Code: {room_code}\nJoin: {os.environ.get(chr(66)+chr(65)+chr(83)+chr(69)+chr(95)+chr(85)+chr(82)+chr(76), chr(104)+chr(116)+chr(116)+chr(112)+chr(58)+chr(47)+chr(47)+chr(108)+chr(111)+chr(99)+chr(97)+chr(108)+chr(104)+chr(111)+chr(115)+chr(116)+chr(58)+chr(53)+chr(48)+chr(48)+chr(48))}/interview_room.html?room={room_code}"
+    cal_link = make_google_calendar_link(title, desc, scheduled_dt)
+
+    # Create ScheduledInterview record
+    sched = ScheduledInterview(
+        application_id=application_id,
+        session_id=sess.id,
+        recruiter_id=recruiter.id,
+        candidate_id=candidate.id,
+        scheduled_at=scheduled_dt,
+        interview_mode=interview_mode,
+        calendar_link=cal_link,
+        room_code=room_code,
+    )
+    db.session.add(sched)
+
+    # Update application status
+    app_obj.status = 'interview_scheduled'
+    db.session.commit()
+
+    scheduled_at_display = scheduled_dt.strftime('%B %d, %Y at %I:%M %p')
+
+    # Send emails — use recruiter's own Gmail if configured, else fall back to env vars
+    r_smtp_user = recruiter.smtp_email or None
+    r_smtp_pass = recruiter.smtp_app_password or None
+
+    send_interview_email(
+        candidate.email, candidate.full_name or candidate.username,
+        recruiter.full_name or recruiter.username,
+        posting.company_name, posting.job_role,
+        scheduled_at_display, room_code, cal_link,
+        role='candidate', smtp_user=r_smtp_user, smtp_pass=r_smtp_pass
+    )
+    send_interview_email(
+        recruiter.email, candidate.full_name or candidate.username,
+        recruiter.full_name or recruiter.username,
+        posting.company_name, posting.job_role,
+        scheduled_at_display, room_code, cal_link,
+        role='recruiter', smtp_user=r_smtp_user, smtp_pass=r_smtp_pass
+    )
+
+    sched.email_sent = True
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'scheduled': sched.to_dict(),
+        'room_code': room_code,
+        'calendar_link': cal_link,
+        'message': f'Interview scheduled for {scheduled_at_display}. Emails sent to both parties.'
+    })
+
+
+@app.route('/api/recruiter/email-settings', methods=['GET'])
+@login_required
+def get_email_settings():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    return jsonify({
+        'success': True,
+        'smtp_email': current_user.smtp_email or '',
+        'has_password': bool(current_user.smtp_app_password),
+    })
+
+@app.route('/api/recruiter/email-settings', methods=['POST'])
+@login_required
+def save_email_settings():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    smtp_email = data.get('smtp_email', '').strip()
+    smtp_pass  = data.get('smtp_app_password', '').strip()
+
+    if smtp_email:
+        # Basic email format check
+        import re as _re
+        if not _re.match(r'^[^@]+@[^@]+\.[^@]+$', smtp_email):
+            return jsonify({'success': False, 'message': 'Invalid email format'}), 400
+
+    current_user.smtp_email = smtp_email or None
+    if smtp_pass:  # only update password if a new one was provided
+        current_user.smtp_app_password = smtp_pass
+    elif not smtp_email:  # if email cleared, clear password too
+        current_user.smtp_app_password = None
+
+    db.session.commit()
+
+    # Test the credentials if both provided
+    if smtp_email and smtp_pass:
+        import smtplib
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(smtp_email, smtp_pass)
+            return jsonify({'success': True, 'message': '✅ Email settings saved and verified! Your Gmail is connected.'})
+        except Exception as e:
+            # Save anyway but warn
+            return jsonify({'success': True, 'verified': False,
+                'message': f'⚠️ Settings saved but Gmail test failed: {str(e)}. Check your App Password.'})
+
+    return jsonify({'success': True, 'message': 'Email settings saved.'})
+
+@app.route('/api/room-status/<room_code>')
+@login_required
+def room_status(room_code):
+    """Check if a recruiter is present in the given room (for candidate waiting screen)."""
+    sess = InterviewSession.query.filter_by(room_code=room_code).first()
+    if not sess:
+        return jsonify({'success': False, 'message': 'Room not found'}), 404
+    # A recruiter is considered present if session status is 'active'
+    recruiter_present = sess.status == 'active'
+    scheduled_at = None
+    if sess.created_at:
+        scheduled_at = sess.created_at.strftime('%Y-%m-%d %H:%M:%S')
+    return jsonify({
+        'success': True,
+        'recruiter_present': recruiter_present,
+        'status': sess.status,
+        'scheduled_at': scheduled_at,
+        'job_role': sess.job_role,
+        'mode': sess.mode,
+    })
+
+@app.route('/api/my-scheduled-interviews')
+@login_required
+def my_scheduled_interviews():
+    if current_user.is_admin:
+        scheds = ScheduledInterview.query.filter_by(recruiter_id=current_user.id).order_by(ScheduledInterview.scheduled_at.desc()).all()
+    else:
+        scheds = ScheduledInterview.query.filter_by(candidate_id=current_user.id).order_by(ScheduledInterview.scheduled_at.desc()).all()
+    return jsonify({'success': True, 'scheduled': [s.to_dict() for s in scheds]})
+
+
+@app.route('/api/interview-complete/<int:session_id>')
+@login_required
+def interview_complete_info(session_id):
+    """Returns info for the post-interview completion page."""
+    sess = db.session.get(InterviewSession, session_id)
+    if not sess:
+        return jsonify({'success': False, 'message': 'Session not found'}), 404
+    if sess.candidate_id != current_user.id and not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    sched = ScheduledInterview.query.filter_by(session_id=session_id).first()
+    sub = TestSubmission.query.filter_by(session_id=session_id).first()
+
+    return jsonify({
+        'success': True,
+        'session': sess.to_dict(),
+        'scheduled': sched.to_dict() if sched else None,
+        'submission': sub.to_dict() if sub else None,
+    })
 
 
 if __name__ == '__main__':

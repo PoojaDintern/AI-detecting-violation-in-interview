@@ -8,205 +8,117 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f1117;
-  --bg2: #161b27;
-  --s: #1a2035;
-  --s2: #1e2640;
-  --border: #2a3350;
-  --border2: #334066;
-  --accent: #4f8ef7;
-  --accent2: #6aa3ff;
-  --accent-light: rgba(79,142,247,0.12);
-  --accent-glow: rgba(79,142,247,0.2);
-  --green: #10b981;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-  --text: #e8edf5;
-  --text2: #c5cde0;
-  --muted: #7a88a8;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
 }
-
-
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-.brand{font-family:'Plus Jakarta Sans', 'Playfair Display', sans-serif;font-size:20px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));background-clip: text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 25%,rgba(67,97,238,0.03) 0%,transparent 50%),radial-gradient(ellipse at 85% 75%,rgba(79,142,247,0.02) 0%,transparent 50%);pointer-events:none;z-index:0;}
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(67,97,238,0.08);}
+.brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);}
 .topbar-right{display:flex;align-items:center;gap:16px;font-size:14px;color:var(--muted);}
 .logout-btn{padding:8px 18px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s;text-decoration:none;}
-.logout-btn:hover{border-color:var(--accent);color:var(--accent);}
-.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px);}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px);position:relative;z-index:1;}
 .sidebar{background:var(--s);border-right:1px solid var(--border);padding:24px 0;}
 .nav-item{display:flex;align-items:center;gap:12px;padding:12px 24px;cursor:pointer;color:var(--muted);font-size:14px;transition:all .2s;border-left:3px solid transparent;}
-.nav-item:hover{color:var(--text);background:rgba(13,31,60,0.04);}
-.nav-item.active{color:var(--accent2);background:rgba(13,31,60,0.07);border-left-color:var(--accent);}
+.nav-item:hover{color:var(--text);background:rgba(79,142,247,0.05);}
+.nav-item.active{color:var(--accent2);background:rgba(79,142,247,0.08);border-left-color:var(--accent);}
 .nav-icon{font-size:18px;width:24px;text-align:center;}
 .main{padding:32px;overflow-y:auto;}
 .page{display:none;animation:fadeIn .3s ease;}
 .page.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-.page-title{font-family:'Playfair Display', serif;font-size:26px;font-weight:700;margin-bottom:8px;}
+.page-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:6px;}
 .page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
-/* STATS */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;}
 .stat{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.stat.blue::before{background:linear-gradient(90deg,var(--accent),var(--accent2));}
-.stat.green::before{background:linear-gradient(90deg,#10b981,#34d399);}
-.stat.yellow::before{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
-.stat.red::before{background:linear-gradient(90deg,#f43f5e,#fb7185);}
-.stat-val{font-family:'Playfair Display', serif;font-size:36px;font-weight:700;margin-bottom:4px;}
-.stat-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
-/* CREATE SESSION PANEL */
-.card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px;}
-.card-title{font-family:'Playfair Display', serif;font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
-.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
-.mode-card{border:2px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;text-align:center;}
-.mode-card:hover{border-color:var(--accent);background:rgba(79,142,247,.1);}
-.mode-card.selected{border-color:var(--accent);background:rgba(13,31,60,0.07);box-shadow:0 0 0 4px rgba(13,31,60,0.07);}
-.mode-icon{font-size:36px;margin-bottom:10px;}
-.mode-name{font-weight:600;font-size:15px;margin-bottom:4px;}
-.mode-desc{font-size:12px;color:var(--muted);line-height:1.5;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
-.fg label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600;}
-.fg select,.fg input{width:100%;padding:11px 14px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans', sans-serif;outline:none;transition:border-color .2s;}
-.fg select:focus,.fg input:focus{border-color:var(--accent);}
+.stat.blue::before{background:linear-gradient(90deg,#4361ee,#6d83f3);}
+.stat.green::before{background:linear-gradient(90deg,#059669,#10b981);}
+.stat.yellow::before{background:linear-gradient(90deg,#d97706,#f59e0b);}
+.stat.red::before{background:linear-gradient(90deg,#dc2626,#ef4444);}
+.stat.purple::before{background:linear-gradient(90deg,#7c3aed,#a78bfa);}
+.stat-val{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;margin-bottom:4px;}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
+.card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;}
+.fg label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;font-weight:600;}
+.fg select,.fg input,.fg textarea{width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.fg textarea{resize:vertical;min-height:72px;}
+.fg select:focus,.fg input:focus,.fg textarea:focus{border-color:var(--accent);}
 .fg select option{background:var(--s2);}
-.btn-primary{padding:12px 28px;background:var(--accent);border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .25s;font-family:'DM Sans', sans-serif;}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(13,31,60,0.3);}
-.btn-sm{padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans', sans-serif;transition:all .2s;}
-.btn-green{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3);}
+.btn-primary{padding:11px 24px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,142,247,0.3);}
+.btn-sm{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;}
+.btn-green{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.25);}
 .btn-green:hover{background:rgba(16,185,129,.25);}
-.btn-red{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+.btn-red{background:rgba(220,38,38,.1);color:#991b1b;border:1px solid rgba(220,38,38,.25);}
 .btn-red:hover{background:rgba(239,68,68,.25);}
-.btn-blue{background:rgba(79,142,247,.1);color:var(--accent2);border:1px solid rgba(13,31,60,0.2);}
-.btn-blue:hover{background:rgba(13,31,60,0.2);}
-/* TABLE */
-.table-wrap{overflow-x:auto;}
+.btn-blue{background:rgba(79,142,247,.12);color:var(--accent2);border:1px solid rgba(79,142,247,.25);}
+.btn-blue:hover{background:rgba(79,142,247,.22);}
 table{width:100%;border-collapse:collapse;}
-th{padding:11px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);font-weight:600;}
-td{padding:13px 14px;font-size:13px;border-bottom:1px solid rgba(42,42,61,.6);}
-tr:hover td{background:rgba(13,31,60,0.025);}
+th{padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);font-weight:600;}
+td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(42,51,80,.5);}
+tr:hover td{background:rgba(79,142,247,0.03);}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
-.badge-green{background:rgba(16,185,129,.15);color:#6ee7b7;}
+.badge-green{background:rgba(5,150,105,.1);color:#047857;}
 .badge-red{background:rgba(244,63,94,.15);color:#fda4af;}
-.badge-yellow{background:rgba(245,158,11,.15);color:#fcd34d;}
-.badge-blue{background:rgba(79,142,247,.1);color:var(--accent2);}
-/* LIVE MONITOR */
-.live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
-.live-card{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;}
-.live-card .pulse{width:10px;height:10px;border-radius:50%;background:var(--green);position:absolute;top:20px;right:20px;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4);}50%{box-shadow:0 0 0 8px rgba(16,185,129,0);}}
-.live-name{font-weight:600;font-size:15px;margin-bottom:4px;}
-.live-role{font-size:12px;color:var(--muted);margin-bottom:12px;}
-.live-scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.ls{background:var(--s2);border-radius:8px;padding:10px;text-align:center;}
-.ls-val{font-size:22px;font-weight:700;}
-.ls-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
-/* ALERT */
-
+.badge-yellow{background:rgba(217,119,6,.1);color:#fcd34d;}
+.badge-blue{background:rgba(79,142,247,.12);color:var(--accent2);}
+.badge-purple{background:rgba(124,58,237,.15);color:#c4b5fd;}
 .empty{text-align:center;padding:48px;color:var(--muted);font-size:14px;}
-.room-code{font-family:monospace;font-size:18px;font-weight:700;background:var(--s2);padding:8px 14px;border-radius:8px;border:1px solid var(--border);color:var(--accent2);letter-spacing:.12em;}
-.copy-btn{cursor:pointer;font-size:11px;color:var(--muted);margin-left:10px;}
-
-
-.brand { color: var(--accent); -webkit-text-fill-color: var(--accent); }
-.brand-name { color: var(--text); -webkit-text-fill-color: var(--text); }
-
-
-
-/* Subtle background texture */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(circle at 20% 20%, rgba(13,31,60,0.05) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, rgba(37,99,235,0.04) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Cards elevated */
-.card, .stat, .join-card, .result-header, .score-card, .modal-card {
-  box-shadow: 0 1px 3px rgba(15,30,60,0.06), 0 4px 16px rgba(15,30,60,0.08);
-  transition: box-shadow 0.2s ease;
-}
-.card:hover, .stat:hover {
-  box-shadow: 0 2px 8px rgba(15,30,60,0.08), 0 8px 24px rgba(15,30,60,0.1);
-}
-
-/* Topbar elevated */
-.topbar {
-  box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(15,30,60,0.06);
-  backdrop-filter: blur(10px);
-}
-
-/* Table styling */
-table {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(15,30,60,0.06);
-}
-
-/* Stat top bar glow */
-.stat.blue::before { background: linear-gradient(90deg, var(--accent), #4a6fa5); }
-.stat.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
-.stat.yellow::before { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
-.stat.red::before { background: linear-gradient(90deg, var(--red), #fc8181); }
-.stat.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-.stat.teal::before { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
-
-/* Proctoring sidebar brighter */
-.proctoring-sidebar {
-  background: var(--s);
-  border-left: 1px solid var(--border);
-}
-
-/* Section titles */
-.page-title, .card-title, .section-title, .join-title {
-  color: var(--text);
-  font-family: 'Playfair Display', serif;
-}
-.page-sub, .join-desc { color: var(--muted); }
-
-/* Main wrapper bg */
-.main, .container { position: relative; z-index: 1; }
-.layout { position: relative; z-index: 1; }
-
-
-/* Dark background with subtle gradient */
-body {
-  background: var(--bg);
-  background-attachment: fixed;
-  color: var(--text);
-}
-
-/* Subtle dark background decoration */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: 
-    radial-gradient(ellipse at 15% 25%, rgba(13,31,60,0.06) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 75%, rgba(13,31,60,0.03) 0%, transparent 45%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Background grid - subtle on dark */
-
-
-
-
-/* handled via JS scoreColor function updates */
-
-
-/* Dark scrollbar */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+.jobs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.job-card{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:20px;transition:all .2s;}
+.job-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(79,142,247,0.1);}
+.job-section-chip{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);background:rgba(79,142,247,.1);padding:3px 10px;border-radius:20px;}
+.job-card-role{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin:10px 0 3px;}
+.job-card-company{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.job-card-desc{font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:14px;max-height:48px;overflow:hidden;}
+.applicant-card{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.applicant-avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.mode-card{border:2px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;}
+.mode-card:hover{border-color:var(--accent);background:rgba(79,142,247,.07);}
+.mode-card.selected{border-color:var(--accent);background:rgba(79,142,247,.1);}
+.mode-icon{font-size:28px;margin-bottom:6px;}
+.mode-name{font-weight:600;font-size:13px;}
+.live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.live-card{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;}
+.pulse-dot{width:10px;height:10px;border-radius:50%;background:var(--green);position:absolute;top:20px;right:20px;animation:pulseDot 2s infinite;}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4);}50%{box-shadow:0 0 0 8px rgba(16,185,129,0);}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.modal-overlay.hidden{display:none;}
+.modal-card{background:var(--s);border:1px solid var(--border);border-radius:18px;padding:32px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:13px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);display:none;max-width:340px;}
+.toast.show{display:block;animation:slideUp .3s ease;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -220,15 +132,18 @@ body::before {
 
 <div class="layout">
   <div class="sidebar">
-    <div class="nav-item active" onclick="showPage('overview')"><span class="nav-icon">📊</span>Overview</div>
-    <div class="nav-item" onclick="showPage('create')"><span class="nav-icon">➕</span>Create Interview</div>
-    <div class="nav-item" onclick="showPage('sessions')"><span class="nav-icon">📋</span>Sessions</div>
-    <div class="nav-item" onclick="showPage('live')"><span class="nav-icon">🔴</span>Live Monitor</div>
-    <div class="nav-item" onclick="showPage('candidates')"><span class="nav-icon">👥</span>Candidates</div>
+    <div class="nav-item active" data-page="overview" onclick="showPage('overview',this)"><span class="nav-icon">📊</span>Overview</div>
+    <div class="nav-item" data-page="jobs" onclick="showPage('jobs',this)"><span class="nav-icon">💼</span>Job Postings</div>
+    <div class="nav-item" data-page="applicants" onclick="showPage('applicants',this)"><span class="nav-icon">👥</span>Applicants</div>
+    <div class="nav-item" data-page="create" onclick="showPage('create',this)"><span class="nav-icon">➕</span>Create Interview</div>
+    <div class="nav-item" data-page="sessions" onclick="showPage('sessions',this)"><span class="nav-icon">📋</span>Sessions</div>
+    <div class="nav-item" data-page="live" onclick="showPage('live',this)"><span class="nav-icon">🔴</span>Live Monitor</div>
+    <div class="nav-item" data-page="candidates" onclick="showPage('candidates',this)"><span class="nav-icon">🧑‍💼</span>Candidates</div>
+    <div class="nav-item" data-page="scheduled" onclick="showPage('scheduled',this)"><span class="nav-icon">📅</span>Scheduled</div>
+    <div class="nav-item" data-page="emailsettings" onclick="showPage('emailsettings',this)"><span class="nav-icon">📧</span>Email Settings</div>
   </div>
 
   <div class="main">
-
     <!-- OVERVIEW -->
     <div class="page active" id="page-overview">
       <div class="page-title">Dashboard Overview</div>
@@ -238,154 +153,214 @@ body::before {
         <div class="stat green"><div class="stat-val" id="s-submissions">—</div><div class="stat-lbl">Submissions</div></div>
         <div class="stat yellow"><div class="stat-val" id="s-violations">—</div><div class="stat-lbl">Violations</div></div>
         <div class="stat red"><div class="stat-val" id="s-active">—</div><div class="stat-lbl">Active Sessions</div></div>
+        <div class="stat purple"><div class="stat-val" id="s-jobs">—</div><div class="stat-lbl">Job Postings</div></div>
       </div>
       <div class="card">
-        <div class="card-title">📋 Recent Submissions</div>
-        <div id="recent-table" class="table-wrap"><div class="empty">Loading…</div></div>
+        <div class="card-title" style="flex-wrap:wrap;gap:12px;">
+          <span>📋 Recent Sessions</span>
+          <div style="display:flex;gap:10px;margin-left:auto;">
+            <input id="ov-filter-name" type="text" placeholder="Search…" oninput="applyOverviewFilters()"
+              style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;width:120px;outline:none;">
+            <button onclick="downloadSessionsExcel()" style="padding:7px 14px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:8px;color:#059669;font-size:12px;font-weight:600;cursor:pointer;">⬇ Excel</button>
+          </div>
+        </div>
+        <div style="max-height:400px;overflow-y:auto;overflow-x:auto;" id="recent-table"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- JOB POSTINGS -->
+    <div class="page" id="page-jobs">
+      <div class="page-title">Post a Job</div>
+      <div class="page-sub">Fill in all details to publish a job opening that candidates can discover and apply for</div>
+
+      <!-- Alert messages -->
+      <div id="jp-success-alert" style="display:none;align-items:center;gap:12px;padding:14px 18px;background:rgba(5,150,105,.08);border:1.5px solid rgba(5,150,105,.25);border-radius:10px;color:#065f46;font-size:14px;font-weight:600;margin-bottom:20px;">
+        <span style="font-size:18px;">✅</span><span id="jp-success-msg">Job posted successfully!</span>
+      </div>
+      <div id="jp-error-alert" style="display:none;align-items:center;gap:12px;padding:14px 18px;background:rgba(220,38,38,.07);border:1.5px solid rgba(220,38,38,.2);border-radius:10px;color:#991b1b;font-size:14px;font-weight:600;margin-bottom:20px;">
+        <span style="font-size:18px;">⚠️</span><span id="jp-error-msg">Please fill in all required fields.</span>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">🏢 Basic Information</div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Job Title <span style="color:var(--red)">*</span></label>
+            <input type="text" id="jp-job-title" placeholder="e.g., Senior Software Engineer">
+          </div>
+          <div class="fg">
+            <label>Company Name <span style="color:var(--red)">*</span></label>
+            <input type="text" id="jp-company" placeholder="e.g., Acme Corp">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Department / Section <span style="color:var(--red)">*</span></label>
+            <select id="jp-section"><option value="">Select department…</option></select>
+          </div>
+          <div class="fg">
+            <label>Job Role <span style="color:var(--red)">*</span></label>
+            <select id="jp-role"><option value="">Select role…</option></select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:0;">
+          <label>Job Description <span style="color:var(--red)">*</span></label>
+          <textarea id="jp-desc" placeholder="Describe the role, responsibilities, and what makes this opportunity unique…" style="min-height:110px;"></textarea>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">🛠️ Skills &amp; Requirements</div>
+        <div class="fg" style="margin-bottom:14px;">
+          <label>Skills Required <span style="color:var(--red)">*</span></label>
+          <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <input type="text" id="jp-skill-input" placeholder="e.g., Python, React, SQL…" style="flex:1;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onkeydown="if(event.key==='Enter'){event.preventDefault();jpAddSkill();}">
+            <button type="button" onclick="jpAddSkill()" style="padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">+ Add Skill</button>
+          </div>
+          <div id="jp-skills-list" style="display:flex;flex-wrap:wrap;gap:8px;min-height:38px;padding:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;">
+            <span style="color:var(--muted2);font-size:13px;font-style:italic;align-self:center;" id="jp-skills-placeholder">No skills added yet — type above and press Enter or click Add Skill</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">📋 Experience &amp; Job Type</div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Experience Required <span style="color:var(--red)">*</span></label>
+            <select id="jp-experience">
+              <option value="">Select level…</option>
+              <option value="Fresher">Fresher (0–1 years)</option>
+              <option value="Junior">Junior (1–3 years)</option>
+              <option value="Mid-Level">Mid-Level (3–5 years)</option>
+              <option value="Senior">Senior (5–8 years)</option>
+              <option value="Lead">Lead (8+ years)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Job Type <span style="color:var(--red)">*</span></label>
+            <select id="jp-job-type">
+              <option value="">Select type…</option>
+              <option value="Full-Time">Full-Time</option>
+              <option value="Part-Time">Part-Time</option>
+              <option value="Contract">Contract</option>
+              <option value="Freelance">Freelance</option>
+              <option value="Internship">Internship</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:32px;">
+        <button class="btn-primary" onclick="createJobPosting()" style="padding:13px 32px;font-size:15px;">
+          📢 Publish Job Posting
+        </button>
+        <button onclick="jpResetForm()" style="padding:13px 24px;background:transparent;border:1.5px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          ↺ Reset Form
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📌 Your Active Postings</div>
+        <div id="jobs-grid-wrap"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+    <!-- APPLICANTS -->
+    <div class="page" id="page-applicants">
+      <div class="page-title">Applicants</div>
+      <div class="page-sub">Select a posting to see who applied, then schedule interviews</div>
+      <div id="applicants-role-select-card">
+        <div class="card">
+          <div class="card-title">🎯 Your Job Postings</div>
+          <div id="applicants-posting-list"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+      <div id="applicants-list-card" style="display:none;">
+        <div class="card">
+          <div class="card-title">
+            <span id="applicants-job-title">Applicants</span>
+            <button class="btn-sm btn-blue" style="margin-left:auto;" onclick="clearApplicantView()">← Back</button>
+          </div>
+          <div id="applicants-list"><div class="empty">Loading…</div></div>
+        </div>
       </div>
     </div>
 
     <!-- CREATE INTERVIEW -->
     <div class="page" id="page-create">
       <div class="page-title">Create Interview Session</div>
-      <div class="page-sub">Choose mode, role, and candidate — then send the room code</div>
-
+      <div class="page-sub">Select a job role to see applicants, then create a session instantly</div>
       <div class="card">
-        <div class="card-title">🎯 Select Interview Mode</div>
+        <div class="card-title">🎯 Interview Mode</div>
         <div class="mode-grid">
-          <div class="mode-card selected" id="mode-mcq" onclick="selectMode('mcq')">
-            <div class="mode-icon">📝</div>
-            <div class="mode-name">MCQ Exam</div>
-            <div class="mode-desc">10 role-specific multiple choice questions. Auto-graded with credibility monitoring.</div>
-          </div>
-          <div class="mode-card" id="mode-ai_interview" onclick="selectMode('ai_interview')">
-            <div class="mode-icon">🤖</div>
-            <div class="mode-name">AI Interviewer</div>
-            <div class="mode-desc">Animated AI avatar asks open-ended questions. Claude evaluates each answer in real-time.</div>
-          </div>
-          <div class="mode-card" id="mode-live_recruiter" onclick="selectMode('live_recruiter')">
-            <div class="mode-icon">🎥</div>
-            <div class="mode-name">Live Recruiter</div>
-            <div class="mode-desc">You interview directly via WebRTC video. Full proctoring runs in the background.</div>
-          </div>
+          <div class="mode-card selected" id="mode-mcq" onclick="selectMode('mcq')"><div class="mode-icon">📝</div><div class="mode-name">MCQ Exam</div></div>
+          <div class="mode-card" id="mode-ai_interview" onclick="selectMode('ai_interview')"><div class="mode-icon">🤖</div><div class="mode-name">AI Interviewer</div></div>
+          <div class="mode-card" id="mode-live_recruiter" onclick="selectMode('live_recruiter')"><div class="mode-icon">🎥</div><div class="mode-name">Live Recruiter</div></div>
         </div>
 
-        <div class="form-row">
+        <!-- Step 1: Role -->
+        <div class="fg" style="margin-bottom:16px;">
+          <label>① Job Role <span style="color:var(--red)">*</span></label>
+          <select id="c-role" onchange="onRoleChange()" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;">
+            <option value="">— Select a job role —</option>
+          </select>
+        </div>
+
+        <!-- Step 2: Candidate (shown after role selected) -->
+        <div id="candidate-section" style="display:none;margin-bottom:16px;">
           <div class="fg">
-            <label>Candidate Username</label>
-            <input type="text" id="c-candidate" placeholder="Enter candidate's username">
-          </div>
-          <div class="fg">
-            <label>Job Role</label>
-            <select id="c-role">
-              <option value="">Loading roles…</option>
+            <label>② Select Candidate <span style="color:var(--red)">*</span></label>
+            <!-- Loading state -->
+            <div id="candidate-loading" style="display:none;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+              <span style="animation:spin 1s linear infinite;display:inline-block;">⏳</span> Loading applicants…
+            </div>
+            <!-- No candidates state -->
+            <div id="candidate-empty" style="display:none;padding:14px 16px;background:rgba(217,119,6,.06);border:1.5px dashed rgba(217,119,6,.35);border-radius:8px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:4px;">🚫</div>
+              <div style="font-size:13px;font-weight:600;color:#92400e;">No candidates have applied for this role yet</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;">Share your job posting so candidates can apply first</div>
+            </div>
+            <!-- Candidates dropdown -->
+            <select id="c-candidate-select" style="display:none;width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onchange="onCandidateSelect()">
+              <option value="">— Select a candidate —</option>
             </select>
           </div>
-        </div>
 
-        <!-- AI VOICE CONFIGURATION -->
-        <div id="ai-voice-config" style="display:none;margin-bottom:24px;">
-          <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
-            <span>🎙️</span> AI Interviewer Voice Settings
-          </div>
-          <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:20px;">
-
-            <!-- Gender Row -->
-            <div style="margin-bottom:18px;">
-              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:10px;">Voice Gender</div>
-              <div style="display:flex;gap:10px;">
-                <div class="voice-opt-card selected" id="vgender-female" onclick="setVoiceGender('female')" style="flex:1;padding:14px;border:2px solid var(--accent);border-radius:11px;cursor:pointer;text-align:center;background:rgba(79,142,247,.08);transition:all .2s;">
-                  <div style="font-size:26px;margin-bottom:4px;">👩</div>
-                  <div style="font-size:13px;font-weight:600;">Female</div>
-                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">Warm & professional</div>
-                </div>
-                <div class="voice-opt-card" id="vgender-male" onclick="setVoiceGender('male')" style="flex:1;padding:14px;border:2px solid var(--border);border-radius:11px;cursor:pointer;text-align:center;background:transparent;transition:all .2s;">
-                  <div style="font-size:26px;margin-bottom:4px;">👨</div>
-                  <div style="font-size:13px;font-weight:600;">Male</div>
-                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">Deep & authoritative</div>
-                </div>
-                <div class="voice-opt-card" id="vgender-neutral" onclick="setVoiceGender('neutral')" style="flex:1;padding:14px;border:2px solid var(--border);border-radius:11px;cursor:pointer;text-align:center;background:transparent;transition:all .2s;">
-                  <div style="font-size:26px;margin-bottom:4px;">🤖</div>
-                  <div style="font-size:13px;font-weight:600;">Neutral</div>
-                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">System default</div>
-                </div>
+          <!-- Candidate info card (shown after selecting candidate) -->
+          <div id="candidate-info-card" style="display:none;margin-top:12px;padding:14px 16px;background:linear-gradient(135deg,rgba(67,97,238,.07),rgba(67,97,238,.03));border:1px solid rgba(67,97,238,.2);border-radius:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div id="c-info-avatar" style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;">?</div>
+              <div style="flex:1;">
+                <div id="c-info-name" style="font-weight:700;font-size:14px;color:var(--text);">—</div>
+                <div id="c-info-meta" style="font-size:12px;color:var(--muted);margin-top:2px;">—</div>
               </div>
-            </div>
-
-            <!-- Accent Row -->
-            <div style="margin-bottom:18px;">
-              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:10px;">Accent / Language</div>
-              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-                <div class="accent-chip selected" id="vaccent-en-IN" onclick="setAccent('en-IN','🇮🇳 Indian')" style="padding:9px 10px;border:2px solid var(--accent);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;background:rgba(79,142,247,.08);transition:all .2s;">🇮🇳 Indian</div>
-                <div class="accent-chip" id="vaccent-en-US" onclick="setAccent('en-US','🇺🇸 American')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇺🇸 American</div>
-                <div class="accent-chip" id="vaccent-en-GB" onclick="setAccent('en-GB','🇬🇧 British')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇬🇧 British</div>
-                <div class="accent-chip" id="vaccent-en-AU" onclick="setAccent('en-AU','🇦🇺 Australian')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇦🇺 Australian</div>
-                <div class="accent-chip" id="vaccent-en-CA" onclick="setAccent('en-CA','🇨🇦 Canadian')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇨🇦 Canadian</div>
-                <div class="accent-chip" id="vaccent-en-ZA" onclick="setAccent('en-ZA','🇿🇦 S. African')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇿🇦 S. African</div>
-                <div class="accent-chip" id="vaccent-en-NZ" onclick="setAccent('en-NZ','🇳🇿 NZ Eng')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇳🇿 NZ Eng</div>
-                <div class="accent-chip" id="vaccent-en-SG" onclick="setAccent('en-SG','🇸🇬 Singaporean')" style="padding:9px 10px;border:2px solid var(--border);border-radius:9px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;">🇸🇬 Singaporean</div>
-              </div>
-            </div>
-
-            <!-- Tone Row -->
-            <div style="margin-bottom:18px;">
-              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:10px;">Interview Tone</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <div class="tone-chip selected" id="vtone-professional" onclick="setTone('professional','Professional')" style="padding:8px 16px;border:2px solid var(--accent);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;background:rgba(79,142,247,.08);transition:all .2s;">💼 Professional</div>
-                <div class="tone-chip" id="vtone-friendly" onclick="setTone('friendly','Friendly')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">😊 Friendly</div>
-                <div class="tone-chip" id="vtone-formal" onclick="setTone('formal','Formal')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">🎩 Formal</div>
-                <div class="tone-chip" id="vtone-energetic" onclick="setTone('energetic','Energetic')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">⚡ Energetic</div>
-                <div class="tone-chip" id="vtone-calm" onclick="setTone('calm','Calm')" style="padding:8px 16px;border:2px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;">🌿 Calm</div>
-              </div>
-            </div>
-
-            <!-- Speed & Pitch Sliders -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-              <div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                  <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Speaking Speed</div>
-                  <div style="font-size:12px;color:var(--accent2);font-weight:700;" id="speed-val">Normal (0.9x)</div>
-                </div>
-                <input type="range" id="voice-speed" min="0.5" max="1.5" step="0.1" value="0.9"
-                  oninput="updateSpeedLabel(this.value)"
-                  style="width:100%;accent-color:var(--accent);cursor:pointer;">
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;"><span>Slow</span><span>Normal</span><span>Fast</span></div>
-              </div>
-              <div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                  <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Voice Pitch</div>
-                  <div style="font-size:12px;color:var(--accent2);font-weight:700;" id="pitch-val">Normal (1.05)</div>
-                </div>
-                <input type="range" id="voice-pitch" min="0.5" max="2.0" step="0.05" value="1.05"
-                  oninput="updatePitchLabel(this.value)"
-                  style="width:100%;accent-color:var(--accent);cursor:pointer;">
-                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;"><span>Deep</span><span>Normal</span><span>High</span></div>
-              </div>
-            </div>
-
-            <!-- Preview Button -->
-            <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
-              <button onclick="previewVoice()" style="padding:9px 20px;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);border-radius:8px;color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(79,142,247,.2)'" onmouseout="this.style.background='rgba(79,142,247,.12)'">
-                🔊 Preview Voice
-              </button>
-              <div style="font-size:12px;color:var(--muted);" id="voice-preview-status"></div>
+              <div id="c-info-status" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;"></div>
             </div>
           </div>
         </div>
 
-        <button class="btn-primary" onclick="createSession()">🚀 Create Session &amp; Get Room Code</button>
+        <!-- Hidden field for username (used by createSession) -->
+        <input type="hidden" id="c-candidate">
+
+        <button class="btn-primary" id="create-session-btn" onclick="createSession()" style="padding:12px 28px;font-size:15px;" disabled>
+          🚀 Create Session
+        </button>
+
         <div id="session-result" style="display:none;margin-top:20px;padding:20px;background:var(--s2);border-radius:12px;border:1px solid var(--border);">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Room Code (share with candidate):</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Room Code — share with candidate:</div>
           <div style="display:flex;align-items:center;gap:10px;">
-            <div class="room-code" id="created-code">—</div>
-            <span class="copy-btn" onclick="copyCode()">📋 Copy</span>
+            <span style="font-family:monospace;font-size:20px;font-weight:700;color:var(--accent2);background:white;padding:8px 14px;border-radius:8px;letter-spacing:.12em;" id="created-code">—</span>
+            <button class="btn-sm btn-blue" onclick="copyCode()">📋 Copy</button>
           </div>
-          <div style="margin-top:12px;font-size:13px;color:var(--muted);">
-            Candidate joins at: <code style="color:var(--accent2);" id="join-url">—</code>
+          <div style="margin-top:10px;font-size:13px;color:var(--muted);">URL: <code style="color:var(--accent2);" id="join-url">—</code></div>
+          <div id="cal-link-wrap" style="display:none;margin-top:10px;">
+            <a id="cal-link" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;padding:7px 14px;background:rgba(67,97,238,.09);border:1px solid rgba(67,97,238,.2);border-radius:8px;">
+              📅 Add to Google Calendar
+            </a>
           </div>
           <div style="margin-top:14px;display:flex;gap:10px;">
             <button class="btn-sm btn-green" onclick="openRecruiterRoom()">Join as Recruiter →</button>
-            <button class="btn-sm btn-blue" onclick="resetCreateForm()">Create Another</button>
+            <button class="btn-sm btn-blue" onclick="resetCreateForm()">New Session</button>
           </div>
         </div>
       </div>
@@ -396,309 +371,813 @@ body::before {
       <div class="page-title">All Sessions</div>
       <div class="page-sub">History of all interview sessions</div>
       <div class="card">
-        <div id="sessions-table" class="table-wrap"><div class="empty">Loading…</div></div>
+        <div class="card-title">📋 Sessions</div>
+        <div style="max-height:480px;overflow-y:auto;overflow-x:auto;" id="sessions-table"><div class="empty">Loading…</div></div>
       </div>
     </div>
 
     <!-- LIVE MONITOR -->
     <div class="page" id="page-live">
       <div class="page-title">🔴 Live Monitor</div>
-      <div class="page-sub">Active exam sessions — updates in real time</div>
-      <div class="live-grid" id="live-grid"><div class="empty" style="grid-column:1/-1">No active sessions right now</div></div>
+      <div class="page-sub">Active interview sessions — real-time</div>
+      <div class="live-grid" id="live-grid"><div class="empty" style="grid-column:1/-1">No active sessions</div></div>
     </div>
 
     <!-- CANDIDATES -->
     <div class="page" id="page-candidates">
       <div class="page-title">Candidates</div>
       <div class="page-sub">All registered candidates</div>
+      <div class="card"><div id="candidates-table"><div class="empty">Loading…</div></div></div>
+    </div>
+
+    <!-- SCHEDULED INTERVIEWS PAGE -->
+    <div class="page" id="page-scheduled">
+      <div class="page-title">📅 Scheduled Interviews</div>
+      <div class="page-sub">All upcoming interviews — view room codes and join directly</div>
       <div class="card">
-        <div id="candidates-table" class="table-wrap"><div class="empty">Loading…</div></div>
+        <div class="card-title">🗓️ Upcoming & Recent Interviews</div>
+        <div id="scheduled-table"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- EMAIL SETTINGS PAGE -->
+    <div class="page" id="page-emailsettings">
+      <div class="page-title">Email Settings</div>
+      <div class="page-sub">Connect your Gmail once — emails send automatically every time you schedule an interview</div>
+
+      <div id="email-status-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;max-width:560px;"></div>
+
+      <div class="card" style="max-width:560px;">
+        <div class="card-title">📧 Your Gmail Connection</div>
+
+        <div style="background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.18);border-radius:12px;padding:18px;margin-bottom:22px;">
+          <div style="font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:12px;">⚡ One-time setup — 3 simple steps:</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+              <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">1</span>
+              <span>Go to your Google Account → <strong>Security</strong> → Turn on <strong>2-Step Verification</strong></span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+              <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">2</span>
+              <span>Visit <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--accent);font-weight:600;">myaccount.google.com/apppasswords</a> → Create App Password → Name it <strong>RecruitAI</strong> → Copy the 16-char password</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+              <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">3</span>
+              <span>Paste your Gmail and App Password below → Click <strong>Save & Test</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="fg" style="margin-bottom:16px;">
+          <label>Your Gmail Address</label>
+          <input type="email" id="es-email" placeholder="yourname@gmail.com" style="width:100%;padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="updateEmailPreview()">
+        </div>
+
+        <div class="fg" style="margin-bottom:8px;">
+          <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(16-char password from Step 2 — NOT your Gmail login password)</span></label>
+          <div style="position:relative;">
+            <input type="password" id="es-pass" placeholder="abcd efgh ijkl mnop" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+            <button onclick="togglePassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;" title="Show/hide">👁</button>
+          </div>
+          <div id="pass-hint" style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep your existing saved password</div>
+        </div>
+
+        <div id="email-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:4px;font-size:12px;color:var(--muted);">
+          📬 Candidates will receive emails <strong>from</strong>: <span id="preview-addr" style="color:var(--accent2);font-weight:600;"></span>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
+          <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:12px 28px;">💾 Save & Test Connection</button>
+          <button onclick="clearEmailSettings()" style="padding:12px 20px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Disconnect</button>
+        </div>
+
+        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">
+            🔒 <strong>Secure:</strong> App Password is stored in DB, never shown again
+          </div>
+          <div style="background:rgba(67,97,238,.06);border:1px solid rgba(67,97,238,.15);border-radius:9px;padding:12px;font-size:12px;color:var(--accent2);line-height:1.6;">
+            ✉️ <strong>Personal:</strong> Candidates see your Gmail as sender
+          </div>
+        </div>
       </div>
     </div>
 
   </div>
 </div>
 
-<!-- Violation toast -->
-  <div id="vtoa-msg" style="font-size:13px;color:var(--muted);"></div>
+<!-- Schedule Interview Modal -->
+<div class="modal-overlay hidden" id="schedule-modal">
+  <div class="modal-card">
+    <div class="modal-title">
+      📅 Schedule Interview
+      <button onclick="closeScheduleModal()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>
+    </div>
+    <div id="schedule-candidate-info" style="background:var(--s2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:13px;border:1px solid var(--border);"></div>
+    <div class="fg" style="margin-bottom:14px;">
+      <label>Interview Mode</label>
+      <div class="mode-grid">
+        <div class="mode-card selected" id="sched-mode-mcq" onclick="selectSchedMode('mcq')"><div class="mode-icon">📝</div><div class="mode-name">MCQ</div></div>
+        <div class="mode-card" id="sched-mode-ai_interview" onclick="selectSchedMode('ai_interview')"><div class="mode-icon">🤖</div><div class="mode-name">AI Interviewer</div></div>
+        <div class="mode-card" id="sched-mode-live_recruiter" onclick="selectSchedMode('live_recruiter')"><div class="mode-icon">🎥</div><div class="mode-name">Live Recruiter</div></div>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:20px;">
+      <label>Interview Date &amp; Time</label>
+      <input type="datetime-local" id="sched-datetime">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-primary" id="sched-confirm-btn" onclick="confirmSchedule()" style="flex:1;">📨 Schedule &amp; Send Email</button>
+      <button class="btn-sm btn-red" onclick="closeScheduleModal()" style="padding:11px 18px;">Cancel</button>
+    </div>
+    <div id="sched-result" style="display:none;margin-top:16px;padding:14px;background:rgba(16,185,129,.08);border:1px solid rgba(5,150,105,.25);border-radius:10px;font-size:13px;line-height:1.6;"></div>
+  </div>
 </div>
 
+    <!-- EMAIL SETTINGS PAGE -->
+    <div class="page" id="page-emailsettings">
+      <div class="page-title">Email Settings</div>
+      <div class="page-sub">Connect your Gmail so interview notifications send directly from your address</div>
+
+      <div class="card" style="max-width:560px;">
+        <div class="card-title">📧 Your Gmail Connection</div>
+
+        <!-- Status banner -->
+        <div id="email-status-banner" style="display:none;padding:12px 16px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:20px;align-items:center;gap:10px;"></div>
+
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:22px;font-size:13px;color:var(--muted);line-height:1.7;">
+          <strong style="color:var(--text);">How it works:</strong><br>
+          When you schedule an interview, the notification email will be sent <strong>from your Gmail</strong> directly to the candidate.
+          You need a <strong>Gmail App Password</strong> — not your regular password.<br><br>
+          <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--accent);font-weight:600;">→ Generate App Password here</a>
+          <span style="color:var(--muted2);"> (requires 2-Step Verification to be ON)</span>
+        </div>
+
+        <div class="fg" style="margin-bottom:16px;">
+          <label>Your Gmail Address</label>
+          <input type="email" id="es-email" placeholder="yourname@gmail.com" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <div class="fg" style="margin-bottom:16px;">
+          <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;">(16 characters, e.g. abcd efgh ijkl mnop)</span></label>
+          <div style="position:relative;">
+            <input type="password" id="es-pass" placeholder="xxxx xxxx xxxx xxxx" style="width:100%;padding:10px 40px 10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+            <button onclick="togglePassVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;" title="Show/hide">👁</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep existing password unchanged</div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:11px 28px;">
+            💾 Save & Test Connection
+          </button>
+          <button onclick="clearEmailSettings()" style="padding:11px 20px;background:transparent;border:1.5px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+            🗑 Disconnect Gmail
+          </button>
+        </div>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+          <div style="font-size:12px;color:var(--muted2);line-height:1.7;">
+            🔒 Your App Password is stored securely in the database and is never shown again after saving.<br>
+            ✉️ Candidates will see your Gmail as the sender — making emails feel personal and professional.<br>
+            ⚠️ If not set, interview scheduling still works but <strong>no email</strong> will be sent.
+          </div>
+        </div>
+      </div>
+    </div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-let socket, selectedMode = 'mcq', lastCreatedSession = null;
+
+// Auto-inject ngrok header for all fetch calls through tunnel
+const _origFetch = window.fetch;
+window.fetch = (url, opts={}) => {
+  opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
+  opts.credentials = opts.credentials || 'same-origin';
+  return _origFetch(url, opts);
+};
+let socket, selectedMode='mcq', schedMode='mcq', lastCreatedSession=null;
+let currentApplicationId=null, allSubmissionsData=[];
 
 async function init() {
   const auth = await fetch('/api/check-auth').then(r=>r.json());
-  if (!auth.authenticated || !auth.is_admin) return window.location.href = 'index.html';
+  if (!auth.authenticated || (auth.role !== 'recruiter' && auth.role !== 'admin')) { window.location.href='index.html'; return; }
   document.getElementById('admin-name').textContent = auth.full_name || auth.username;
-  await loadRoles();
-  await loadDashboard();
-  await loadCandidates();
+  await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadCandidates(), loadMyPostings()]);
   initSocket();
+}
+
+async function loadJobSections() {
+  const data = await fetch('/api/job-sections').then(r=>r.json());
+  const sel = document.getElementById('jp-section');
+  sel.innerHTML = '<option value="">Select department…</option>' + data.sections.map(s=>`<option>${s}</option>`).join('');
 }
 
 async function loadRoles() {
   const data = await fetch('/api/job-roles').then(r=>r.json());
-  const sel  = document.getElementById('c-role');
-  sel.innerHTML = data.roles.map(r=>`<option value="${r}">${r}</option>`).join('');
+  ['c-role','jp-role'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) s.innerHTML = (id==='jp-role'?'<option value="">Select role…</option>':'') + data.roles.map(r=>`<option>${r}</option>`).join('');
+  });
 }
 
 async function loadDashboard() {
-  const data = await fetch('/api/dashboard-stats').then(r=>r.json());
-  if (!data.success) return;
-  document.getElementById('s-candidates').textContent  = data.stats.total_candidates;
-  document.getElementById('s-submissions').textContent = data.stats.total_submissions;
-  document.getElementById('s-violations').textContent  = data.stats.total_violations;
-  document.getElementById('s-active').textContent      = data.stats.active_sessions;
-
-  renderSubmissionsTable(data.recent_submissions, 'recent-table');
-  renderSessionsTable(data.recent_submissions, 'sessions-table');
-  renderLive(data.active_sessions_list || []);
+  const [stats, jpData] = await Promise.all([
+    fetch('/api/dashboard-stats').then(r=>r.json()).catch(()=>({success:false})),
+    fetch('/api/job-postings/all').then(r=>r.json()).catch(()=>({success:false,postings:[]}))
+  ]);
+  if (!stats.success) return;
+  document.getElementById('s-candidates').textContent = stats.stats.total_candidates;
+  document.getElementById('s-submissions').textContent = stats.stats.total_submissions;
+  document.getElementById('s-violations').textContent = stats.stats.total_violations;
+  document.getElementById('s-active').textContent = stats.stats.active_sessions;
+  document.getElementById('s-jobs').textContent = (jpData.postings||[]).filter(p=>p.is_active).length;
+  allSubmissionsData = stats.recent_submissions || [];
+  applyOverviewFilters();
+  renderSessionsTable(allSubmissionsData.slice(0,20), 'sessions-table');
+  renderLive(stats.active_sessions_list || []);
 }
 
 async function loadCandidates() {
   const data = await fetch('/api/candidates').then(r=>r.json());
-  if (!data.success) return;
-  const container = document.getElementById('candidates-table');
-  if (!data.candidates.length) { container.innerHTML = '<div class="empty">No candidates yet</div>'; return; }
-  container.innerHTML = `<table><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Submissions</th></tr></thead><tbody>
-  ${data.candidates.map(c=>`<tr><td><strong>${c.full_name||c.username}</strong></td><td>${c.username}</td><td>${c.email}</td><td>${c.submissions}</td></tr>`).join('')}
-  </tbody></table>`;
+  const el = document.getElementById('candidates-table');
+  if (!data.candidates?.length) { el.innerHTML='<div class="empty">No candidates yet</div>'; return; }
+  el.innerHTML = `<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Submissions</th></tr></thead><tbody>
+    ${data.candidates.map(c=>`<tr><td><strong>${c.full_name||c.username}</strong></td><td>${c.username}</td><td>${c.email}</td><td>${c.submissions}</td></tr>`).join('')}
+  </tbody></table></div>`;
 }
 
-function renderSubmissionsTable(subs, containerId) {
-  const el = document.getElementById(containerId);
-  if (!subs || !subs.length) { el.innerHTML = '<div class="empty">No submissions yet</div>'; return; }
-  el.innerHTML = `<table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Interview</th><th>Violations</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
-  ${subs.map(s=>`<tr>
-    <td><strong>${s.full_name||s.username}</strong></td>
-    <td>${s.job_role||'—'}</td>
-    <td><span class="badge badge-blue">${(s.mode||'mcq').replace('_',' ')}</span></td>
-    <td><strong style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</strong></td>
-    <td><strong>${s.interview_score||0}</strong></td>
-    <td>${s.total_violations}</td>
-    <td>${s.passed?'<span class="badge badge-green">PASSED</span>':'<span class="badge badge-red">FAILED</span>'}</td>
-    <td style="color:var(--muted);font-size:12px;">${s.submitted_at}</td>
-    <td><button class="btn-sm btn-blue" onclick="window.location.href='results.html?id=${s.id}'">Report</button></td>
-  </tr>`).join('')}
-  </tbody></table>`;
+async function loadMyPostings() {
+  const data = await fetch('/api/job-postings/all').then(r=>r.json()).catch(()=>({success:false,postings:[]}));
+  const active = (data.postings||[]).filter(p=>p.is_active);
+  renderPostingGrid(active);
+  renderPostingList(active);
 }
 
-function renderSessionsTable(subs, containerId) {
-  renderSubmissionsTable(subs, containerId);
-}
-
-function renderLive(sessions) {
-  const el = document.getElementById('live-grid');
-  if (!sessions.length) { el.innerHTML = '<div class="empty" style="grid-column:1/-1">No active sessions</div>'; return; }
-  el.innerHTML = sessions.map(s=>`
-    <div class="live-card">
-      <div class="pulse"></div>
-      <div class="live-name">${s.candidate_name}</div>
-      <div class="live-role">${s.job_role} · ${s.mode.replace('_',' ')}</div>
-      <div class="live-scores">
-        <div class="ls"><div class="ls-val" style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</div><div class="ls-lbl">Credibility</div></div>
-        <div class="ls"><div class="ls-val">${s.interview_score}</div><div class="ls-lbl">Interview</div></div>
+function renderPostingGrid(postings) {
+  const el = document.getElementById('jobs-grid-wrap');
+  if (!postings.length) { el.innerHTML='<div class="empty">No postings yet. Post your first role above!</div>'; return; }
+  el.innerHTML = `<div class="jobs-grid">${postings.map(p=>`
+    <div class="job-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <span class="job-section-chip">${p.job_section}</span>
+        <button class="btn-sm btn-red" onclick="deletePosting(${p.id})">✕ Close</button>
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;">
-        ${s.mode==='live_recruiter'?`<button class="btn-sm btn-green" onclick="joinLiveSession('${s.room_code}')">Join Session</button>`:''}
-        <button class="btn-sm btn-blue" onclick="showPage('candidates')">Monitor</button>
+      <div class="job-card-role">${p.job_title||p.job_role}</div>
+      <div class="job-card-company">🏢 ${p.company_name}</div>
+      ${p.package?`<div style="font-size:12px;color:#059669;font-weight:600;margin-bottom:4px;">💰 ${p.package}</div>`:''}
+      ${p.experience_required||p.job_type?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${[p.experience_required,p.job_type].filter(Boolean).join(' · ')}</div>`:''}
+      ${p.city||p.state?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📍 ${[p.city,p.state,p.country].filter(Boolean).join(', ')}</div>`:''}
+      ${p.skills_required&&p.skills_required.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">${p.skills_required.slice(0,4).map(s=>`<span style="font-size:10px;padding:2px 8px;background:rgba(67,97,238,.09);border:1px solid rgba(67,97,238,.18);border-radius:10px;color:var(--accent2);font-weight:600;">${s}</span>`).join('')}${p.skills_required.length>4?`<span style="font-size:10px;color:var(--muted);align-self:center;"> +${p.skills_required.length-4} more</span>`:''}</div>`:''}
+      <div class="job-card-desc">${p.description||'No description'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+        <span style="font-size:12px;color:var(--muted);">👥 <strong style="color:var(--text)">${p.application_count}</strong> applicant${p.application_count!==1?'s':''}</span>
+        <button class="btn-sm btn-blue" onclick="viewApplicants(${p.id},'${p.job_title||p.job_role} at ${p.company_name}')">View →</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('')}</div>`;
 }
 
-function scoreColor(s) {
-  if (s >= 80) return '#10b981';
-  if (s >= 60) return '#f59e0b';
-  return '#f43f5e';
+function renderPostingList(postings) {
+  const el = document.getElementById('applicants-posting-list');
+  if (!postings.length) { el.innerHTML='<div class="empty">No postings yet. Go to Job Postings to add roles.</div>'; return; }
+  el.innerHTML = postings.map(p=>`
+    <div onclick="viewApplicants(${p.id},'${p.job_role} at ${p.company_name}')" style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:14px;">${p.job_role}</div>
+        <div style="font-size:12px;color:var(--muted);">${p.company_name} · ${p.job_section}</div>
+      </div>
+      <span class="badge badge-blue">👥 ${p.application_count}</span>
+      <span style="color:var(--muted);">→</span>
+    </div>`).join('');
 }
 
-// ── VOICE CONFIG STATE ─────────────────────────────────────────────────────────
-let voiceConfig = {
-  gender: 'female',
-  accent: 'en-IN',
-  accentLabel: '🇮🇳 Indian',
-  tone: 'professional',
-  toneLabel: 'Professional',
-  speed: 0.9,
-  pitch: 1.05
-};
+// ── Job Posting Skills State ────────────────────────────────────────────────
+let jpSkills = [];
 
-function selectMode(mode) {
-  selectedMode = mode;
-  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-  document.getElementById('mode-' + mode).classList.add('selected');
-  // Show voice config only for AI Interview mode
-  document.getElementById('ai-voice-config').style.display =
-    mode === 'ai_interview' ? 'block' : 'none';
+function jpAddSkill() {
+  const inp = document.getElementById('jp-skill-input');
+  const skill = inp.value.trim();
+  if (!skill) { jpShowError('Please enter a skill name.'); return; }
+  if (jpSkills.includes(skill)) { jpShowError('That skill is already added.'); return; }
+  jpSkills.push(skill);
+  jpRenderSkills();
+  inp.value = '';
+  inp.focus();
 }
 
-function setVoiceGender(gender) {
-  voiceConfig.gender = gender;
-  document.querySelectorAll('.voice-opt-card').forEach(el => {
-    el.style.border = '2px solid var(--border)';
-    el.style.background = 'transparent';
-  });
-  const sel = document.getElementById('vgender-' + gender);
-  sel.style.border = '2px solid var(--accent)';
-  sel.style.background = 'rgba(79,142,247,.08)';
+function jpRemoveSkill(idx) {
+  jpSkills.splice(idx, 1);
+  jpRenderSkills();
 }
 
-function setAccent(lang, label) {
-  voiceConfig.accent = lang;
-  voiceConfig.accentLabel = label;
-  document.querySelectorAll('.accent-chip').forEach(el => {
-    el.style.border = '2px solid var(--border)';
-    el.style.background = 'transparent';
-  });
-  const sel = document.getElementById('vaccent-' + lang);
-  if (sel) { sel.style.border = '2px solid var(--accent)'; sel.style.background = 'rgba(79,142,247,.08)'; }
-}
-
-function setTone(tone, label) {
-  voiceConfig.tone = tone;
-  voiceConfig.toneLabel = label;
-  document.querySelectorAll('.tone-chip').forEach(el => {
-    el.style.border = '2px solid var(--border)';
-    el.style.background = 'transparent';
-  });
-  const sel = document.getElementById('vtone-' + tone);
-  if (sel) { sel.style.border = '2px solid var(--accent)'; sel.style.background = 'rgba(79,142,247,.08)'; }
-  // Adjust speed/pitch defaults based on tone
-  const tonePresets = {
-    professional: {speed: 0.90, pitch: 1.05},
-    friendly:     {speed: 1.00, pitch: 1.15},
-    formal:       {speed: 0.82, pitch: 0.95},
-    energetic:    {speed: 1.15, pitch: 1.20},
-    calm:         {speed: 0.78, pitch: 0.98}
-  };
-  if (tonePresets[tone]) {
-    const p = tonePresets[tone];
-    document.getElementById('voice-speed').value = p.speed;
-    document.getElementById('voice-pitch').value = p.pitch;
-    updateSpeedLabel(p.speed);
-    updatePitchLabel(p.pitch);
-  }
-}
-
-function updateSpeedLabel(val) {
-  voiceConfig.speed = parseFloat(val);
-  const label = val < 0.75 ? 'Slow' : val < 0.95 ? 'Normal' : val < 1.2 ? 'Fast' : 'Very Fast';
-  document.getElementById('speed-val').textContent = `${label} (${parseFloat(val).toFixed(1)}x)`;
-}
-
-function updatePitchLabel(val) {
-  voiceConfig.pitch = parseFloat(val);
-  const label = val < 0.85 ? 'Deep' : val < 1.15 ? 'Normal' : val < 1.6 ? 'High' : 'Very High';
-  document.getElementById('pitch-val').textContent = `${label} (${parseFloat(val).toFixed(2)})`;
-}
-
-function previewVoice() {
-  if (!('speechSynthesis' in window)) {
-    document.getElementById('voice-preview-status').textContent = '⚠️ Speech synthesis not supported in this browser';
+function jpRenderSkills() {
+  const list = document.getElementById('jp-skills-list');
+  const ph   = document.getElementById('jp-skills-placeholder');
+  if (!jpSkills.length) {
+    list.innerHTML = '<span style="color:var(--muted2);font-size:13px;font-style:italic;align-self:center;" id="jp-skills-placeholder">No skills added yet — type above and press Enter or click Add Skill</span>';
     return;
   }
-  speechSynthesis.cancel();
-  const previewTexts = {
-    professional: "Hello, I'm Alex, your AI interviewer today. Let's begin the interview.",
-    friendly: "Hi there! I'm Alex, and I'm excited to chat with you today about this role!",
-    formal: "Good day. I am Alex, the AI interviewer assigned to evaluate your candidacy.",
-    energetic: "Hey! I'm Alex — let's dive right in and have an amazing interview session!",
-    calm: "Welcome. I'm Alex, and I'm here to guide you through today's interview at your pace."
-  };
-  const text = previewTexts[voiceConfig.tone] || previewTexts.professional;
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.rate = voiceConfig.speed;
-  utt.pitch = voiceConfig.pitch;
-  utt.lang = voiceConfig.accent;
-  const voices = speechSynthesis.getVoices();
-  const picked = pickVoice(voices, voiceConfig.gender, voiceConfig.accent);
-  if (picked) utt.voice = picked;
-  const statusEl = document.getElementById('voice-preview-status');
-  statusEl.textContent = picked ? `🎙️ Using: ${picked.name}` : '🎙️ Using browser default voice';
-  utt.onend = () => { statusEl.textContent = '✅ Preview done'; setTimeout(()=>statusEl.textContent='', 3000); };
-  speechSynthesis.speak(utt);
+  list.innerHTML = jpSkills.map((s,i) => `
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.2);border-radius:20px;font-size:13px;font-weight:600;color:var(--accent2);">
+      ${s}
+      <button onclick="jpRemoveSkill(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px;" title="Remove">×</button>
+    </span>`).join('');
 }
 
-function pickVoice(voices, gender, lang) {
-  // Filter by language first
-  const langVoices = voices.filter(v => v.lang === lang || v.lang.startsWith(lang.split('-')[0]));
-  const pool = langVoices.length ? langVoices : voices.filter(v => v.lang.startsWith('en'));
-  if (!pool.length) return null;
+function jpShowSuccess(msg) {
+  const el = document.getElementById('jp-success-alert');
+  const em = document.getElementById('jp-success-msg');
+  document.getElementById('jp-error-alert').style.display='none';
+  if(em) em.textContent = msg || 'Job posted successfully!';
+  el.style.display='flex';
+  setTimeout(()=>{ el.style.display='none'; }, 5000);
+}
 
-  const femaleName = /zira|female|samantha|victoria|karen|moira|fiona|alice|kate|susan|catherine|heera|veena|raveena|aria|jenny|sonia|ava|nicky/i;
-  const maleName   = /david|mark|daniel|james|richard|ryan|tom|guy|lee|rishi|george|fred|william/i;
+function jpShowError(msg) {
+  const el = document.getElementById('jp-error-alert');
+  const em = document.getElementById('jp-error-msg');
+  document.getElementById('jp-success-alert').style.display='none';
+  if(em) em.textContent = msg;
+  el.style.display='flex';
+  setTimeout(()=>{ el.style.display='none'; }, 5000);
+}
 
-  if (gender === 'female') return pool.find(v => femaleName.test(v.name)) || pool[0];
-  if (gender === 'male')   return pool.find(v => maleName.test(v.name))   || pool[pool.length-1];
-  return pool[0]; // neutral — first available
+function jpResetForm() {
+  if (!confirm('Reset the form? All entered data will be lost.')) return;
+  ['jp-job-title','jp-company','jp-desc'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['jp-section','jp-role','jp-experience','jp-job-type'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  jpSkills = [];
+  jpRenderSkills();
+  document.getElementById('jp-success-alert').style.display='none';
+  document.getElementById('jp-error-alert').style.display='none';
+}
+
+async function createJobPosting() {
+  const section   = document.getElementById('jp-section').value;
+  const role      = document.getElementById('jp-role').value;
+  const jobTitle  = document.getElementById('jp-job-title').value.trim();
+  const company   = document.getElementById('jp-company').value.trim();
+  const desc      = document.getElementById('jp-desc').value.trim();
+  const experience= document.getElementById('jp-experience').value;
+  const jobType   = document.getElementById('jp-job-type').value;
+
+  // Validation
+  if (!section)    { jpShowError('⚠️ Please select a Department / Section.'); return; }
+  if (!role)       { jpShowError('⚠️ Please select a Job Role.'); return; }
+  if (!company)    { jpShowError('⚠️ Company Name is required.'); return; }
+  if (!desc)       { jpShowError('⚠️ Job Description is required.'); return; }
+  if (!jpSkills.length) { jpShowError('⚠️ Please add at least one required skill.'); return; }
+  if (!experience) { jpShowError('⚠️ Please select the experience level required.'); return; }
+  if (!jobType)    { jpShowError('⚠️ Please select a Job Type.'); return; }
+
+  const btn = document.querySelector('[onclick="createJobPosting()"]');
+  if (btn) { btn.disabled=true; btn.textContent='Publishing…'; }
+
+  try {
+    const res = await fetch('/api/job-postings', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        job_section: section,
+        job_role: role,
+        job_title: jobTitle || role,
+        company_name: company,
+        description: desc,
+        skills_required: jpSkills,
+        experience_required: experience,
+        job_type: jobType,
+      })
+    });
+    const data = await res.json();
+    if (!data.success) { jpShowError('❌ ' + (data.message || 'Failed to post job.')); return; }
+    jpShowSuccess('✅ Job posted! Candidates can now apply.');
+    jpResetForm();
+    showToast('✅ Job posted successfully!');
+    await loadMyPostings();
+    await loadDashboard();
+  } catch(e) {
+    jpShowError('❌ Network error. Please try again.');
+  } finally {
+    if (btn) { btn.disabled=false; btn.innerHTML='📢 Publish Job Posting'; }
+  }
+}
+
+async function deletePosting(id) {
+  if (!confirm('Close this job posting? Candidates will no longer see it.')) return;
+  const data = await fetch(`/api/job-postings/${id}`,{method:'DELETE'}).then(r=>r.json());
+  if (data.success) { showToast('✅ Posting closed'); await loadMyPostings(); }
+}
+
+async function viewApplicants(postingId, title) {
+  document.getElementById('applicants-role-select-card').style.display='none';
+  document.getElementById('applicants-list-card').style.display='block';
+  document.getElementById('applicants-job-title').textContent='👥 '+title;
+  const el=document.getElementById('applicants-list');
+  el.innerHTML='<div class="empty">Loading…</div>';
+  // Switch page
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-applicants').classList.add('active');
+  document.querySelector('[data-page="applicants"]').classList.add('active');
+  const data = await fetch(`/api/job-postings/${postingId}/applications`).then(r=>r.json());
+  const apps = data.applications||[];
+  if (!apps.length) { el.innerHTML='<div class="empty">No applicants yet for this role</div>'; return; }
+  const statusBadge = {applied:'<span class="badge badge-blue">Applied</span>',shortlisted:'<span class="badge badge-yellow">Shortlisted</span>',interview_scheduled:'<span class="badge badge-green">Interview Scheduled</span>',rejected:'<span class="badge badge-red">Rejected</span>'};
+  el.innerHTML = apps.map(a=>`
+    <div class="applicant-card">
+      <div class="applicant-avatar">${(a.candidate_name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:150px;">
+        <div style="font-weight:600;font-size:14px;">${a.candidate_name}</div>
+        <div style="font-size:12px;color:var(--muted);">@${a.candidate_username} · ${a.candidate_email}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Applied ${a.applied_at.split(' ')[0]}</div>
+        ${a.cover_note?`<div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic;background:var(--s);padding:8px 10px;border-radius:6px;">"${a.cover_note}"</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        ${statusBadge[a.status]||a.status}
+        ${a.status!=='interview_scheduled'?`<button class="btn-sm btn-green" onclick="openScheduleModal(${a.id},'${a.candidate_name.replace(/'/g,"\\'")}','${a.job_role}','${a.company_name.replace(/'/g,"\\'")}')">📅 Schedule</button>`:'<span style="font-size:11px;color:var(--green);">✓ Scheduled</span>'}
+      </div>
+    </div>`).join('');
+}
+
+function clearApplicantView() {
+  document.getElementById('applicants-role-select-card').style.display='block';
+  document.getElementById('applicants-list-card').style.display='none';
+}
+
+// ── Schedule Modal ─────────────────────────────────────────────────────────────
+function openScheduleModal(applicationId, candidateName, jobRole, company) {
+  currentApplicationId=applicationId; schedMode='mcq';
+  document.querySelectorAll('[id^="sched-mode-"]').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('sched-mode-mcq').classList.add('selected');
+  document.getElementById('schedule-candidate-info').innerHTML=`<strong>👤 ${candidateName}</strong><br><span style="color:var(--muted);">${jobRole} at ${company}</span>`;
+  document.getElementById('sched-result').style.display='none';
+  const dt=new Date(); dt.setDate(dt.getDate()+1); dt.setMinutes(0,0,0);
+  document.getElementById('sched-datetime').value=dt.toISOString().slice(0,16);
+  document.getElementById('schedule-modal').classList.remove('hidden');
+}
+function closeScheduleModal() { document.getElementById('schedule-modal').classList.add('hidden'); currentApplicationId=null; }
+function selectSchedMode(mode) {
+  schedMode=mode;
+  document.querySelectorAll('[id^="sched-mode-"]').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('sched-mode-'+mode).classList.add('selected');
+}
+async function confirmSchedule() {
+  const dt=document.getElementById('sched-datetime').value;
+  if (!dt) { showToast('⚠️ Pick a date and time'); return; }
+  const btn=document.getElementById('sched-confirm-btn');
+  btn.textContent='⏳ Scheduling…'; btn.disabled=true;
+  const data=await fetch('/api/schedule-interview',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({application_id:currentApplicationId,scheduled_at:dt,interview_mode:schedMode})}).then(r=>r.json());
+  btn.textContent='📨 Schedule & Send Email'; btn.disabled=false;
+  if (!data.success) { showToast('❌ '+data.message); return; }
+  const res=document.getElementById('sched-result');
+  res.style.display='block';
+  res.innerHTML=`✅ <strong>Interview Scheduled!</strong><br>Room Code: <code style="color:var(--accent2);background:var(--bg2);padding:3px 8px;border-radius:4px;">${data.room_code}</code><br>
+    📧 Emails sent to candidate & recruiter<br>
+    ${data.calendar_link?`<a href="${data.calendar_link}" target="_blank" style="color:var(--accent2);">📅 Add to Google Calendar</a>`:''}`;
+  showToast('✅ Scheduled! Emails sent to both parties.');
+  setTimeout(()=>{ closeScheduleModal(); loadMyPostings(); }, 4000);
+}
+
+// ── Manual Session ─────────────────────────────────────────────────────────────
+function selectMode(mode) {
+  selectedMode=mode;
+  document.querySelectorAll('#page-create .mode-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('mode-'+mode).classList.add('selected');
+}
+
+async function onRoleChange() {
+  const role = document.getElementById('c-role').value;
+  const candidateSection = document.getElementById('candidate-section');
+  const candidateLoading = document.getElementById('candidate-loading');
+  const candidateEmpty   = document.getElementById('candidate-empty');
+  const candidateSelect  = document.getElementById('c-candidate-select');
+  const infoCard         = document.getElementById('candidate-info-card');
+  const createBtn        = document.getElementById('create-session-btn');
+
+  // Reset
+  document.getElementById('c-candidate').value = '';
+  candidateSelect.innerHTML = '<option value="">— Select a candidate —</option>';
+  candidateSelect.style.display = 'none';
+  candidateEmpty.style.display  = 'none';
+  infoCard.style.display        = 'none';
+  createBtn.disabled            = true;
+
+  if (!role) { candidateSection.style.display='none'; return; }
+
+  candidateSection.style.display = 'block';
+  candidateLoading.style.display = 'flex';
+
+  try {
+    const data = await fetch(`/api/applicants-by-role?job_role=${encodeURIComponent(role)}`).then(r=>r.json());
+    candidateLoading.style.display = 'none';
+
+    if (!data.success || !data.candidates || data.candidates.length === 0) {
+      candidateEmpty.style.display = 'block';
+      return;
+    }
+
+    // Populate dropdown
+    candidateSelect.innerHTML = '<option value="">— Select a candidate —</option>'
+      + data.candidates.map(c =>
+          `<option value="${c.candidate_username}" data-name="${c.candidate_name}" data-email="${c.candidate_email}" data-status="${c.status}" data-applied="${c.applied_at}">${c.candidate_name} (@${c.candidate_username}) — Applied ${c.applied_at}</option>`
+        ).join('');
+    candidateSelect.style.display = 'block';
+
+    // If only one candidate, auto-select
+    if (data.candidates.length === 1) {
+      candidateSelect.selectedIndex = 1;
+      onCandidateSelect();
+    }
+  } catch(e) {
+    candidateLoading.style.display = 'none';
+    candidateEmpty.style.display   = 'block';
+    console.error('Failed to load applicants', e);
+  }
+}
+
+function onCandidateSelect() {
+  const sel      = document.getElementById('c-candidate-select');
+  const infoCard = document.getElementById('candidate-info-card');
+  const createBtn= document.getElementById('create-session-btn');
+  const opt      = sel.options[sel.selectedIndex];
+
+  if (!sel.value) {
+    document.getElementById('c-candidate').value = '';
+    infoCard.style.display = 'none';
+    createBtn.disabled = true;
+    return;
+  }
+
+  document.getElementById('c-candidate').value = sel.value;
+
+  const name    = opt.dataset.name    || sel.value;
+  const email   = opt.dataset.email   || '';
+  const status  = opt.dataset.status  || 'applied';
+  const applied = opt.dataset.applied || '';
+
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('c-info-avatar').textContent = initials;
+  document.getElementById('c-info-name').textContent   = name;
+  document.getElementById('c-info-meta').textContent   = `@${sel.value}  ·  ${email}  ·  Applied ${applied}`;
+
+  const statusEl = document.getElementById('c-info-status');
+  const statusMap = {
+    applied:              ['Applied',              'background:rgba(79,142,247,.12);color:var(--accent2);border:1px solid rgba(79,142,247,.25)'],
+    shortlisted:          ['Shortlisted',          'background:rgba(217,119,6,.1);color:#92400e;border:1px solid rgba(217,119,6,.25)'],
+    interview_scheduled:  ['Interview Scheduled',  'background:rgba(5,150,105,.1);color:#065f46;border:1px solid rgba(5,150,105,.25)'],
+    rejected:             ['Rejected',             'background:rgba(220,38,38,.1);color:#991b1b;border:1px solid rgba(220,38,38,.25)'],
+  };
+  const [label, style] = statusMap[status] || ['Applied', statusMap.applied[1]];
+  statusEl.textContent  = label;
+  statusEl.style.cssText = style;
+
+  infoCard.style.display = 'flex';
+  createBtn.disabled     = false;
 }
 
 async function createSession() {
   const candidate = document.getElementById('c-candidate').value.trim();
   const jobRole   = document.getElementById('c-role').value;
-  if (!candidate) return alert('Please enter a candidate username');
-  if (!jobRole)   return alert('Please select a job role');
+  if (!candidate) { showToast('⚠️ Please select a candidate'); return; }
+  if (!jobRole)   { showToast('⚠️ Select a job role'); return; }
 
-  const payload = {
-    candidate_username: candidate,
-    job_role: jobRole,
-    mode: selectedMode,
-    voice_config: selectedMode === 'ai_interview' ? voiceConfig : null
-  };
+  const createBtn = document.getElementById('create-session-btn');
+  createBtn.disabled    = true;
+  createBtn.textContent = '⏳ Creating…';
 
-  const data = await fetch('/api/create-session', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  }).then(r=>r.json());
+  try {
+    const data = await fetch('/api/create-session', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode})
+    }).then(r=>r.json());
 
-  if (!data.success) return alert(data.error || 'Failed to create session');
-  lastCreatedSession = data.session;
-  // Voice config is now stored server-side in the session record — no localStorage needed
+    if (!data.success) { showToast('❌ '+(data.message||'Failed')); return; }
+    lastCreatedSession = data.session;
+    document.getElementById('created-code').textContent = data.room_code;
+    document.getElementById('join-url').textContent = `${location.origin}/interview_room.html?room=${data.room_code}`;
 
-  document.getElementById('created-code').textContent = data.room_code;
-  const baseUrl = `${window.location.origin}/interview_room.html?room=${data.room_code}`;
-  document.getElementById('join-url').textContent = baseUrl;
-  document.getElementById('session-result').style.display = 'block';
+    // Google Calendar link
+    const calWrap = document.getElementById('cal-link-wrap');
+    const calLink = document.getElementById('cal-link');
+    if (data.calendar_link) {
+      calLink.href = data.calendar_link;
+      calWrap.style.display = 'block';
+    } else {
+      // Build a calendar link client-side as fallback
+      const now = new Date();
+      const end = new Date(now.getTime() + 60*60*1000);
+      const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      const params = new URLSearchParams({
+        action: 'TEMPLATE',
+        text: `RecruitAI Interview — ${jobRole}`,
+        details: `Candidate: ${candidate}\nJob Role: ${jobRole}\nRoom Code: ${data.room_code}\nJoin: ${location.origin}/interview_room.html?room=${data.room_code}`,
+        dates: `${fmt(now)}/${fmt(end)}`
+      });
+      calLink.href = 'https://calendar.google.com/calendar/render?' + params.toString();
+      calWrap.style.display = 'block';
+    }
+
+    document.getElementById('session-result').style.display = 'block';
+  } finally {
+    createBtn.disabled    = false;
+    createBtn.textContent = '🚀 Create Session';
+  }
 }
 
-function copyCode() {
-  navigator.clipboard.writeText(document.getElementById('created-code').textContent);
-  
-}
-
-function openRecruiterRoom() {
-  if (!lastCreatedSession) return;
-  window.open(`/recruiter_room.html?room=${lastCreatedSession.room_code}`, '_blank');
-}
-
-function joinLiveSession(code) {
-  window.open(`/recruiter_room.html?room=${code}`, '_blank');
-}
-
+function copyCode() { navigator.clipboard.writeText(document.getElementById('created-code').textContent); showToast('✅ Copied!'); }
+function openRecruiterRoom() { if (lastCreatedSession) window.open(`/recruiter_room.html?room=${lastCreatedSession.room_code}`,'_blank'); }
 function resetCreateForm() {
   document.getElementById('session-result').style.display = 'none';
+  document.getElementById('cal-link-wrap').style.display  = 'none';
+  document.getElementById('c-role').value = '';
   document.getElementById('c-candidate').value = '';
+  document.getElementById('candidate-section').style.display = 'none';
+  document.getElementById('candidate-info-card').style.display = 'none';
+  document.getElementById('create-session-btn').disabled = true;
   lastCreatedSession = null;
 }
 
-function showPage(name) {
+// ── Filters & Tables ──────────────────────────────────────────────────────────
+function applyOverviewFilters() {
+  const name=(document.getElementById('ov-filter-name')?.value||'').toLowerCase();
+  const filtered=allSubmissionsData.filter(s=>{ const n=(s.full_name||s.username||'').toLowerCase(); return !name||n.includes(name); }).slice(0,10);
+  renderSessionsTable(filtered,'recent-table');
+}
+function renderSessionsTable(subs, containerId) {
+  const el=document.getElementById(containerId);
+  if (!subs?.length) { el.innerHTML='<div class="empty">No sessions yet</div>'; return; }
+  el.innerHTML=`<table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+    ${subs.map(s=>`<tr><td><strong>${s.full_name||s.username}</strong></td><td>${s.job_role||'—'}</td>
+    <td><span class="badge badge-blue">${(s.mode||'mcq').replace('_',' ')}</span></td>
+    <td><strong style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</strong></td>
+    <td><strong>${s.interview_score||0}</strong></td>
+    <td>${s.passed?'<span class="badge badge-green">PASSED</span>':'<span class="badge badge-red">FAILED</span>'}</td>
+    <td style="color:var(--muted);font-size:12px;">${s.submitted_at}</td>
+    <td><button class="btn-sm btn-blue" onclick="window.location.href='results.html?id=${s.id}'">Report</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+function downloadSessionsExcel() {
+  const h=['Candidate','Role','Mode','Credibility','Score','Status','Date'];
+  const rows=allSubmissionsData.map(s=>[s.full_name||s.username,s.job_role,s.mode,s.credibility_score,s.interview_score,s.passed?'PASSED':'FAILED',s.submitted_at]);
+  const tsv=[h,...rows].map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join('\t')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+tsv],{type:'application/vnd.ms-excel'}));
+  a.download='RecruitAI_Sessions.xls'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function renderLive(sessions) {
+  const el=document.getElementById('live-grid');
+  if (!sessions.length) { el.innerHTML='<div class="empty" style="grid-column:1/-1">No active sessions</div>'; return; }
+  el.innerHTML=sessions.map(s=>`<div class="live-card"><div class="pulse-dot"></div>
+    <div style="font-weight:600;font-size:15px;margin-bottom:3px;">${s.candidate_name}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">${s.job_role} · ${(s.mode||'').replace('_',' ')}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div style="background:var(--s2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:${scoreColor(s.credibility_score)}">${s.credibility_score}</div><div style="font-size:10px;color:var(--muted);">CREDIBILITY</div></div>
+      <div style="background:var(--s2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;">${s.interview_score}</div><div style="font-size:10px;color:var(--muted);">SCORE</div></div>
+    </div>
+    ${s.mode==='live_recruiter'?`<button class="btn-sm btn-green" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')">Join Session</button>`:''}
+  </div>`).join('');
+}
+function scoreColor(s) { return s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e'; }
+function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  event.currentTarget.classList.add('active');
-  if (name === 'overview' || name === 'sessions') loadDashboard();
-  if (name === 'candidates') loadCandidates();
+  if (el) el.classList.add('active');
+  if (name==='overview'||name==='sessions') loadDashboard();
+  if (name==='candidates') loadCandidates();
+  if (name==='jobs'||name==='applicants') loadMyPostings();
+  if (name==='emailsettings') loadEmailSettings();
+  if (name==='scheduled') loadScheduled();
+}
+function initSocket() {
+  socket=io();
+  socket.on('connect',()=>socket.emit('join_dashboard'));
+  socket.on('violation_alert',()=>{ const sv=document.getElementById('s-violations'); if(sv) sv.textContent=parseInt(sv.textContent||'0')+1; });
+}
+function showToast(msg,dur=3500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
+
+// ── Scheduled Interviews ───────────────────────────────────────────────────────
+async function loadScheduled() {
+  const el = document.getElementById('scheduled-table');
+  if (!el) return;
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const data = await fetch('/api/my-scheduled-interviews').then(r=>r.json());
+    if (!data.success || !data.scheduled.length) {
+      el.innerHTML = '<div class="empty">No scheduled interviews yet</div>';
+      return;
+    }
+    el.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="border-bottom:2px solid var(--border);">
+        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Candidate</th>
+        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Job Role</th>
+        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Mode</th>
+        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Scheduled At</th>
+        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Room Code</th>
+        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Action</th>
+      </tr></thead>
+      <tbody>${data.scheduled.map(s=>`
+        <tr style="border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
+          <td style="padding:12px;font-weight:600;">${s.candidate_name||'—'}</td>
+          <td style="padding:12px;color:var(--muted);">${s.job_role||'—'}</td>
+          <td style="padding:12px;"><span style="background:var(--accent-light);color:var(--accent2);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${(s.interview_mode||s.mode||'mcq').replace('_',' ').toUpperCase()}</span></td>
+          <td style="padding:12px;color:var(--muted);">${s.scheduled_at||'—'}</td>
+          <td style="padding:12px;"><code style="background:var(--bg2);color:var(--accent2);padding:4px 10px;border-radius:6px;font-size:13px;font-weight:700;letter-spacing:1px;">${s.room_code||'—'}</code>
+            <button onclick="navigator.clipboard.writeText('${s.room_code}');showToast('Room code copied!')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;margin-left:4px;" title="Copy code">📋</button>
+          </td>
+          <td style="padding:12px;">
+            ${s.room_code ? `<button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">🎥 Join</button>` : '—'}
+            ${s.calendar_link ? `<a href="${s.calendar_link}" target="_blank" style="margin-left:6px;padding:7px 10px;background:transparent;color:var(--accent2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;">📅</a>` : ''}
+          </td>
+        </tr>`).join('')}
+      </tbody></table></div>`;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Failed to load scheduled interviews</div>';
+  }
 }
 
-function initSocket() {
-  socket = io();
-  socket.on('connect', () => socket.emit('join_dashboard'));
-  socket.on('violation_alert', data => {
-    const t = document.getElementById('vtoa');
-    // Update live board count
-    const sv = document.getElementById('s-violations');
-    sv.textContent = parseInt(sv.textContent || '0') + 1;});
+// ── Email Settings ─────────────────────────────────────────────────────────────
+async function loadEmailSettings() {
+  try {
+    const data = await fetch('/api/recruiter/email-settings').then(r=>r.json());
+    if (!data.success) return;
+    if (data.smtp_email) {
+      document.getElementById('es-email').value = data.smtp_email;
+      updateEmailPreview();
+      showEmailBanner('success', `<span style="font-size:20px;">✅</span>&nbsp; <div><strong>Gmail connected!</strong><br><span style="font-weight:400;font-size:13px;">Sending from: ${data.smtp_email}</span></div>`);
+    } else {
+      showEmailBanner('warn', '<span style="font-size:20px;">⚠️</span>&nbsp; <div><strong>No Gmail connected yet</strong><br><span style="font-weight:400;font-size:13px;">Follow the 3 steps above and click Save & Test</span></div>');
+    }
+  } catch(e) { console.error('Email settings load failed', e); }
+}
+
+function updateEmailPreview() {
+  const email = (document.getElementById('es-email')?.value || '').trim();
+  const preview = document.getElementById('email-preview');
+  const addr = document.getElementById('preview-addr');
+  if (preview && addr) {
+    if (email.includes('@')) { preview.style.display='block'; addr.textContent=email; }
+    else { preview.style.display='none'; }
+  }
+}
+
+function showEmailBanner(type, html) {
+  const b = document.getElementById('email-status-banner');
+  if (!b) return;
+  b.style.display = 'flex';
+  b.style.alignItems = 'center';
+  b.style.gap = '10px';
+  if (type==='success') { b.style.background='rgba(5,150,105,.08)'; b.style.border='1.5px solid rgba(5,150,105,.25)'; b.style.color='#065f46'; }
+  else if (type==='warn') { b.style.background='rgba(217,119,6,.08)'; b.style.border='1.5px solid rgba(217,119,6,.25)'; b.style.color='#92400e'; }
+  else { b.style.background='rgba(220,38,38,.07)'; b.style.border='1.5px solid rgba(220,38,38,.2)'; b.style.color='#991b1b'; }
+  b.innerHTML = html;
+}
+
+function togglePassVis() {
+  const inp = document.getElementById('es-pass');
+  if (inp) inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+async function saveEmailSettings() {
+  const email = document.getElementById('es-email').value.trim();
+  const pass  = document.getElementById('es-pass').value.replace(/ /g,'').trim();
+  if (!email) { showEmailBanner('error','<span>❌</span> Please enter your Gmail address'); return; }
+  if (!email.endsWith('@gmail.com')) { showEmailBanner('warn','<span>⚠️</span> Only Gmail addresses work (must end in @gmail.com)'); return; }
+  const btn = document.getElementById('es-save-btn');
+  btn.disabled=true; btn.textContent='⏳ Testing connection…';
+  try {
+    const data = await fetch('/api/recruiter/email-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({smtp_email:email,smtp_app_password:pass})}).then(r=>r.json());
+    if (data.verified===false) {
+      showEmailBanner('error',`<span style="font-size:18px;">❌</span> <div><strong>Connection failed</strong><br><span style="font-weight:400;font-size:13px;">${data.message} — make sure you copied the App Password correctly</span></div>`);
+    } else if (data.success) {
+      showEmailBanner('success',`<span style="font-size:20px;">✅</span> <div><strong>Gmail connected!</strong><br><span style="font-weight:400;font-size:13px;">Emails will now send automatically from ${email}</span></div>`);
+      document.getElementById('es-pass').value='';
+      document.getElementById('es-pass').placeholder='✓ Password saved';
+      showToast('✅ Gmail connected!');
+    } else {
+      showEmailBanner('error',`<span>❌</span> ${data.message||'Failed to save'}`);
+    }
+  } catch(e) { showEmailBanner('error','<span>❌</span> Network error — please try again'); }
+  finally { btn.disabled=false; btn.innerHTML='💾 Save & Test Connection'; }
+}
+
+async function clearEmailSettings() {
+  if (!confirm('Disconnect your Gmail? Emails will not be sent until you reconnect.')) return;
+  await fetch('/api/recruiter/email-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({smtp_email:'',smtp_app_password:''})});
+  document.getElementById('es-email').value='';
+  document.getElementById('es-pass').value='';
+  document.getElementById('es-pass').placeholder='abcd efgh ijkl mnop';
+  document.getElementById('email-preview').style.display='none';
+  showEmailBanner('warn','<span style="font-size:20px;">⚠️</span> <div><strong>Gmail disconnected</strong><br><span style="font-weight:400;font-size:13px;">Reconnect to resume email notifications</span></div>');
+  showToast('Gmail disconnected');
 }
 
 init();

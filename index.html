@@ -6,27 +6,28 @@
 <title>RecruitAI — Login</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0f1117;
-  --bg2:#161b27;
-  --s:#1a2035;
-  --s2:#1e2640;
-  --border:#2a3350;
-  --border2:#334066;
-  --accent:#4f8ef7;
-  --accent2:#6aa3ff;
-  --accent-light:rgba(79,142,247,0.12);
-  --accent-glow:rgba(79,142,247,0.2);
-  --green:#10b981;
-  --red:#ef4444;
-  --yellow:#f59e0b;
-  --text:#e8edf5;
-  --text2:#c5cde0;
-  --muted:#7a88a8;
-  --muted2:#4a5568;
-  --shadow-sm:0 1px 3px rgba(0,0,0,0.4),0 1px 2px rgba(0,0,0,0.3);
-  --shadow-md:0 4px 14px rgba(0,0,0,0.4),0 2px 6px rgba(0,0,0,0.3);
-  --shadow-lg:0 24px 64px rgba(0,0,0,0.6),0 8px 24px rgba(0,0,0,0.4);
+:root {
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -39,8 +40,8 @@ body{
   padding:24px;
   color:var(--text);
   background-image:
-    radial-gradient(ellipse 70% 50% at 20% 20%, rgba(79,142,247,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 60% at 80% 80%, rgba(79,142,247,0.04) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 50% at 20% 20%, rgba(67,97,238,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 80% 80%, rgba(67,97,238,0.03) 0%, transparent 60%);
 }
 
 /* Dark scrollbar */
@@ -131,7 +132,7 @@ body{
   border-radius:100px;
   font-size:12px;color:rgba(255,255,255,0.4);
 }
-.trust-dot{width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 0 2px rgba(16,185,129,0.25);}
+.trust-dot{width:7px;height:7px;border-radius:50%;background:#059669;box-shadow:0 0 0 2px rgba(5,150,105,0.2);}
 
 /* ── RIGHT: Dark form panel ── */
 .right{
@@ -210,8 +211,8 @@ body{
 .btn-main:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
 
 .msg{margin-top:12px;padding:11px 13px;border-radius:8px;font-size:13px;display:none;}
-.msg.success{background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);color:#34d399;}
-.msg.error{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;}
+.msg.success{background:rgba(5,150,105,.08);border:1px solid rgba(16,185,129,0.3);color:#059669;}
+.msg.error{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#991b1b;}
 
 .demo-box{
   margin-top:20px;padding:15px;
@@ -296,6 +297,14 @@ body{
   </div>
 </div>
 <script>
+
+// Auto-inject ngrok header for all fetch calls through tunnel
+const _origFetch = window.fetch;
+window.fetch = (url, opts={}) => {
+  opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
+  opts.credentials = opts.credentials || 'same-origin';
+  return _origFetch(url, opts);
+};
 let selectedRole='candidate';
 function selectRole(r){selectedRole=r;document.getElementById('rb-candidate').classList.toggle('active',r==='candidate');document.getElementById('rb-recruiter').classList.toggle('active',r==='recruiter');}
 function switchTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.form').forEach(x=>x.classList.remove('active'));document.getElementById('tab-'+t).classList.add('active');document.getElementById(t+'-form').classList.add('active');document.querySelectorAll('.msg').forEach(m=>m.style.display='none');}

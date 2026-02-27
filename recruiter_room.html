@@ -8,24 +8,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f1117;
-  --bg2: #161b27;
-  --s: #1a2035;
-  --s2: #1e2640;
-  --border: #2a3350;
-  --border2: #334066;
-  --accent: #4f8ef7;
-  --accent2: #6aa3ff;
-  --accent-light: rgba(79,142,247,0.12);
-  --accent-glow: rgba(79,142,247,0.2);
-  --green: #10b981;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-  --text: #e8edf5;
-  --text2: #c5cde0;
-  --muted: #7a88a8;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
 }
 :root {
   --bg: #0f1117;
@@ -45,15 +48,15 @@
   --text2: #c5cde0;
   --muted: #7a88a8;
   --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 20px rgba(67,97,238,0.12), 0 12px 40px rgba(67,97,238,0.08);
 }
 
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);height:100vh;display:grid;grid-template-rows:60px 1fr;}
-.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;}
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;justify-content:space-between;}
 .brand{font-family:'Plus Jakarta Sans','Playfair Display',sans-serif;font-size:18px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));background-clip: text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .session-info{display:flex;align-items:center;gap:14px;font-size:13px;}
-.live-badge{padding:4px 12px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:20px;color:var(--red);font-size:11px;font-weight:700;animation:pulseLive 2s infinite;}
+.live-badge{padding:4px 12px;background:rgba(220,38,38,.1);border:1px solid rgba(239,68,68,.4);border-radius:20px;color:var(--red);font-size:11px;font-weight:700;animation:pulseLive 2s infinite;}
 @keyframes pulseLive{0%,100%{opacity:1}50%{opacity:.6}}
 .layout{display:grid;grid-template-columns:1fr 340px;overflow:hidden;}
 /* VIDEO AREA */
@@ -68,7 +71,7 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);he
 .controls{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px;}
 .ctrl-btn{width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--s2);color:var(--text);cursor:pointer;font-size:20px;transition:all .2s;display:flex;align-items:center;justify-content:center;}
 .ctrl-btn:hover{border-color:var(--accent);background:rgba(13,31,60,0.1);}
-.ctrl-btn.active{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);}
+.ctrl-btn.active{background:rgba(220,38,38,.1);border-color:rgba(239,68,68,.4);}
 .ctrl-btn.end{background:var(--red);border-color:var(--red);width:56px;height:56px;font-size:22px;}
 .ctrl-btn.end:hover{background:#c81340;}
 /* NOTES & MSG */
@@ -88,9 +91,9 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);he
 .sc-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:3px;}
 .status-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
 .st-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:7px 10px;border-radius:7px;}
-.st-item.ok{background:rgba(16,185,129,.1);color:#34d399;}
+.st-item.ok{background:rgba(16,185,129,.1);color:#059669;}
 .st-item.warn{background:rgba(245,158,11,.1);color:#fcd34d;}
-.st-item.bad{background:rgba(239,68,68,.1);color:#fca5a5;}
+.st-item.bad{background:rgba(239,68,68,.1);color:#991b1b;}
 .vio-feed{max-height:200px;overflow-y:auto;}
 .vf-item{padding:6px 9px;background:rgba(244,63,94,.07);border-left:2px solid var(--red);border-radius:4px;margin-bottom:5px;font-size:11px;color:#fda4af;}
 /* NOTES */
@@ -106,7 +109,7 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);he
 /* MESSAGES */
 .msg-thread{height:220px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;}
 .msg-bubble{padding:9px 12px;border-radius:9px;font-size:13px;max-width:90%;}
-.msg-bubble.sent{background:rgba(13,31,60,0.1);border:1px solid rgba(13,31,60,0.2);align-self:flex-end;}
+.msg-bubble.sent{background:rgba(13,31,60,0.1);border:1px solid rgba(67,97,238,0.08);align-self:flex-end;}
 .msg-bubble.recv{background:var(--s2);border:1px solid var(--border);align-self:flex-start;}
 .msg-from{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600;text-transform:uppercase;}
 .msg-input-row{display:flex;gap:8px;}
@@ -114,7 +117,7 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);he
 .msg-input:focus{border-color:var(--accent);}
 .btn-send-msg{padding:10px 16px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:14px;}
 /* END MODAL */
-.end-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.end-modal{position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:9999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 .end-modal.show{display:flex;}
 .end-card{background:var(--s);border:1px solid var(--border);border-radius:20px;padding:40px;text-align:center;max-width:420px;}
 .end-card h2{font-family:'Playfair Display', serif;font-size:26px;margin-bottom:10px;}
@@ -136,7 +139,7 @@ body::before {
   position: fixed;
   inset: 0;
   background-image: radial-gradient(circle at 20% 20%, rgba(26,86,219,0.06) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, rgba(37,99,235,0.04) 0%, transparent 50%);
+                    radial-gradient(circle at 80% 80%, rgba(99,122,255,0.03) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -164,10 +167,10 @@ table {
 }
 
 /* Stat top bar glow */
-.stat.blue::before { background: linear-gradient(90deg, var(--accent), #4a6fa5); }
-.stat.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+.stat.blue::before { background: linear-gradient(90deg, #4361ee, #6d83f3); }
+.stat.green::before { background: linear-gradient(90deg, #059669, #10b981); }
 .stat.yellow::before { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
-.stat.red::before { background: linear-gradient(90deg, var(--red), #fc8181); }
+.stat.red::before { background: linear-gradient(90deg, #dc2626, #ef4444); }
 .stat.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
 .stat.teal::before { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
 
@@ -202,7 +205,7 @@ body::before {
   position: fixed;
   inset: 0;
   background-image: 
-    radial-gradient(ellipse at 15% 25%, rgba(13,31,60,0.06) 0%, transparent 45%),
+    radial-gradient(ellipse at 15% 25%, rgba(67,97,238,0.05) 0%, transparent 45%),
     radial-gradient(ellipse at 85% 75%, rgba(59,130,246,0.06) 0%, transparent 45%);
   pointer-events: none;
   z-index: 0;
@@ -355,6 +358,14 @@ body::before {
 </div>
 
 <script>
+// Auto-inject ngrok header for all fetch calls
+const _origFetch = window.fetch;
+window.fetch = (url, opts={}) => {
+  opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
+  opts.credentials = opts.credentials || 'same-origin';
+  return _origFetch(url, opts);
+};
+
 let socket, peerConn, localStream, sessionData;
 let rating = 0, sessionStartTime = Date.now();
 let micOn = true, camOn = true;
@@ -362,7 +373,7 @@ let micOn = true, camOn = true;
 async function init() {
   // Add credentials:include so cookies are sent even when opened in new tab
   const auth = await fetch('/api/check-auth', {credentials:'include'}).then(r=>r.json()).catch(()=>({authenticated:false}));
-  if (!auth.authenticated || !auth.is_admin) {
+  if (!auth.authenticated || (auth.role !== 'recruiter' && auth.role !== 'admin')) {
     // Store intended URL so we can redirect back after login
     sessionStorage.setItem('redirect_after_login', window.location.href);
     return window.location.href='index.html';
@@ -394,14 +405,44 @@ async function startLocalVideo() {
 }
 
 function initSocket(room, iceServers) {
-  socket = io();
+  socket = io(window.location.origin, {
+    transports: ['polling', 'websocket'],
+    withCredentials: true,
+    extraHeaders: { 'ngrok-skip-browser-warning': 'true' }
+  });
   socket.on('connect', ()=>{
     socket.emit('join_room_event', {room, role:'recruiter'});
+    // FIX: Activate session when recruiter connects so candidate waiting screen unblocks.
+    // join-session already does this via HTTP, but emit via socket ensures real-time update.
+    if (sessionData?.id) {
+      fetch(`/api/start-session/${sessionData.id}`, {method:'POST', credentials:'include'})
+        .catch(e => console.warn('start-session error:', e));
+    }
   });
 
   socket.on('user_joined', data=>{
     if (data.role==='candidate') {
       document.getElementById('waiting-msg').style.display='none';
+      // FIX: Don't send offer immediately on user_joined — wait for candidate_ready signal
+      // to avoid the race condition where candidate's RTCPeerConnection isn't set up yet
+    }
+  });
+
+  // FIX: Candidate signals they are ready for WebRTC — NOW it's safe to send the offer
+  socket.on('candidate_ready', data => {
+    document.getElementById('waiting-msg').style.display='none';
+    // Only set up WebRTC if we haven't already
+    if (!peerConn) {
+      setupWebRTC(room, iceServers);
+    }
+  });
+
+  // Server tells us candidate is already in room
+  socket.on('candidate_present', data=>{
+    document.getElementById('waiting-msg').style.display='none';
+    // Candidate is already in room — they'll send candidate_ready when their socket reconnects
+    // If peerConn not set up yet, setupWebRTC will be called on candidate_ready
+    if (!peerConn) {
       setupWebRTC(room, iceServers);
     }
   });
@@ -546,10 +587,15 @@ function hideEndModal() { document.getElementById('end-modal').classList.remove(
 function endInterview() {
   socket?.emit('end_interview', {room: sessionData?.room_code});
   if (localStream) localStream.getTracks().forEach(t=>t.stop());
-  // Save final notes
+  // FIX: Save recruiter notes to the session before leaving
   const notes = document.getElementById('notes-input').value;
+  const rec   = document.getElementById('rec-select').value;
   if (notes && sessionData?.id) {
-    fetch(`/api/start-session/${sessionData.id}`, {method:'POST'});
+    // Save notes via recruiter_message so it's logged to the session
+    socket?.emit('recruiter_message', {
+      room: sessionData?.room_code,
+      message: `[FINAL_NOTES] ${notes} | Rating: ${rating}/5 | Recommendation: ${rec}`
+    });
   }
   window.location.href = 'recruiter_dashboard.html';
 }

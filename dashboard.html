@@ -8,30 +8,33 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f1117;
-  --bg2: #161b27;
-  --s: #1a2035;
-  --s2: #1e2640;
-  --border: #2a3350;
-  --border2: #334066;
-  --accent: #4f8ef7;
-  --accent2: #6aa3ff;
-  --accent-light: rgba(79,142,247,0.12);
-  --accent-glow: rgba(79,142,247,0.2);
-  --green: #10b981;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-  --text: #e8edf5;
-  --text2: #c5cde0;
-  --muted: #7a88a8;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
 }
 
 
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);}
-.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;}
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;}
 .brand{font-family:'Plus Jakarta Sans', 'Playfair Display', sans-serif;font-size:20px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .topbar-right{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--muted);}
 .logout-link{padding:8px 18px;border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;text-decoration:none;transition:all .2s;}
@@ -40,12 +43,12 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:16px;margin-bottom:30px;}
 .stat{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:22px;position:relative;overflow:hidden;}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.stat.blue::before{background:linear-gradient(90deg,var(--accent),var(--accent2));}
-.stat.green::before{background:linear-gradient(90deg,#10b981,#34d399);}
-.stat.yellow::before{background:linear-gradient(90deg,#f59e0b,#fbbf24);}
-.stat.red::before{background:linear-gradient(90deg,#f43f5e,#fb7185);}
-.stat.purple::before{background:linear-gradient(90deg,#8b5cf6,#a78bfa);}
-.stat.teal::before{background:linear-gradient(90deg,#14b8a6,#2dd4bf);}
+.stat.blue::before{background:linear-gradient(90deg,#4361ee,#6d83f3);}
+.stat.green::before{background:linear-gradient(90deg,#059669,#10b981);}
+.stat.yellow::before{background:linear-gradient(90deg,#d97706,#f59e0b);}
+.stat.red::before{background:linear-gradient(90deg,#dc2626,#ef4444);}
+.stat.purple::before{background:linear-gradient(90deg,#7c3aed,#8b5cf6);}
+.stat.teal::before{background:linear-gradient(90deg,#0d9488,#14b8a6);}
 .stat-val{font-family:'Playfair Display', serif;font-size:34px;font-weight:700;margin-bottom:4px;}
 .stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 .card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px;}
@@ -53,17 +56,17 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);}
 table{width:100%;border-collapse:collapse;}
 th{padding:11px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);font-weight:600;}
 td{padding:13px 14px;font-size:13px;border-bottom:1px solid rgba(42,42,61,.5);}
-tr:hover td{background:rgba(13,31,60,0.025);}
+tr:hover td{background:rgba(67,97,238,0.025);}
 .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
-.bg{background:rgba(16,185,129,.15);color:#34d399;}
-.br{background:rgba(239,68,68,.15);color:#fca5a5;}
-.bb{background:rgba(13,31,60,0.08);color:var(--accent2);}
-.by{background:rgba(245,158,11,.15);color:#fcd34d;}
-.sv-low{color:#10b981;font-weight:700;}
+.bg{background:rgba(5,150,105,.1);color:#059669;}
+.br{background:rgba(220,38,38,.1);color:#991b1b;}
+.bb{background:rgba(67,97,238,0.06);color:var(--accent2);}
+.by{background:rgba(217,119,6,.1);color:#fcd34d;}
+.sv-low{color:#059669;font-weight:700;}
 .sv-med{color:#f59e0b;font-weight:700;}
 .sv-hi{color:#f43f5e;font-weight:700;}
 .btn-sm{padding:7px 14px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;background:rgba(79,142,247,.1);color:var(--accent2);transition:all .2s;}
-.btn-sm:hover{background:rgba(13,31,60,0.2);}
+.btn-sm:hover{background:rgba(67,97,238,0.08);}
 
 .empty{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
 .overflow{overflow-x:auto;}
@@ -79,8 +82,8 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(circle at 20% 20%, rgba(13,31,60,0.05) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, rgba(37,99,235,0.04) 0%, transparent 50%);
+  background-image: radial-gradient(circle at 20% 20%, rgba(67,97,238,0.04) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(99,122,255,0.03) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -108,10 +111,10 @@ table {
 }
 
 /* Stat top bar glow */
-.stat.blue::before { background: linear-gradient(90deg, var(--accent), #4a6fa5); }
-.stat.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+.stat.blue::before { background: linear-gradient(90deg, #4361ee, #6d83f3); }
+.stat.green::before { background: linear-gradient(90deg, #059669, #10b981); }
 .stat.yellow::before { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
-.stat.red::before { background: linear-gradient(90deg, var(--red), #fc8181); }
+.stat.red::before { background: linear-gradient(90deg, #dc2626, #ef4444); }
 .stat.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
 .stat.teal::before { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
 
@@ -146,8 +149,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image: 
-    radial-gradient(ellipse at 15% 25%, rgba(13,31,60,0.06) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 75%, rgba(13,31,60,0.03) 0%, transparent 45%);
+    radial-gradient(ellipse at 15% 25%, rgba(67,97,238,0.05) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 75%, rgba(67,97,238,0.02) 0%, transparent 45%);
   pointer-events: none;
   z-index: 0;
 }
@@ -188,8 +191,32 @@ body::before {
   </div>
 
   <div class="card">
-    <div class="card-title">📋 Recent Submissions</div>
-    <div class="overflow" id="submissions-container"><div class="empty">Loading…</div></div>
+    <div class="card-title" style="flex-wrap:wrap;gap:12px;">
+      <span>📋 Recent Candidates <span style="font-size:12px;color:var(--muted);font-weight:400;">(Top 10)</span></span>
+      <div style="display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;align-items:center;">
+        <input id="filter-name" type="text" placeholder="Search name…" oninput="applyFilters()"
+          style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;width:140px;outline:none;">
+        <select id="filter-status" onchange="applyFilters()"
+          style="padding:7px 10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;">
+          <option value="">All Status</option>
+          <option value="passed">Passed</option>
+          <option value="failed">Failed</option>
+        </select>
+        <select id="filter-mode" onchange="applyFilters()"
+          style="padding:7px 10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;">
+          <option value="">All Modes</option>
+          <option value="mcq">MCQ</option>
+          <option value="ai_interview">AI Interview</option>
+          <option value="live_recruiter">Live Recruiter</option>
+        </select>
+        <button onclick="downloadExcel()" title="Download as Excel"
+          style="padding:7px 14px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:8px;color:#059669;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;"
+          onmouseover="this.style.background='rgba(16,185,129,.25)'" onmouseout="this.style.background='rgba(5,150,105,.1)'">
+          ⬇ Excel
+        </button>
+      </div>
+    </div>
+    <div style="max-height:420px;overflow-y:auto;overflow-x:auto;" id="submissions-container"><div class="empty">Loading…</div></div>
   </div>
 
   <div class="card">
@@ -203,10 +230,11 @@ body::before {
 
 <script>
 let socket;
+let allSubmissions = [];
 
 async function init() {
   const auth=await fetch('/api/check-auth').then(r=>r.json());
-  if (!auth.authenticated||!auth.is_admin) return window.location.href='index.html';
+  if (!auth.authenticated || auth.role === 'candidate') return window.location.href='index.html';
   document.getElementById('admin-name').textContent=auth.full_name||auth.username;
   await loadData();
   initSocket();
@@ -221,13 +249,29 @@ async function loadData() {
   document.getElementById('s-active').textContent=data.stats.active_sessions;
   document.getElementById('s-gaze').textContent=data.stats.total_gaze_events||0;
   document.getElementById('s-device').textContent=data.stats.total_device_alerts||0;
-  renderSubs(data.recent_submissions||[]);
+  allSubmissions = data.recent_submissions || [];
+  applyFilters();
   renderVios(data.recent_violations||[]);
+}
+
+function applyFilters() {
+  const name = (document.getElementById('filter-name')?.value||'').toLowerCase();
+  const status = document.getElementById('filter-status')?.value||'';
+  const mode = document.getElementById('filter-mode')?.value||'';
+  let filtered = allSubmissions.filter(s => {
+    const n = (s.full_name||s.username||'').toLowerCase();
+    if (name && !n.includes(name)) return false;
+    if (status === 'passed' && !s.passed) return false;
+    if (status === 'failed' && s.passed) return false;
+    if (mode && !(s.mode||'').includes(mode)) return false;
+    return true;
+  }).slice(0, 10);
+  renderSubs(filtered);
 }
 
 function renderSubs(subs) {
   const el=document.getElementById('submissions-container');
-  if (!subs.length){el.innerHTML='<div class="empty">No submissions yet</div>';return;}
+  if (!subs.length){el.innerHTML='<div class="empty">No submissions match filters</div>';return;}
   el.innerHTML=`<table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Interview</th><th>Violations</th><th>Status</th><th>Attempt</th><th>Date</th><th></th></tr></thead><tbody>
   ${subs.map(s=>`<tr>
     <td><strong>${s.full_name||s.username}</strong></td>
@@ -256,22 +300,52 @@ function renderVios(vios) {
   </tbody></table>`;
 }
 
-function scoreColor(s){return s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e';}
+function scoreColor(s){return s>=80?'#059669':s>=60?'#d97706':'#dc2626';}
 function fmt(t){return (t||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+
+function downloadExcel() {
+  // Build CSV and force download as .xlsx-compatible CSV
+  const name = (document.getElementById('filter-name')?.value||'').toLowerCase();
+  const status = document.getElementById('filter-status')?.value||'';
+  const mode = document.getElementById('filter-mode')?.value||'';
+  const filtered = allSubmissions.filter(s => {
+    const n = (s.full_name||s.username||'').toLowerCase();
+    if (name && !n.includes(name)) return false;
+    if (status === 'passed' && !s.passed) return false;
+    if (status === 'failed' && s.passed) return false;
+    if (mode && !(s.mode||'').includes(mode)) return false;
+    return true;
+  }).slice(0, 10);
+
+  const headers = ['Candidate','Username','Job Role','Mode','Credibility Score','Interview Score','Violations','Status','Attempt','Submitted At'];
+  const rows = filtered.map(s => [
+    s.full_name||s.username, s.username, s.job_role||'—',
+    (s.mode||'mcq').replace(/_/g,' '),
+    s.credibility_score, s.interview_score||0, s.total_violations,
+    s.passed?'PASSED':'FAILED', '#'+(s.attempt_number||1), s.submitted_at
+  ]);
+
+  // Build tab-separated for Excel compatibility
+  const tsv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join('\t')).join('\n');
+  const blob = new Blob(['\ufeff'+tsv], {type:'application/vnd.ms-excel;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'RecruitAI_Sessions.xls';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
 
 function initSocket() {
   socket=io();
   socket.on('connect',()=>socket.emit('join_dashboard'));
   socket.on('violation_alert',data=>{
-    const t=document.getElementById('vtoa');
-    // Prepend to table
     const tbody=document.getElementById('vio-tbody');
     if (tbody) {
       const cls=data.severity===1?'sv-low':data.severity===2?'sv-med':'sv-hi';
       const sev=data.severity===1?'Low':data.severity===2?'Medium':'High';
       const row=tbody.insertRow(0);
       row.innerHTML=`<td><strong>${data.username}</strong></td><td>${fmt(data.violation_type)}</td><td><span class="${cls}">${sev}</span></td><td>${data.timestamp}</td>`;
-      row.style.background='rgba(244,63,94,.06)';
+      row.style.background='rgba(220,38,38,.04)';
       setTimeout(()=>row.style.background='',3000);
     }
     const sv=document.getElementById('s-violations');
@@ -282,4 +356,4 @@ function initSocket() {
 init();
 </script>
 </body>
-</html>
+</html> 

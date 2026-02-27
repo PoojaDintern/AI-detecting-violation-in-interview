@@ -8,2165 +8,1384 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f1117;
-  --bg2: #161b27;
-  --s: #1a2035;
-  --s2: #1e2640;
-  --border: #2a3350;
-  --border2: #334066;
-  --accent: #4f8ef7;
-  --accent2: #6aa3ff;
-  --accent-light: rgba(79,142,247,0.12);
-  --accent-glow: rgba(79,142,247,0.2);
-  --green: #10b981;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-  --text: #e8edf5;
-  --text2: #c5cde0;
-  --muted: #7a88a8;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
 }
-:root {
-  --bg: #0f1117;
-  --bg2: #161b27;
-  --s: #1a2035;
-  --s2: #1e2640;
-  --border: #2a3350;
-  --border2: #334066;
-  --accent: #4f8ef7;
-  --accent2: #6aa3ff;
-  --accent-light: rgba(79,142,247,0.12);
-  --accent-glow: rgba(79,142,247,0.2);
-  --green: #10b981;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-  --text: #e8edf5;
-  --text2: #c5cde0;
-  --muted: #7a88a8;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
-}
-
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
-.brand{font-family:'Plus Jakarta Sans','Playfair Display',sans-serif;font-size:18px;font-weight:800;background:linear-gradient(135deg,#fff,var(--accent2));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.topbar-right{display:flex;align-items:center;gap:16px;}
-.timer-display{font-family:monospace;font-size:20px;font-weight:700;color:var(--accent2);background:var(--s2);padding:6px 14px;border-radius:8px;border:1px solid var(--border);}
-.timer-display.warn{color:var(--red);border-color:var(--red);animation:pulse 1s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-.layout{display:grid;grid-template-columns:1fr 300px;gap:0;min-height:calc(100vh - 60px);}
-.interview-area{padding:28px;overflow-y:auto;}
-.proctoring-sidebar{background:var(--s);border-left:1px solid var(--border);padding:20px;display:flex;flex-direction:column;gap:16px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;}
-#mode-selector{max-width:680px;margin:0 auto;}
-.mode-header{text-align:center;margin-bottom:32px;}
-.mode-header h1{font-family:'Playfair Display', serif;font-size:32px;font-weight:800;margin-bottom:8px;}
-.mode-header p{color:var(--muted);font-size:15px;}
-.room-join{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;}
-.room-join label{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600;}
-.room-join input,.room-join select{width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans', sans-serif;outline:none;margin-bottom:14px;}
-.room-join input:focus,.room-join select:focus{border-color:var(--accent);}
-.btn-start{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),#162d50);border:none;border-radius:11px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:'Playfair Display', serif;transition:all .25s;}
-.btn-start:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(13,31,60,0.3);}
-#mcq-area{display:none;}
-.q-progress{display:flex;align-items:center;gap:12px;margin-bottom:28px;}
-.q-dots{display:flex;gap:6px;flex-wrap:wrap;}
-.qdot{width:14px;height:14px;border-radius:50%;background:var(--s2);border:2px solid var(--border);cursor:pointer;transition:all .2s;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+/* ── Top bar ── */
+.topbar{background:var(--s);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,0.3);}
+.brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:var(--accent2);}
+.timer-wrap{display:flex;align-items:center;gap:10px;}
+.timer{font-family:monospace;font-size:22px;font-weight:700;color:var(--accent2);background:var(--s2);padding:6px 14px;border-radius:8px;border:1px solid var(--border);}
+.timer.warn{color:var(--red);border-color:var(--red);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+.btn-leave{padding:8px 18px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);border-radius:8px;color:#fca5a5;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-leave:hover{background:rgba(239,68,68,.3);}
+/* ── Layout ── */
+.interview-layout{display:grid;grid-template-columns:1fr 340px;gap:0;min-height:calc(100vh - 58px);}
+/* ── Camera panel ── */
+.camera-panel{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;gap:14px;position:sticky;top:58px;height:calc(100vh - 58px);}
+.cam-box{position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:14px;overflow:hidden;border:2px solid var(--border);}
+.cam-box video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+.cam-overlay{position:absolute;bottom:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-end;}
+.cam-status{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.3);}
+.cam-status.bad{background:rgba(239,68,68,.2);color:#fca5a5;border-color:rgba(239,68,68,.3);}
+.face-indicator{width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+.face-indicator.bad{background:var(--red);box-shadow:0 0 8px var(--red);}
+.session-info{width:100%;background:var(--s);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;}
+.session-info-row{display:flex;justify-content:space-between;margin-bottom:6px;}
+.session-info-row:last-child{margin-bottom:0;}
+.si-lbl{color:var(--muted);font-size:12px;}
+.si-val{font-weight:600;font-size:12px;}
+/* ── Question area ── */
+.qa-panel{padding:28px;overflow-y:auto;}
+/* MCQ */
+#mcq-area{max-width:720px;}
+.q-progress{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;}
+.qdot{width:13px;height:13px;border-radius:50%;background:var(--s2);border:2px solid var(--border);cursor:pointer;transition:all .2s;}
 .qdot.ans{background:var(--accent);border-color:var(--accent);}
-.qdot.curr{background:transparent;border-color:var(--accent2);}
-.question-card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:20px;}
-.q-num{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;font-family:'Playfair Display', serif;font-weight:700;}
-.q-text{font-size:19px;font-weight:500;line-height:1.55;margin-bottom:24px;}
+.qdot.curr{border-color:var(--accent2);background:transparent;}
+.question-card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:18px;}
+.q-num{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:10px;}
+.q-text{font-size:18px;font-weight:500;line-height:1.55;margin-bottom:22px;}
 .options{display:grid;gap:10px;}
-.opt{display:flex;align-items:center;gap:14px;padding:15px 18px;background:var(--s2);border:2px solid var(--border);border-radius:11px;cursor:pointer;transition:all .2s;font-size:14px;}
-.opt:hover{border-color:var(--accent);background:rgba(79,142,247,.1);}
+.opt{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--s2);border:2px solid var(--border);border-radius:11px;cursor:pointer;transition:all .2s;font-size:14px;}
+.opt:hover{border-color:var(--accent);background:rgba(79,142,247,.08);}
 .opt.selected{border-color:var(--accent);background:rgba(79,142,247,.1);}
-.opt-letter{width:30px;height:30px;border-radius:8px;background:var(--s);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;transition:all .2s;}
+.opt-letter{width:28px;height:28px;border-radius:7px;background:var(--s);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;transition:all .2s;}
 .opt.selected .opt-letter{background:var(--accent);border-color:var(--accent);color:#fff;}
-.q-nav{display:flex;justify-content:space-between;align-items:center;}
-.btn-nav{padding:10px 22px;border:1px solid var(--border);border-radius:9px;background:var(--s2);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;font-family:'DM Sans', sans-serif;transition:all .2s;}
+.q-nav{display:flex;justify-content:space-between;align-items:center;margin-top:16px;}
+.btn-nav{padding:10px 22px;border:1px solid var(--border);border-radius:9px;background:var(--s2);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;}
 .btn-nav:hover{border-color:var(--accent);color:var(--accent2);}
-.btn-submit-mcq{padding:12px 28px;background:linear-gradient(135deg,var(--green),#34d399);border:none;border-radius:9px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans', sans-serif;}
-/* ══════════════════════════════════════════════════
-   AI INTERVIEWER  ·  Professional Video Call UI
-   (Teams / Meet style — clean, industry-standard)
-══════════════════════════════════════════════════ */
-#ai-area { display: none; }
+.btn-submit{padding:12px 28px;background:var(--green);border:none;border-radius:9px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn-submit:hover{box-shadow:0 6px 20px rgba(16,185,129,0.35);}
+/* AI Interview */
+#ai-area{display:none;max-width:720px;}
+.ai-video-box{position:relative;width:100%;aspect-ratio:16/9;max-height:360px;background:linear-gradient(135deg,#1e3a5f,#0f2a3f);border-radius:16px;overflow:hidden;margin-bottom:16px;border:1px solid var(--border);}
+.ai-avatar-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ai-avatar-img{width:200px;height:auto;filter:drop-shadow(0 8px 32px rgba(0,0,0,0.5));}
+.ai-name-tag{position:absolute;bottom:14px;left:14px;background:rgba(0,0,0,0.6);color:#fff;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;backdrop-filter:blur(4px);}
+.ai-speak-indicator{position:absolute;bottom:14px;right:14px;display:flex;gap:4px;align-items:flex-end;}
+.ai-bar{width:4px;background:var(--accent);border-radius:2px;animation:bars 1.2s ease infinite;}
+.ai-bar:nth-child(1){height:8px;animation-delay:0s;}
+.ai-bar:nth-child(2){height:16px;animation-delay:.15s;}
+.ai-bar:nth-child(3){height:10px;animation-delay:.3s;}
+.ai-bar:nth-child(4){height:18px;animation-delay:.45s;}
+@keyframes bars{0%,100%{opacity:.3;transform:scaleY(.4);}50%{opacity:1;transform:scaleY(1);}}
+.ai-question-box{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
+.ai-q-label{font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:8px;}
+.ai-q-text{font-size:16px;font-weight:500;line-height:1.55;}
+.ai-answer-box{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.ai-a-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:10px;}
+.ai-answer-textarea{width:100%;min-height:100px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;resize:none;transition:border-color .2s;line-height:1.5;}
+.ai-answer-textarea:focus{border-color:var(--accent);}
+.ai-action-row{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;}
+/* Loading state */
+#loading-screen{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* Device kick overlay */
+#device-kicked-overlay{position:fixed;inset:0;background:rgba(10,10,15,0.97);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:40px;}
+.kick-icon{font-size:80px;}
+.kick-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:800;color:var(--red);}
+.kick-desc{font-size:16px;color:var(--text2);max-width:500px;line-height:1.6;}
+.kick-cta{font-size:13px;color:var(--muted);margin-top:8px;}
+.countdown-badge{font-size:40px;font-weight:700;font-family:monospace;color:var(--yellow);}
+/* Submit overlay */
+#submitting-overlay{position:fixed;inset:0;background:rgba(10,10,15,0.95);z-index:9990;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;}
+/* Leave confirm */
+#leave-modal{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:8000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.leave-card{background:var(--s);border:1px solid var(--border);border-radius:18px;padding:32px;max-width:400px;text-align:center;}
+.leave-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:10px;}
+.leave-desc{color:var(--muted);font-size:14px;margin-bottom:24px;line-height:1.6;}
+.leave-btns{display:flex;gap:12px;justify-content:center;}
 
-/* ── Outer video call frame ── */
-.ai-video-call {
-  position: relative;
-  width: 100%; aspect-ratio: 16/9; max-height: 420px;
-  border-radius: 16px; overflow: hidden;
-  background: #1c2333;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.07);
-  margin-bottom: 14px;
+/* ── 360° Room Scan Overlay ── */
+#room-scan-overlay {
+  display:none;
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(10,15,40,0.97);
+  align-items:center;justify-content:center;flex-direction:column;
+  font-family:'DM Sans',sans-serif;
 }
+.scan-card {
+  background:#0f172a;border:1px solid rgba(67,97,238,0.3);
+  border-radius:24px;padding:40px 44px;max-width:520px;width:90%;
+  text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.6);
+}
+.scan-title {
+  font-family:'Playfair Display',serif;font-size:26px;font-weight:800;
+  color:#fff;margin-bottom:8px;
+}
+.scan-sub {
+  color:#94a3b8;font-size:14px;margin-bottom:28px;line-height:1.7;
+}
+.scan-preview {
+  width:100%;aspect-ratio:4/3;background:#000;border-radius:14px;
+  overflow:hidden;margin-bottom:20px;position:relative;
+  border:2px solid rgba(67,97,238,0.4);
+}
+.scan-preview video {
+  width:100%;height:100%;object-fit:cover;transform:scaleX(-1);
+}
+.scan-arc {
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.scan-arc svg { width:80%;height:80%;opacity:0.5; }
+.scan-arc svg circle.progress {
+  transition: stroke-dashoffset 0.3s ease;
+  transform-origin: center;
+  transform: rotate(-90deg);
+}
+.scan-steps {
+  display:flex;gap:8px;justify-content:center;margin-bottom:20px;
+}
+.scan-step {
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;padding:8px 14px;font-size:12px;color:#94a3b8;
+  transition:all 0.3s;
+}
+.scan-step.active {
+  background:rgba(67,97,238,0.15);border-color:rgba(67,97,238,0.5);color:#a5b4fc;
+}
+.scan-step.done {
+  background:rgba(5,150,105,0.12);border-color:rgba(5,150,105,0.4);color:#6ee7b7;
+}
+.scan-instruction {
+  font-size:16px;font-weight:600;color:#fff;
+  background:rgba(67,97,238,0.12);border:1px solid rgba(67,97,238,0.3);
+  border-radius:10px;padding:12px 20px;margin-bottom:20px;
+  min-height:48px;display:flex;align-items:center;justify-content:center;
+}
+.scan-progress-bar {
+  width:100%;height:6px;background:rgba(255,255,255,0.08);
+  border-radius:99px;overflow:hidden;margin-bottom:20px;
+}
+.scan-progress-fill {
+  height:100%;background:linear-gradient(90deg,#4361ee,#7c3aed);
+  border-radius:99px;transition:width 0.4s ease;width:0%;
+}
+.scan-btn {
+  padding:14px 36px;background:var(--accent);border:none;
+  border-radius:12px;color:#fff;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;width:100%;
+}
+.scan-btn:hover{background:var(--accent2);transform:translateY(-1px);}
+.scan-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.scan-frames-grid {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px;
+}
+.scan-thumb {
+  aspect-ratio:4/3;background:#1e293b;border-radius:6px;overflow:hidden;
+  border:2px solid rgba(255,255,255,0.05);transition:border-color 0.3s;
+}
+.scan-thumb.captured { border-color:rgba(5,150,105,0.6); }
+.scan-thumb img { width:100%;height:100%;object-fit:cover; }
+.scan-status {
+  font-size:13px;color:#94a3b8;margin-bottom:16px;min-height:20px;
+}
+.scan-status.warn { color:#f59e0b; }
+.scan-status.ok { color:#10b981; }
 
-/* ── Background: subtle bokeh / blurred office ── */
-.ai-bg {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 60% 70% at 30% 40%, #1e3a5f 0%, transparent 65%),
-    radial-gradient(ellipse 50% 60% at 75% 60%, #0f2a3f 0%, transparent 65%),
-    linear-gradient(160deg, #111927 0%, #1a2640 50%, #0d1520 100%);
-}
-/* Faint bokeh circles — blurred office lights */
-.ai-bg::before {
-  content: '';
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(circle 80px at 15% 25%, rgba(100,160,255,0.08) 0%, transparent 100%),
-    radial-gradient(circle 120px at 80% 20%, rgba(255,200,100,0.06) 0%, transparent 100%),
-    radial-gradient(circle 60px at 65% 75%, rgba(80,140,255,0.06) 0%, transparent 100%),
-    radial-gradient(circle 90px at 10% 80%, rgba(60,100,200,0.05) 0%, transparent 100%);
-}
-/* Subtle grid texture on bg */
-.ai-bg::after {
-  content: '';
-  position: absolute; inset: 0;
-  background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* ── Central avatar area ── */
-.ai-center {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 0;
-}
-
-/* ── Avatar image wrap ── */
-.ai-avatar-circle-wrap {
-  position: relative;
-  display: flex; align-items: flex-end; justify-content: center;
-}
-
-/* Animated speaking ring — 3 layers (around image) */
-.ai-speak-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 2.5px solid transparent;
-  opacity: 0;
-  transition: opacity 0.3s;
-  /* rings centered on the head area (top portion of image) */
-  width: clamp(110px, 22vw, 160px);
-  height: clamp(110px, 22vw, 160px);
-  top: 0; left: 50%; transform: translateX(-50%);
-}
-.ai-speak-ring-1 { border-color: rgba(79,142,247,0.85); inset: unset; top: -6px; width: calc(clamp(110px, 22vw, 160px) + 12px); height: calc(clamp(110px, 22vw, 160px) + 12px); }
-.ai-speak-ring-2 { border-color: rgba(79,142,247,0.4);  inset: unset; top: -14px; width: calc(clamp(110px, 22vw, 160px) + 28px); height: calc(clamp(110px, 22vw, 160px) + 28px); }
-.ai-speak-ring-3 { border-color: rgba(79,142,247,0.15); inset: unset; top: -22px; width: calc(clamp(110px, 22vw, 160px) + 44px); height: calc(clamp(110px, 22vw, 160px) + 44px); }
-
-.ai-video-call.speaking .ai-speak-ring-1 { opacity: 1; animation: speakPulse1 1.1s ease-in-out infinite; }
-.ai-video-call.speaking .ai-speak-ring-2 { opacity: 1; animation: speakPulse2 1.1s ease-in-out infinite 0.15s; }
-.ai-video-call.speaking .ai-speak-ring-3 { opacity: 1; animation: speakPulse2 1.1s ease-in-out infinite 0.3s; }
-
-@keyframes speakPulse1 {
-  0%,100% { transform: translateX(-50%) scale(1);    border-color: rgba(79,142,247,0.85); }
-  50%      { transform: translateX(-50%) scale(1.04); border-color: rgba(79,142,247,1); }
-}
-@keyframes speakPulse2 {
-  0%,100% { transform: translateX(-50%) scale(1);    opacity: 0.5; }
-  50%      { transform: translateX(-50%) scale(1.07); opacity: 1;   }
-}
-
-/* Avatar image */
-.ai-avatar-img-wrap {
-  position: relative; z-index: 5;
-  width: clamp(160px, 30vw, 260px);
-  filter: drop-shadow(0 8px 32px rgba(0,0,0,0.55));
-  /* idle breathing animation */
-  animation: avatarBreathe 4s ease-in-out infinite;
-}
-.ai-avatar-img-wrap.talking {
-  animation: avatarTalk 0.35s ease-in-out infinite alternate;
-}
-@keyframes avatarBreathe {
-  0%,100% { transform: translateY(0px) scale(1); }
-  50%      { transform: translateY(-4px) scale(1.005); }
-}
-@keyframes avatarTalk {
-  0%   { transform: translateY(-2px) rotate(-0.4deg); }
-  100% { transform: translateY(0px)  rotate(0.4deg);  }
-}
-
-.ai-avatar-img {
-  width: 100%; height: auto;
-  display: block;
-  /* remove white bg from the image */
-  mix-blend-mode: normal;
-}
-
-/* AI label under avatar */
-.ai-label-under {
-  margin-top: 14px;
-  text-align: center;
-}
-.ai-label-name {
-  font-size: 15px; font-weight: 600; color: #fff;
-  letter-spacing: 0.01em;
-}
-.ai-label-role {
-  font-size: 11px; color: rgba(255,255,255,0.45);
-  margin-top: 3px; font-weight: 400;
-  text-transform: uppercase; letter-spacing: 0.08em;
-}
-
-/* ── Top bar (call controls row) ── */
-.ai-call-topbar {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 30;
-  padding: 12px 16px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.ai-call-label {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.9);
-}
-.ai-live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 2px rgba(34,197,94,0.25);
-  animation: livePulse 2.5s ease-in-out infinite;
-}
-@keyframes livePulse {
-  0%,100% { box-shadow: 0 0 0 2px rgba(34,197,94,0.25); }
-  50%      { box-shadow: 0 0 0 5px rgba(34,197,94,0.1);  }
-}
-.ai-call-timer {
-  font-family: 'DM Mono', monospace;
-  font-size: 12px; color: rgba(255,255,255,0.5);
-  background: rgba(0,0,0,0.35);
-  padding: 3px 10px; border-radius: 20px;
-  letter-spacing: 0.05em;
-}
-
-/* ── Bottom bar ── */
-.ai-call-bottombar {
-  position: absolute; bottom: 0; left: 0; right: 0; z-index: 30;
-  padding: 32px 16px 14px;
-  background: linear-gradient(0deg, rgba(0,0,0,0.65) 0%, transparent 100%);
-  display: flex; align-items: flex-end; justify-content: space-between;
-}
-.ai-name-tag {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; font-weight: 600; color: #fff;
-}
-.ai-mic-icon {
-  width: 22px; height: 22px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.15);
-}
-.ai-mic-icon.active { background: rgba(79,142,247,0.25); border-color: rgba(79,142,247,0.5); }
-
-/* ── Audio wave ── */
-.ai-audio-wave {
-  display: flex; align-items: center; gap: 3px; height: 22px;
-  opacity: 0; transition: opacity 0.3s;
-}
-.ai-audio-wave.active { opacity: 1; }
-.wave-bar {
-  width: 3px; border-radius: 3px;
-  background: linear-gradient(180deg, #6aa3ff, #4f8ef7);
-  animation: waveAnim 0.5s ease-in-out infinite alternate;
-}
-.wave-bar:nth-child(1){height:4px;animation-delay:0s}
-.wave-bar:nth-child(2){height:10px;animation-delay:.06s}
-.wave-bar:nth-child(3){height:18px;animation-delay:.12s}
-.wave-bar:nth-child(4){height:14px;animation-delay:.18s}
-.wave-bar:nth-child(5){height:8px;animation-delay:.24s}
-.wave-bar:nth-child(6){height:16px;animation-delay:.30s}
-.wave-bar:nth-child(7){height:11px;animation-delay:.36s}
-.wave-bar:nth-child(8){height:5px;animation-delay:.42s}
-@keyframes waveAnim { 0%{transform:scaleY(0.25)} 100%{transform:scaleY(1)} }
-
-/* ── Candidate PiP ── */
-.ai-candidate-pip {
-  position: absolute; bottom: 14px; right: 14px;
-  width: 22%; max-width: 130px; aspect-ratio: 4/3;
-  border-radius: 10px; overflow: hidden;
-  border: 2px solid rgba(255,255,255,0.15);
-  background: #0a0a0f;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-  z-index: 40;
-}
-.ai-candidate-pip video { width: 100%; height: 100%; object-fit: cover; }
-.pip-label {
-  position: absolute; bottom: 5px; left: 7px;
-  font-size: 10px; font-weight: 600;
-  color: rgba(255,255,255,0.88);
-  background: rgba(0,0,0,0.6);
-  padding: 2px 7px; border-radius: 4px;
-}
-
-/* ── Status row below video ── */
-.ai-avatar-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 0; }
-.ai-status { font-size: 13px; color: var(--muted); margin-top: 8px; min-height: 20px; text-align: center; }
-
-/* ── Legacy ── */
-.ai-avatar, .ring, .ring2 { display: none; }
-@keyframes ripple { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.2);opacity:0} }
-/* Loading spinner shown while fetching questions */
-.ai-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px;background:var(--s);border:1px solid var(--border);border-radius:16px;margin-bottom:20px;}
-.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
-
-.ai-error-box{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.3);border-radius:12px;padding:18px;margin-bottom:20px;display:none;text-align:center;}
-.ai-error-box h3{color:var(--red);margin-bottom:6px;font-size:15px;}
-.ai-error-box p{color:var(--muted);font-size:13px;line-height:1.6;}
-.btn-retry{margin-top:12px;padding:9px 20px;background:var(--red);border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:13px;}
-.ai-question-box{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;min-height:100px;position:relative;}
-.ai-question-text{font-size:18px;line-height:1.6;font-weight:500;}
-.ai-question-text .cursor{display:inline-block;width:3px;height:20px;background:var(--accent);margin-left:2px;animation:blink .6s step-end infinite;vertical-align:middle;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-.ai-q-num{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
-.answer-area{position:relative;}
-.answer-textarea{width:100%;min-height:120px;padding:16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;font-family:'DM Sans', sans-serif;resize:vertical;outline:none;line-height:1.6;transition:border-color .2s;}
-.answer-textarea:focus{border-color:var(--accent);}
-.answer-controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px;}
-.btn-voice{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
-.btn-voice.recording{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.4);color:var(--red);}
-.btn-send{padding:11px 26px;background:linear-gradient(135deg,var(--accent),#162d50);border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans', sans-serif;transition:opacity .2s;}
-.btn-send:disabled{opacity:.45;cursor:not-allowed;}
-.feedback-box{background:rgba(13,31,60,0.06);border:1px solid rgba(13,31,60,0.15);border-radius:12px;padding:16px;margin-top:14px;display:none;}
-.fb-score{font-size:28px;font-weight:700;color:var(--accent2);margin-bottom:6px;}
-.fb-text{font-size:13px;color:var(--muted);line-height:1.6;}
-.progress-bar{height:5px;background:var(--border);border-radius:10px;overflow:hidden;margin:16px 0;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s;}
-#live-area{display:none;}
-.video-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
-.video-box{background:#000;border-radius:14px;aspect-ratio:16/9;overflow:hidden;position:relative;border:1px solid var(--border);}
-.video-box video{width:100%;height:100%;object-fit:cover;}
-.video-label{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.7);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;}
-.recruiter-msg-box{background:var(--s);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;max-height:160px;overflow-y:auto;}
-.rmsg{padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:13px;}
-.rmsg.recruiter{background:rgba(13,31,60,0.07);border:1px solid rgba(13,31,60,0.15);}
-.rmsg-from{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600;text-transform:uppercase;}
-.cam-box{background:#000;border-radius:10px;aspect-ratio:4/3;overflow:hidden;position:relative;}
-.cam-box video{width:100%;height:100%;object-fit:cover;}
-.cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;}
-.score-widget{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
-.score-big{font-family:'Playfair Display', serif;font-size:44px;font-weight:800;}
-.score-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;}
-.status-pill{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12px;margin:4px 0;}
-.status-pill.ok{background:rgba(16,185,129,.1);color:#6ee7b7;}
-.status-pill.warn{background:rgba(245,158,11,.1);color:#fcd34d;}
-.status-pill.bad{background:rgba(244,63,94,.1);color:#fda4af;}
-.vio-log{font-size:11px;max-height:180px;overflow-y:auto;}
-.vio-item{padding:6px 9px;background:rgba(244,63,94,.08);border-left:3px solid var(--red);border-radius:4px;margin-bottom:5px;color:#fda4af;}
-.stats-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.sm{background:var(--s2);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border);}
-.sm-val{font-size:22px;font-weight:700;font-family:'Playfair Display', serif;color:var(--accent2);}
-.sm-lbl{font-size:10px;color:var(--muted);margin-top:3px;}
-.fs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);}
-.fs-card{background:var(--s);border:1px solid var(--border);border-radius:20px;padding:48px;text-align:center;max-width:520px;}
-.fs-card h2{font-family:'Playfair Display', serif;font-size:28px;font-weight:800;margin-bottom:12px;}
-.fs-card p{color:var(--muted);margin-bottom:24px;font-size:15px;line-height:1.6;}
-.fs-btn{padding:16px 40px;background:linear-gradient(135deg,var(--accent),#162d50);border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;font-family:'Playfair Display', serif;box-shadow:0 8px 24px rgba(13,31,60,0.3);}
-
-.brand { background: linear-gradient(135deg, var(--accent), var(--accent2)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.brand-name { color: var(--text); -webkit-text-fill-color: var(--text); }
-
-
-
-/* Violation toast */
-/* Subtle background texture */
-body::before {
-  content: '';
+/* ── Rules Page Overlay ── */
+#rules-overlay {
+  display: none;
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(circle at 20% 20%, rgba(26,86,219,0.06) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, rgba(37,99,235,0.04) 0%, transparent 50%);
+  z-index: 10000;
+  background: #080c18;
+  overflow-y: auto;
+  font-family: 'DM Sans', sans-serif;
+}
+#rules-overlay.show { display: block; }
+
+.rules-bg {
+  position: fixed;
+  inset: 0;
   pointer-events: none;
-  z-index: 0;
-}
-
-/* Cards elevated */
-.card, .stat, .join-card, .result-header, .score-card, .modal-card {
-  box-shadow: 0 1px 3px rgba(15,30,60,0.06), 0 4px 16px rgba(15,30,60,0.08);
-  transition: box-shadow 0.2s ease;
-}
-.card:hover, .stat:hover {
-  box-shadow: 0 2px 8px rgba(15,30,60,0.08), 0 8px 24px rgba(15,30,60,0.1);
-}
-
-/* Topbar elevated */
-.topbar {
-  box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(15,30,60,0.06);
-  backdrop-filter: blur(10px);
-}
-
-/* Table styling */
-table {
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(15,30,60,0.06);
+  z-index: 0;
 }
-
-/* Stat top bar glow */
-.stat.blue::before { background: linear-gradient(90deg, var(--accent), #4a6fa5); }
-.stat.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
-.stat.yellow::before { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
-.stat.red::before { background: linear-gradient(90deg, var(--red), #fc8181); }
-.stat.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-.stat.teal::before { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
-
-/* Proctoring sidebar brighter */
-.proctoring-sidebar {
-  background: var(--s);
-  border-left: 1px solid var(--border);
-}
-
-/* Section titles */
-.page-title, .card-title, .section-title, .join-title {
-  color: var(--text);
-  font-family: 'Playfair Display', serif;
-}
-.page-sub, .join-desc { color: var(--muted); }
-
-/* Main wrapper bg */
-.main, .container { position: relative; z-index: 1; }
-.layout { position: relative; z-index: 1; }
-
-
-/* Dark background with subtle gradient */
-body {
-  background: var(--bg);
-  background-attachment: fixed;
-  color: var(--text);
-}
-
-/* Subtle dark background decoration */
-body::before {
+.rules-bg::before {
   content: '';
+  position: absolute;
+  top: -20%; left: -10%;
+  width: 60%; height: 60%;
+  background: radial-gradient(ellipse, rgba(67,97,238,0.18) 0%, transparent 70%);
+  animation: driftA 12s ease-in-out infinite alternate;
+}
+.rules-bg::after {
+  content: '';
+  position: absolute;
+  bottom: -10%; right: -10%;
+  width: 50%; height: 50%;
+  background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%);
+  animation: driftB 15s ease-in-out infinite alternate;
+}
+@keyframes driftA { from{transform:translate(0,0)} to{transform:translate(5%,8%)} }
+@keyframes driftB { from{transform:translate(0,0)} to{transform:translate(-5%,-6%)} }
+.rules-grid-bg {
   position: fixed;
   inset: 0;
-  background-image: 
-    radial-gradient(ellipse at 15% 25%, rgba(13,31,60,0.06) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 75%, rgba(59,130,246,0.06) 0%, transparent 45%);
+  background-image: linear-gradient(rgba(67,97,238,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(67,97,238,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
   pointer-events: none;
   z-index: 0;
 }
-
-/* Background grid - subtle on dark */
-.bg-grid {
-  background-image: linear-gradient(rgba(37,99,235,0.05) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(37,99,235,0.05) 1px, transparent 1px);
+.rules-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 28px 60px;
 }
-.orb1 { background: rgba(37,99,235,0.10); }
-.orb2 { background: rgba(59,130,246,0.07); }
-
-/* handled via JS scoreColor function updates */
-
-
-/* Dark scrollbar */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--muted)}
-
-/* ══════════════════════════════════════════════════════════════════
-   PRE-EXAM SETUP + ROOM SCAN OVERLAY
-═══════════════════════════════════════════════════════════════════ */
-.setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:10001;display:flex;align-items:center;justify-content:center;}
-.setup-modal{background:#0f1623;border:1px solid rgba(255,255,255,.08);border-radius:22px;width:min(860px,96vw);max-height:94vh;overflow-y:auto;display:flex;flex-direction:column;}
-
-/* Step indicator */
-.setup-steps{display:flex;align-items:center;justify-content:center;gap:0;padding:28px 36px 0;}
-.step-item{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;max-width:120px;}
-.step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:all .3s;border:2px solid rgba(255,255,255,.12);color:rgba(255,255,255,.3);}
-.step-dot.active{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 16px rgba(79,142,247,.5);}
-.step-dot.done{background:#10b981;border-color:#10b981;color:#fff;}
-.step-label{font-size:10px;color:rgba(255,255,255,.3);text-align:center;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
-.step-label.active{color:var(--accent2);}
-.step-label.done{color:#10b981;}
-.step-connector{flex:1;height:2px;background:rgba(255,255,255,.08);margin-bottom:16px;max-width:60px;}
-.step-connector.done{background:#10b981;}
-
-/* Step panels */
-.setup-panel{display:none;padding:28px 36px 0;}
-.setup-panel.active{display:block;}
-.setup-panel-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;margin-bottom:6px;}
-.setup-panel-sub{color:rgba(255,255,255,.45);font-size:13px;margin-bottom:22px;line-height:1.6;}
-
-/* Camera check panel */
-.cam-check-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
-.cam-preview-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;border:2px solid rgba(255,255,255,.1);}
-.cam-preview-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
-.cam-face-status{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;transition:all .3s;}
-.cam-face-status.ok{background:rgba(16,185,129,.85);color:#fff;}
-.cam-face-status.bad{background:rgba(239,68,68,.85);color:#fff;}
-.cam-face-status.warn{background:rgba(245,158,11,.85);color:#000;}
-
-/* Rules grid */
-.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.rule-card{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:10px;font-size:12px;line-height:1.5;}
-.rule-card.ok{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);}
-.rule-card.bad{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);}
-.rule-card.info{background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);}
-.rule-icon{font-size:16px;flex-shrink:0;}
-.rule-text strong{display:block;font-weight:600;margin-bottom:1px;}
-.rule-text span{color:rgba(255,255,255,.45);font-size:11px;}
-
-/* Checklist */
-.checklist{display:flex;flex-direction:column;gap:7px;margin-top:16px;}
-.chk-item{display:flex;align-items:center;gap:10px;padding:9px 13px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;font-size:13px;}
-.chk-ico{font-size:15px;width:18px;text-align:center;}
-.chk-lbl{flex:1;}
-.chk-st{font-size:11px;font-weight:700;}
-.chk-st.ok{color:#10b981;} .chk-st.bad{color:#ef4444;} .chk-st.pending{color:rgba(255,255,255,.3);}
-
-/* ── Room Scan Panel ──────────────────────────────────────────── */
-.scan-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
-.scan-cam-wrap{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;border:2px solid rgba(255,255,255,.1);}
-.scan-cam-wrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
-.scan-cam-wrap.scanning{border-color:rgba(79,142,247,.7);box-shadow:0 0 24px rgba(79,142,247,.3);}
-.scan-cam-wrap.ok{border-color:rgba(16,185,129,.7);box-shadow:0 0 24px rgba(16,185,129,.2);}
-.scan-cam-wrap.bad{border-color:rgba(239,68,68,.7);box-shadow:0 0 24px rgba(239,68,68,.3);}
-
-.scan-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;border-radius:12px;}
-.scan-flash.flash{animation:scanFlash .25s ease;}
-@keyframes scanFlash{0%{opacity:.7}100%{opacity:0}}
-
-.scan-overlay-label{position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;background:rgba(0,0,0,.7);color:#fff;border:1px solid rgba(255,255,255,.15);}
-
-/* Direction wheel */
-.scan-directions{display:flex;flex-direction:column;gap:10px;}
-.dir-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);transition:all .25s;}
-.dir-item.active{background:rgba(79,142,247,.1);border-color:rgba(79,142,247,.4);}
-.dir-item.done-ok{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3);}
-.dir-item.done-warn{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);}
-.dir-arrow{font-size:26px;width:36px;text-align:center;flex-shrink:0;}
-.dir-body{flex:1;}
-.dir-title{font-size:13px;font-weight:700;margin-bottom:2px;}
-.dir-desc{font-size:11px;color:rgba(255,255,255,.4);}
-.dir-result{font-size:12px;font-weight:700;margin-left:auto;flex-shrink:0;}
-.dir-result.ok{color:#10b981;} .dir-result.warn{color:#ef4444;} .dir-result.pending{color:rgba(255,255,255,.25);}
-
-/* Scan countdown ring */
-.scan-countdown-wrap{position:absolute;bottom:10px;right:10px;}
-.scan-ring{transform:rotate(-90deg);}
-.scan-ring-bg{fill:none;stroke:rgba(255,255,255,.15);stroke-width:4;}
-.scan-ring-fill{fill:none;stroke:var(--accent);stroke-width:4;stroke-dasharray:88;stroke-dashoffset:88;transition:stroke-dashoffset .9s linear;}
-.scan-ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;}
-
-/* Scan result banner */
-.scan-result-banner{margin-top:16px;padding:14px 18px;border-radius:12px;font-size:13px;display:none;}
-.scan-result-banner.clear{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#6ee7b7;}
-.scan-result-banner.flagged{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
-
-/* Devices found table */
-.devices-found{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
-.device-row{display:flex;align-items:center;gap:10px;padding:9px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12px;}
-.device-row .dev-icon{font-size:16px;}
-.device-row .dev-info{flex:1;}
-.device-row .dev-conf{font-size:11px;color:rgba(255,255,255,.4);}
-
-/* Footer */
-.setup-footer{padding:20px 36px 28px;border-top:1px solid rgba(255,255,255,.06);display:flex;gap:12px;align-items:center;justify-content:space-between;margin-top:20px;}
-.setup-hint{font-size:12px;color:rgba(255,255,255,.3);max-width:340px;line-height:1.6;}
-.btn-setup-next{padding:13px 36px;border:none;border-radius:11px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .25s;}
-.btn-setup-next.primary{background:linear-gradient(135deg,var(--accent),#2563eb);color:#fff;}
-.btn-setup-next.primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(79,142,247,.4);}
-.btn-setup-next.locked{background:rgba(255,255,255,.07);color:rgba(255,255,255,.25);pointer-events:none;}
-.btn-setup-next.danger{background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;}
-.btn-setup-next.danger:hover{transform:translateY(-2px);}
-
-/* Violation TOAST */
-#vio-toast-container{position:fixed;top:72px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;width:300px;}
-.vio-toast{display:flex;align-items:flex-start;gap:12px;border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;pointer-events:auto;animation:toastSlideIn .35s cubic-bezier(.34,1.56,.64,1) forwards;box-shadow:0 4px 24px rgba(0,0,0,.6);}
-.vio-toast.vio-red{background:#1c0a0a;border:1px solid rgba(239,68,68,.55);border-left:4px solid #ef4444;}
-.vio-toast.vio-yellow{background:#1a1200;border:1px solid rgba(245,158,11,.5);border-left:4px solid #f59e0b;}
-.vio-toast.dismissing{animation:toastSlideOut .28s ease forwards;}
-@keyframes toastSlideIn{from{opacity:0;transform:translateX(80px) scale(.9);}to{opacity:1;transform:translateX(0) scale(1);}}
-@keyframes toastSlideOut{from{opacity:1;transform:translateX(0);max-height:100px;}to{opacity:0;transform:translateX(80px);max-height:0;padding:0;}}
-.vio-toast-icon{font-size:20px;flex-shrink:0;margin-top:1px;}
-.vio-toast-body{flex:1;min-width:0;}
-.vio-toast-title{font-size:13px;font-weight:700;margin-bottom:2px;}
-.vio-red .vio-toast-title{color:#fca5a5;}
-.vio-yellow .vio-toast-title{color:#fcd34d;}
-.vio-toast-msg{font-size:11px;color:rgba(255,255,255,.5);line-height:1.45;}
-.vio-toast-x{font-size:14px;color:rgba(255,255,255,.3);cursor:pointer;flex-shrink:0;}
-.vio-toast-x:hover{color:rgba(255,255,255,.7);}
-.vio-toast-timer{position:absolute;bottom:0;left:0;height:3px;border-radius:0 0 12px 12px;animation:timerBar var(--dur,5s) linear forwards;}
-.vio-red .vio-toast-timer{background:rgba(239,68,68,.5);}
-.vio-yellow .vio-toast-timer{background:rgba(245,158,11,.5);}
-@keyframes timerBar{from{width:100%;}to{width:0;}}
+.rules-header { text-align: center; margin-bottom: 36px; animation: fadeSlideUp 0.6s ease both; }
+.rules-brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: rgba(67,97,238,0.1); border: 1px solid rgba(67,97,238,0.25);
+  border-radius: 50px; padding: 8px 20px;
+  font-size: 12px; font-weight: 700; color: #818cf8;
+  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px;
+}
+.rules-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(26px, 5vw, 42px);
+  font-weight: 800; color: #f1f5ff; line-height: 1.15; margin-bottom: 12px;
+}
+.rules-title span {
+  background: linear-gradient(135deg, #6aa3ff, #818cf8, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.rules-subtitle { font-size: 15px; color: #64748b; max-width: 540px; margin: 0 auto; line-height: 1.7; }
+.section-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px; padding: 26px; margin-bottom: 20px;
+}
+.section-card:nth-child(2) { animation: fadeSlideUp 0.6s 0.08s ease both; }
+.section-card:nth-child(3) { animation: fadeSlideUp 0.6s 0.16s ease both; }
+.section-card:nth-child(4) { animation: fadeSlideUp 0.6s 0.24s ease both; }
+.section-card:nth-child(5) { animation: fadeSlideUp 0.6s 0.32s ease both; }
+.section-heading {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #6aa3ff;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 18px;
+}
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media(max-width:600px){ .setup-grid { grid-template-columns: 1fr; } }
+.setup-diagram {
+  background: #0a0f1e;
+  border: 1px solid rgba(67,97,238,0.2);
+  border-radius: 14px;
+  padding: 20px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 200px; position: relative; overflow: hidden;
+}
+.setup-diagram::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 10%, rgba(67,97,238,0.1) 0%, transparent 60%);
+}
+.setup-tips { display: flex; flex-direction: column; gap: 9px; }
+.tip-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.025); border-radius: 10px; font-size: 13px; color: #94a3b8; line-height: 1.5;
+}
+.tip-item.good { border-left: 3px solid #10b981; }
+.tip-item.bad  { border-left: 3px solid #ef4444; }
+.tip-icon { font-size: 17px; flex-shrink: 0; }
+.tip-text strong { color: #f1f5ff; display: block; font-size: 13px; margin-bottom: 2px; }
+.violations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 11px; margin-top: 4px; }
+.vio-card {
+  background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.13);
+  border-radius: 12px; padding: 14px; display: flex; gap: 13px;
+  align-items: flex-start; transition: all 0.2s;
+}
+.vio-card:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.28); }
+.vio-icon-wrap {
+  width: 38px; height: 38px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0;
+}
+.vio-icon-wrap.sev1 { background: rgba(245,158,11,0.15); }
+.vio-icon-wrap.sev2 { background: rgba(239,68,68,0.15); }
+.vio-icon-wrap.sev3 { background: rgba(220,38,38,0.22); }
+.vio-name { font-size: 13px; font-weight: 700; color: #f1f5ff; margin-bottom: 3px; }
+.vio-desc { font-size: 11.5px; color: #64748b; line-height: 1.5; }
+.vio-sev {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 20px; margin-top: 6px; display: inline-block;
+}
+.vio-sev.s1 { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.vio-sev.s2 { background: rgba(239,68,68,0.15); color: #f87171; }
+.vio-sev.s3 { background: rgba(220,38,38,0.22); color: #fca5a5; }
+.score-bar-track {
+  height: 14px; background: rgba(255,255,255,0.06);
+  border-radius: 99px; overflow: hidden; position: relative; margin-bottom: 8px;
+}
+.score-bar-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 38%, #10b981 72%, #10b981 100%);
+}
+.score-bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 14px; }
+.score-levels { display: flex; gap: 10px; flex-wrap: wrap; }
+.score-level {
+  padding: 10px 16px; border-radius: 9px; font-size: 12px; font-weight: 600;
+  text-align: center; min-width: 80px;
+}
+.score-level.fail { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+.score-level.warn { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+.score-level.pass { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+.score-level .lvl-num { font-size: 20px; font-weight: 800; display: block; }
+.score-level .lvl-lbl { font-size: 10px; opacity: 0.75; margin-top: 2px; }
+.checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 4px; }
+@media(max-width:560px){ .checklist-grid { grid-template-columns: 1fr; } }
+.check-item {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: #cbd5e1; padding: 10px 13px;
+  background: rgba(255,255,255,0.02); border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.check-item .ci { font-size: 16px; }
+.rules-cta { text-align: center; animation: fadeSlideUp 0.6s 0.38s ease both; }
+.rules-cta-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 17px 52px;
+  background: linear-gradient(135deg, #4361ee, #6d83f3);
+  border: none; border-radius: 14px;
+  color: #fff; font-size: 16px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.25s;
+  box-shadow: 0 8px 32px rgba(67,97,238,0.38);
+}
+.rules-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(67,97,238,0.5); }
+.rules-cta-btn:active { transform: translateY(0); }
+.rules-cta-sub { margin-top: 12px; font-size: 12px; color: #475569; }
+@keyframes fadeSlideUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+/* Consent checkbox */
+.consent-row { display:flex; align-items:center; gap:10px; margin-bottom:20px; justify-content:center; }
+.consent-row input[type=checkbox] { width:18px; height:18px; accent-color:#4361ee; cursor:pointer; }
+.consent-row label { font-size:13px; color:#94a3b8; cursor:pointer; }
+#rules-cta-btn-main { opacity:0.45; pointer-events:none; transition: all 0.3s; }
+#rules-cta-btn-main.enabled { opacity:1; pointer-events:auto; }
 
 </style>
 </head>
 <body>
 
-<!-- VIOLATION TOAST CONTAINER -->
-<div id="vio-toast-container"></div>
-
-<!-- ══ PRE-EXAM SETUP + ROOM SCAN OVERLAY ══════════════════════════════════ -->
-<div class="setup-overlay" id="setup-overlay" style="display:none;">
-  <div class="setup-modal">
-
-    <!-- Step progress -->
-    <div class="setup-steps">
-      <div class="step-item">
-        <div class="step-dot active" id="sdot-1">1</div>
-        <div class="step-label active" id="slbl-1">Rules</div>
-      </div>
-      <div class="step-connector" id="scon-1"></div>
-      <div class="step-item">
-        <div class="step-dot" id="sdot-2">2</div>
-        <div class="step-label" id="slbl-2">Camera</div>
-      </div>
-      <div class="step-connector" id="scon-2"></div>
-      <div class="step-item">
-        <div class="step-dot" id="sdot-3">3</div>
-        <div class="step-label" id="slbl-3">Room Scan</div>
-      </div>
-    </div>
-
-    <!-- ── STEP 1: Rules Acknowledgement ── -->
-    <div class="setup-panel active" id="step-1">
-      <div class="setup-panel-title">📋 Exam Rules</div>
-      <div class="setup-panel-sub">Read and acknowledge these rules before starting. Violations are recorded and affect your credibility score.</div>
-      <div class="rules-grid">
-        <div class="rule-card ok"><div class="rule-icon">✅</div><div class="rule-text"><strong>Stay on this tab the entire time</strong><span>Tab switches are logged instantly</span></div></div>
-        <div class="rule-card bad"><div class="rule-icon">🚫</div><div class="rule-text"><strong>No other people allowed</strong><span>Multiple faces = immediate violation</span></div></div>
-        <div class="rule-card ok"><div class="rule-icon">✅</div><div class="rule-text"><strong>Keep your face visible at all times</strong><span>3 missed checks (~9s) = violation</span></div></div>
-        <div class="rule-card bad"><div class="rule-icon">🚫</div><div class="rule-text"><strong>No phones, tablets or earphones</strong><span>Device detection is active throughout</span></div></div>
-        <div class="rule-card ok"><div class="rule-icon">✅</div><div class="rule-text"><strong>Stay in fullscreen mode</strong><span>Exiting fullscreen is flagged</span></div></div>
-        <div class="rule-card bad"><div class="rule-icon">🚫</div><div class="rule-text"><strong>No copy/paste</strong><span>Both are blocked and logged</span></div></div>
-        <div class="rule-card info"><div class="rule-icon">⏱️</div><div class="rule-text"><strong>20-second warmup after start</strong><span>No violations logged during this window</span></div></div>
-        <div class="rule-card info"><div class="rule-icon">🔁</div><div class="rule-text"><strong>No retakes unless recruiter assigns one</strong><span>Once submitted, session is locked</span></div></div>
-      </div>
-      <div style="margin-top:18px;padding:14px 18px;background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);border-radius:10px;font-size:13px;color:rgba(255,255,255,.6);line-height:1.6;">
-        By clicking <strong style="color:#fff">I Understand, Continue</strong> you confirm that you have read and understood all rules above.
-      </div>
-    </div>
-
-    <!-- ── STEP 2: Camera & Face Check ── -->
-    <div class="setup-panel" id="step-2">
-      <div class="setup-panel-title">📷 Camera & Lighting Check</div>
-      <div class="setup-panel-sub">Make sure your face is clearly visible before we begin. Adjust your position, lighting, and camera angle now.</div>
-      <div class="cam-check-grid">
-        <div>
-          <div class="cam-preview-wrap">
-            <video id="setup-cam-video" autoplay muted playsinline></video>
-            <div class="cam-face-status warn" id="setup-face-badge">🔄 Checking…</div>
-          </div>
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.3);margin-bottom:10px;">Sitting Tips</div>
-          <div class="rules-grid">
-            <div class="rule-card ok"><div class="rule-icon">💡</div><div class="rule-text"><strong>Face a light source</strong><span>Avoid sitting with a window behind you</span></div></div>
-            <div class="rule-card ok"><div class="rule-icon">👤</div><div class="rule-text"><strong>Camera at eye level</strong><span>Raise your laptop if needed</span></div></div>
-            <div class="rule-card ok"><div class="rule-icon">📏</div><div class="rule-text"><strong>50–80 cm away</strong><span>Not too close, not too far</span></div></div>
-            <div class="rule-card ok"><div class="rule-icon">🧍</div><div class="rule-text"><strong>Sit upright</strong><span>Face forward, shoulders relaxed</span></div></div>
-          </div>
-          <div class="checklist">
-            <div class="chk-item"><div class="chk-ico">📷</div><div class="chk-lbl">Camera working</div><div class="chk-st pending" id="chk-cam">Checking…</div></div>
-            <div class="chk-item"><div class="chk-ico">👤</div><div class="chk-lbl">Face clearly detected</div><div class="chk-st pending" id="chk-face">Waiting…</div></div>
-            <div class="chk-item"><div class="chk-ico">💡</div><div class="chk-lbl">Sufficient lighting</div><div class="chk-st pending" id="chk-light">Checking…</div></div>
-            <div class="chk-item"><div class="chk-ico">🧍</div><div class="chk-lbl">Only one person visible</div><div class="chk-st pending" id="chk-alone">Waiting…</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── STEP 3: 360° Room Scan ── -->
-    <div class="setup-panel" id="step-3">
-      <div class="setup-panel-title">🔍 360° Room Scan</div>
-      <div class="setup-panel-sub">Hold your camera and slowly rotate to show each area of your room. Our system will scan for any electronic devices. <strong style="color:rgba(255,255,255,.7)">This is mandatory.</strong></div>
-      <div class="scan-layout">
-        <div>
-          <div class="scan-cam-wrap" id="scan-cam-wrap">
-            <video id="scan-cam-video" autoplay muted playsinline></video>
-            <div class="scan-overlay-label" id="scan-dir-label">Press Start to begin</div>
-            <div class="scan-flash" id="scan-flash"></div>
-            <div class="scan-countdown-wrap" id="scan-countdown-wrap" style="display:none;">
-              <svg class="scan-ring" width="40" height="40" viewBox="0 0 40 40">
-                <circle class="scan-ring-bg" cx="20" cy="20" r="14"/>
-                <circle class="scan-ring-fill" id="scan-ring-fill" cx="20" cy="20" r="14"/>
-              </svg>
-              <div class="scan-ring-num" id="scan-ring-num">5</div>
-            </div>
-          </div>
-        </div>
-        <div class="scan-directions" id="scan-dirs">
-          <div class="dir-item" id="dir-front">
-            <div class="dir-arrow">👤</div>
-            <div class="dir-body"><div class="dir-title">Face Forward</div><div class="dir-desc">Show your face and immediate surroundings</div></div>
-            <div class="dir-result pending" id="dir-front-result">—</div>
-          </div>
-          <div class="dir-item" id="dir-left">
-            <div class="dir-arrow">⬅️</div>
-            <div class="dir-body"><div class="dir-title">Turn Camera Left</div><div class="dir-desc">Show what's to your left side</div></div>
-            <div class="dir-result pending" id="dir-left-result">—</div>
-          </div>
-          <div class="dir-item" id="dir-right">
-            <div class="dir-arrow">➡️</div>
-            <div class="dir-body"><div class="dir-title">Turn Camera Right</div><div class="dir-desc">Show what's to your right side</div></div>
-            <div class="dir-result pending" id="dir-right-result">—</div>
-          </div>
-          <div class="dir-item" id="dir-desk">
-            <div class="dir-arrow">⬇️</div>
-            <div class="dir-body"><div class="dir-title">Show Your Desk</div><div class="dir-desc">Tilt down to show your desk surface</div></div>
-            <div class="dir-result pending" id="dir-desk-result">—</div>
-          </div>
-        </div>
-      </div>
-      <div class="scan-result-banner" id="scan-banner"></div>
-      <div class="devices-found" id="devices-found"></div>
-      <div id="scan-start-wrap" style="text-align:center;margin-top:18px;">
-        <button id="scan-start-btn" onclick="startRoomScan()" style="padding:13px 36px;background:linear-gradient(135deg,var(--accent),#2563eb);border:none;border-radius:11px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .25s;">▶ Start Room Scan</button>
-      </div>
-    </div>
-
-
-
-    <!-- Footer -->
-    <div class="setup-footer">
-      <div class="setup-hint" id="setup-hint">Please read all rules carefully before continuing.</div>
-      <div style="display:flex;gap:10px;">
-        <button class="btn-setup-next primary locked" id="setup-next-btn" onclick="setupNext()">Continue →</button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- FULLSCREEN GATE -->
-<div class="fs-overlay" id="fs-overlay">
-  <div class="fs-card">
-    <div style="font-size:60px;margin-bottom:16px;">🔒</div>
-    <h2>Fullscreen Required</h2>
-    <p>To maintain exam integrity, you must enter fullscreen mode. Your camera, gaze, and screen activity will be monitored throughout.</p>
-    <button class="fs-btn" id="fs-btn">Enter Fullscreen & Continue</button>
-  </div>
-</div>
-
-<div class="topbar">
-  <div class="brand">🤖 RecruitAI — Interview</div>
-  <div class="topbar-right">
-    <span style="font-size:13px;color:var(--muted)">Welcome, <strong id="user-name">…</strong></span>
-    <div class="timer-display" id="timer">45:00</div>
-  </div>
-</div>
-
-<div class="layout">
-  <div class="interview-area">
-
-    <!-- MODE SELECTOR -->
-    <div id="mode-selector">
-      <div class="mode-header">
-        <h1>Join Your Interview</h1>
-        <p>Enter your room code to join, or start a self-scheduled interview</p>
-      </div>
-      <div class="room-join">
-        <label>Room Code (from recruiter)</label>
-        <input type="text" id="room-code-input" placeholder="e.g. AB12CD34" maxlength="8" style="text-transform:uppercase;font-family:monospace;letter-spacing:.1em;font-size:18px;">
-        <label>Job Role</label>
-        <select id="role-select"><option value="">Loading…</option></select>
-        <button class="btn-start" id="join-btn" onclick="joinOrStart()">🚀 Join Interview</button>
-      </div>
-    </div>
-
-    <!-- MCQ -->
-    <div id="mcq-area">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-        <div>
-          <div style="font-family:'Playfair Display', serif;font-size:22px;font-weight:800;" id="mcq-title">MCQ Assessment</div>
-          <div style="font-size:13px;color:var(--muted);" id="mcq-subtitle">10 Questions · Role-based</div>
-        </div>
-      </div>
-      <div class="q-progress">
-        <div class="q-dots" id="q-dots"></div>
-        <div style="font-size:12px;color:var(--muted);margin-left:auto;" id="q-counter">0/10</div>
-      </div>
-      <div class="question-card" id="q-card">
-        <div class="q-num" id="q-num">Question 1 of 10</div>
-        <div class="q-text" id="q-text">Loading…</div>
-        <div class="options" id="q-options"></div>
-      </div>
-      <div class="q-nav">
-        <button class="btn-nav" id="btn-prev" onclick="navQ(-1)">← Previous</button>
-        <div style="font-size:12px;color:var(--muted);" id="q-answered">0 answered</div>
-        <button class="btn-nav" id="btn-next" onclick="navQ(1)">Next →</button>
-      </div>
-      <div style="margin-top:20px;text-align:center;">
-        <button class="btn-submit-mcq" onclick="confirmSubmitMCQ()">✅ Submit Exam</button>
-      </div>
-    </div>
-
-    <!-- AI INTERVIEWER — Professional Video Call -->
-    <div id="ai-area">
-
-      <div class="ai-video-call" id="ai-video-call">
-
-        <!-- Background -->
-        <div class="ai-bg"></div>
-
-        <!-- Central avatar -->
-        <div class="ai-center">
-          <div class="ai-avatar-circle-wrap">
-            <div class="ai-speak-ring ai-speak-ring-3"></div>
-            <div class="ai-speak-ring ai-speak-ring-2"></div>
-            <div class="ai-speak-ring ai-speak-ring-1"></div>
-            <div class="ai-avatar-img-wrap" id="ai-avatar-img-wrap">
-              <img src="data:image/jpeg;base64,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" class="ai-avatar-img" id="ai-avatar-img" alt="Alex AI Interviewer"/>
-            </div>
-          </div>
-          <div class="ai-label-under">
-            <div class="ai-label-name">Alex</div>
-            <div class="ai-label-role">AI Interviewer · RecruitAI</div>
-          </div>
-        </div>
-
-        <!-- Top bar -->
-        <div class="ai-call-topbar">
-          <div class="ai-call-label">
-            <div class="ai-live-dot"></div>
-            Interview in progress
-          </div>
-          <div class="ai-call-timer" id="ai-call-timer">00:00</div>
-        </div>
-
-        <!-- Bottom bar -->
-        <div class="ai-call-bottombar">
-          <div class="ai-name-tag">
-            <div class="ai-mic-icon active" id="ai-mic-icon">🎙</div>
-            Alex
-          </div>
-          <div class="ai-audio-wave" id="ai-audio-wave">
-            <div class="wave-bar"></div><div class="wave-bar"></div>
-            <div class="wave-bar"></div><div class="wave-bar"></div>
-            <div class="wave-bar"></div><div class="wave-bar"></div>
-            <div class="wave-bar"></div><div class="wave-bar"></div>
-          </div>
-        </div>
-
-        <!-- Candidate PiP -->
-        <div class="ai-candidate-pip">
-          <video id="pip-cam" autoplay muted playsinline></video>
-          <div class="pip-label">You</div>
-        </div>
-
-      </div>
-
-      <!-- Status -->
-      <div class="ai-avatar-wrap">
-        <div class="ai-status" id="ai-status">Connecting to AI…</div>
-      </div>
-
-      <div class="progress-bar"><div class="progress-fill" id="ai-progress" style="width:0%"></div></div>
-
-      <!-- Loading spinner shown while questions are being fetched -->
-      <div class="ai-loading" id="ai-loading">
-        <div class="spinner"></div>
-        <div style="color:var(--muted);font-size:13px;">Alex is preparing your questions…</div>
-        <div style="color:var(--muted);font-size:11px;margin-top:4px;" id="ai-load-detail">Connecting to AI engine…</div>
-      </div>
-
-      <!-- Error box shown if questions fail to load -->
-      <div class="ai-error-box" id="ai-error-box">
-        <h3>⚠️ Could not load AI questions</h3>
-        <p id="ai-error-msg">The AI engine is not connected. Make sure your ANTHROPIC_API_KEY is set before starting the server. Falling back to standard questions…</p>
-        <button class="btn-retry" onclick="retryLoadQuestions()">🔄 Retry</button>
-      </div>
-
-      <div class="ai-question-box" id="ai-q-box" style="display:none;">
-        <div class="ai-q-num" id="ai-q-num">Question 1 of 10</div>
-        <div class="ai-question-text" id="ai-q-text"><span class="cursor"></span></div>
-      </div>
-
-      <div class="answer-area" id="ai-answer-area" style="display:none;">
-        <textarea class="answer-textarea" id="ai-answer" placeholder="Type your answer here, or use the microphone…" rows="5"></textarea>
-        <div class="answer-controls">
-          <button class="btn-voice" id="voice-btn" onclick="toggleVoice()">🎤 Start Recording</button>
-          <div style="font-size:12px;color:var(--muted);" id="ai-hint">Be specific and concise</div>
-          <button class="btn-send" id="send-btn" onclick="submitAIAnswer()">Submit Answer →</button>
-        </div>
-      </div>
-
-      <div class="feedback-box" id="feedback-box">
-        <div class="fb-score" id="fb-score">—</div>
-        <div class="fb-text" id="fb-text"></div>
-      </div>
-    </div>
-
-    <!-- LIVE RECRUITER -->
-    <div id="live-area">
-      <div style="font-family:'Playfair Display', serif;font-size:22px;font-weight:800;margin-bottom:16px;">🎥 Live Interview</div>
-      <div class="video-grid">
-        <div class="video-box">
-          <video id="local-video" autoplay muted playsinline></video>
-          <div class="video-label">You</div>
-        </div>
-        <div class="video-box">
-          <video id="remote-video" autoplay playsinline></video>
-          <div class="video-label" style="background:rgba(0,0,0,0.7);">Recruiter</div>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Messages from Recruiter:</div>
-      <div class="recruiter-msg-box" id="recruiter-msgs">
-        <div style="color:var(--muted);font-size:12px;text-align:center;">Waiting for recruiter to connect…</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- PROCTORING SIDEBAR -->
-  <div class="proctoring-sidebar">
-    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">🛡️ Proctoring</div>
-    <div class="cam-box">
-      <video id="proctor-cam" autoplay muted playsinline></video>
-      <div class="cam-overlay" id="cam-status-overlay">Initializing…</div>
-    </div>
-    <div class="score-widget">
-      <div class="score-big" id="cred-score">100</div>
-      <div class="score-lbl">Credibility Score</div>
-    </div>
-    <div id="face-status" class="status-pill warn">⚠️ Initializing camera…</div>
-    <div id="gaze-status" class="status-pill warn">👁️ Calibrating gaze…</div>
-    <div id="device-status" class="status-pill ok">📱 No device detected</div>
-    <div class="stats-mini">
-      <div class="sm"><div class="sm-val" id="vio-count">0</div><div class="sm-lbl">Violations</div></div>
-      <div class="sm"><div class="sm-val" id="gaze-count">0</div><div class="sm-lbl">Gaze Alerts</div></div>
-    </div>
-    <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Violation Log</div>
-    <div class="vio-log" id="vio-log"><div style="color:var(--muted);font-size:11px;">No violations recorded</div></div>
-  </div>
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:14px;">Loading your interview session…</div>
 </div>
 
 
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- RULES & SETUP PAGE — shown before 360° scan           -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="rules-overlay">
+  <div class="rules-bg"></div>
+  <div class="rules-grid-bg"></div>
+  <div class="rules-container">
+
+    <!-- Header -->
+    <div class="rules-header">
+      <div class="rules-brand">🤖 RecruitAI &nbsp;·&nbsp; Pre-Interview Briefing</div>
+      <div class="rules-title">Before We Begin,<br><span>Read These Rules</span></div>
+      <div class="rules-subtitle">Your interview is AI-proctored. Please read the setup guide and violation rules carefully before starting.</div>
+    </div>
+
+    <!-- 1. Camera & Environment Setup -->
+    <div class="section-card">
+      <div class="section-heading">📷 &nbsp; Camera & Environment Setup</div>
+      <div class="setup-grid">
+        <!-- SVG Diagram -->
+        <div class="setup-diagram">
+          <svg width="180" height="190" viewBox="0 0 180 190" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Monitor / Camera frame at top -->
+            <rect x="55" y="8" width="70" height="50" rx="6" fill="#1e2a4a" stroke="#4361ee" stroke-width="1.5"/>
+            <rect x="61" y="14" width="58" height="38" rx="3" fill="#0d1220"/>
+            <!-- Camera dot -->
+            <circle cx="90" cy="11" r="2.5" fill="#4361ee"/>
+            <!-- Face inside monitor (candidate visible) -->
+            <circle cx="90" cy="33" r="12" fill="#2a3a6a" stroke="#6aa3ff" stroke-width="1"/>
+            <circle cx="86" cy="31" r="2" fill="#6aa3ff" opacity="0.7"/>
+            <circle cx="94" cy="31" r="2" fill="#6aa3ff" opacity="0.7"/>
+            <path d="M85 37 Q90 41 95 37" stroke="#6aa3ff" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+            <!-- Monitor stand -->
+            <rect x="86" y="58" width="8" height="12" rx="2" fill="#2a3560"/>
+            <rect x="74" y="68" width="32" height="4" rx="2" fill="#2a3560"/>
+            <!-- Desk surface -->
+            <rect x="20" y="110" width="140" height="8" rx="3" fill="#1a2240" stroke="#2a3560" stroke-width="1"/>
+            <!-- Person body (simple) -->
+            <ellipse cx="90" cy="155" rx="26" ry="20" fill="#1a2240" stroke="#334177" stroke-width="1.2"/>
+            <!-- Person head -->
+            <circle cx="90" cy="100" r="18" fill="#1e2a50" stroke="#4361ee" stroke-width="1.5"/>
+            <circle cx="84" cy="97" r="2.5" fill="#6aa3ff" opacity="0.8"/>
+            <circle cx="96" cy="97" r="2.5" fill="#6aa3ff" opacity="0.8"/>
+            <path d="M83 105 Q90 110 97 105" stroke="#6aa3ff" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+            <!-- Good posture arrow -->
+            <line x1="135" y1="30" x2="135" y2="100" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>
+            <text x="140" y="45" fill="#10b981" font-size="9" font-family="sans-serif" opacity="0.9">Eye</text>
+            <text x="140" y="55" fill="#10b981" font-size="9" font-family="sans-serif" opacity="0.9">level</text>
+            <!-- Distance bracket -->
+            <line x1="22" y1="78" x2="60" y2="78" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.7"/>
+            <text x="24" y="92" fill="#f59e0b" font-size="8.5" font-family="sans-serif" opacity="0.9">50-80cm</text>
+            <!-- Green checkmark badge -->
+            <circle cx="136" cy="148" r="14" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1.2"/>
+            <text x="130" y="153" fill="#10b981" font-size="13">✓</text>
+          </svg>
+          <div style="font-size:11px;color:#475569;margin-top:8px;text-align:center;position:relative;z-index:1;">Correct camera position</div>
+        </div>
+        <!-- Tips -->
+        <div class="setup-tips">
+          <div class="tip-item good">
+            <span class="tip-icon">✅</span>
+            <div class="tip-text"><strong>Face at camera eye-level</strong>Position your camera so your face is centred — not looking up or down at a steep angle.</div>
+          </div>
+          <div class="tip-item good">
+            <span class="tip-icon">✅</span>
+            <div class="tip-text"><strong>50–80 cm from screen</strong>Sit at a comfortable arm's length. Your full face and shoulders should be clearly visible.</div>
+          </div>
+          <div class="tip-item good">
+            <span class="tip-icon">✅</span>
+            <div class="tip-text"><strong>Well-lit, plain background</strong>Use natural or front-facing light. Avoid sitting with a bright window behind you.</div>
+          </div>
+          <div class="tip-item good">
+            <span class="tip-icon">✅</span>
+            <div class="tip-text"><strong>Quiet, private room</strong>Ensure no one else enters during the session. You must be alone in the frame.</div>
+          </div>
+          <div class="tip-item bad">
+            <span class="tip-icon">❌</span>
+            <div class="tip-text"><strong>No phones or extra devices</strong>Remove all visible phones, tablets, smart watches or earpieces before starting.</div>
+          </div>
+          <div class="tip-item bad">
+            <span class="tip-icon">❌</span>
+            <div class="tip-text"><strong>No headphones (unless wired)</strong>Bluetooth earpieces are flagged as a violation. Wired earphones are permitted.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Violations -->
+    <div class="section-card">
+      <div class="section-heading">⚠️ &nbsp; What Gets Flagged — Violations & Penalties</div>
+      <div class="violations-grid">
+        <div class="vio-card">
+          <div class="vio-icon-wrap sev2"><span>👤</span></div>
+          <div>
+            <div class="vio-name">Face Not Detected</div>
+            <div class="vio-desc">Your face is not visible in the camera for more than a moment. Stay in frame at all times.</div>
+            <span class="vio-sev s2">Medium — −10 pts</span>
+          </div>
+        </div>
+        <div class="vio-card">
+          <div class="vio-icon-wrap sev2"><span>👥</span></div>
+          <div>
+            <div class="vio-name">Multiple Faces</div>
+            <div class="vio-desc">More than one person is detected in the camera frame. You must be alone.</div>
+            <span class="vio-sev s2">Medium — −10 pts</span>
+          </div>
+        </div>
+        <div class="vio-card">
+          <div class="vio-icon-wrap sev1"><span>👀</span></div>
+          <div>
+            <div class="vio-name">Gaze Away</div>
+            <div class="vio-desc">Your eyes are consistently looking away from the screen. Focus on the interview.</div>
+            <span class="vio-sev s1">Low — −5 pts</span>
+          </div>
+        </div>
+        <div class="vio-card">
+          <div class="vio-icon-wrap sev3"><span>📱</span></div>
+          <div>
+            <div class="vio-name">Device Detected</div>
+            <div class="vio-desc">A phone, tablet, laptop screen or Bluetooth earpiece is visible in your camera view.</div>
+            <span class="vio-sev s3">High — −15 pts</span>
+          </div>
+        </div>
+        <div class="vio-card">
+          <div class="vio-icon-wrap sev2"><span>🪟</span></div>
+          <div>
+            <div class="vio-name">Tab Switch</div>
+            <div class="vio-desc">You switched to another browser tab or application during the interview.</div>
+            <span class="vio-sev s2">Medium — −10 pts</span>
+          </div>
+        </div>
+        <div class="vio-card">
+          <div class="vio-icon-wrap sev1"><span>🖱️</span></div>
+          <div>
+            <div class="vio-name">Right-Click / Copy</div>
+            <div class="vio-desc">Right-clicking or using Ctrl+C during the exam is flagged as a potential cheating attempt.</div>
+            <span class="vio-sev s1">Low — −5 pts</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Credibility Score -->
+    <div class="section-card">
+      <div class="section-heading">🛡️ &nbsp; Your Credibility Score</div>
+      <p style="font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.7;">
+        You start with <strong style="color:#f1f5ff;">100 points</strong>. Every violation detected deducts points. Your recruiter sees this score in real-time. You need at least <strong style="color:#34d399;">60 points</strong> to pass.
+      </p>
+      <div class="score-bar-track">
+        <div class="score-bar-fill"></div>
+      </div>
+      <div class="score-bar-labels"><span>0 — Fail</span><span>60 — Pass threshold</span><span>100 — Perfect</span></div>
+      <div class="score-levels">
+        <div class="score-level fail"><span class="lvl-num">0–59</span><div class="lvl-lbl">❌ Fail</div></div>
+        <div class="score-level warn"><span class="lvl-num">60–79</span><div class="lvl-lbl">⚠ Acceptable</div></div>
+        <div class="score-level pass"><span class="lvl-num">80–100</span><div class="lvl-lbl">✅ Excellent</div></div>
+      </div>
+    </div>
+
+    <!-- 4. Pre-interview checklist -->
+    <div class="section-card">
+      <div class="section-heading">✅ &nbsp; Pre-Interview Checklist — Confirm Before Starting</div>
+      <div class="checklist-grid">
+        <div class="check-item"><span class="ci">💡</span> Room is well-lit and bright</div>
+        <div class="check-item"><span class="ci">🤫</span> Quiet environment, no background noise</div>
+        <div class="check-item"><span class="ci">👁️</span> Camera is at eye level, face clearly visible</div>
+        <div class="check-item"><span class="ci">📏</span> Sitting 50–80 cm from the screen</div>
+        <div class="check-item"><span class="ci">📵</span> Phone, tablet and all devices removed</div>
+        <div class="check-item"><span class="ci">🔇</span> Bluetooth earpieces removed</div>
+        <div class="check-item"><span class="ci">🔒</span> Room door closed, no one else present</div>
+        <div class="check-item"><span class="ci">🌐</span> Stable internet connection confirmed</div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="rules-cta">
+      <div class="consent-row">
+        <input type="checkbox" id="rules-consent" onchange="document.getElementById('rules-cta-btn-main').classList.toggle('enabled', this.checked)">
+        <label for="rules-consent">I have read all rules and my environment is set up correctly</label>
+      </div>
+      <button class="rules-cta-btn" id="rules-cta-btn-main" onclick="proceedToScan()">
+        <span>📷</span> Proceed to Room Scan
+      </button>
+      <div class="rules-cta-sub">Next: a 360° security scan of your room will be performed (~30 seconds)</div>
+    </div>
+
+  </div><!-- /rules-container -->
+</div><!-- /rules-overlay -->
+
+<!-- 360° Room Scan Overlay -->
+<div id="room-scan-overlay" style="display:none;align-items:center;justify-content:center;flex-direction:column;">
+  <div class="scan-card">
+    <div class="scan-title">🔍 Room Security Scan</div>
+    <div class="scan-sub">Before your interview begins, please do a slow 360° scan of your room so we can verify your environment is secure.</div>
+
+    <div class="scan-preview">
+      <video id="scan-video" autoplay muted playsinline></video>
+      <div class="scan-arc">
+        <svg viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+          <circle class="progress" id="scan-arc-circle" cx="50" cy="50" r="44"
+            stroke="#4361ee" stroke-width="3"
+            stroke-dasharray="276.46" stroke-dashoffset="276.46"
+            stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="scan-frames-grid" id="scan-frames-grid">
+      <div class="scan-thumb" id="sf0"></div>
+      <div class="scan-thumb" id="sf1"></div>
+      <div class="scan-thumb" id="sf2"></div>
+      <div class="scan-thumb" id="sf3"></div>
+      <div class="scan-thumb" id="sf4"></div>
+      <div class="scan-thumb" id="sf5"></div>
+      <div class="scan-thumb" id="sf6"></div>
+      <div class="scan-thumb" id="sf7"></div>
+    </div>
+
+    <div class="scan-steps">
+      <div class="scan-step active" id="sstep-0">① Face Camera</div>
+      <div class="scan-step" id="sstep-1">② Rotate Left</div>
+      <div class="scan-step" id="sstep-2">③ Rotate Right</div>
+      <div class="scan-step" id="sstep-3">④ Show Desk</div>
+    </div>
+
+    <div class="scan-instruction" id="scan-instruction">📷 Position your face in the camera, then press Start Scan</div>
+    <div class="scan-progress-bar"><div class="scan-progress-fill" id="scan-progress-fill"></div></div>
+    <div class="scan-status" id="scan-status"></div>
+
+    <button class="scan-btn" id="scan-btn" onclick="startRoomScan()">▶ Start Room Scan</button>
+  </div>
+</div>
+
+<!-- Device Kicked Overlay -->
+<div id="device-kicked-overlay">
+  <div class="kick-icon">🚫📱</div>
+  <div class="kick-title">Device Detected — Interview Paused</div>
+  <div class="kick-desc">A prohibited device (phone, tablet, or other electronic device) was detected by our proctoring system. You must remove all devices from the camera view before continuing.</div>
+  <div class="countdown-badge" id="kick-countdown">10</div>
+  <div class="kick-cta">Ensure no devices are visible. Interview resumes after a clean 10-second detection window.</div>
+  <button onclick="requestRejoin()" style="margin-top:16px;padding:14px 32px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">✓ I've removed the device — Check Again</button>
+</div>
+
+<!-- Submitting Overlay -->
+<div id="submitting-overlay">
+  <div class="spinner"></div>
+  <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-top:8px;">Submitting Your Interview…</div>
+  <div style="color:var(--muted);font-size:14px;">Please wait. Do not close this tab.</div>
+</div>
+
+<!-- Leave Modal -->
+<div id="leave-modal" style="display:none;align-items:center;justify-content:center;">
+  <div class="leave-card">
+    <div class="leave-title">Leave Interview?</div>
+    <div class="leave-desc">If you leave now, your current progress will be submitted and the session will end. Are you sure?</div>
+    <div class="leave-btns">
+      <button onclick="confirmLeave()" style="padding:11px 24px;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.4);border-radius:9px;color:#fca5a5;font-size:14px;font-weight:600;cursor:pointer;">Yes, Leave</button>
+      <button onclick="closeLeaveMod()" style="padding:11px 24px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;">Continue Interview</button>
+    </div>
+  </div>
+</div>
+
+<div id="interview-ui" style="display:none;">
+  <div class="topbar">
+    <div class="brand">🤖 RecruitAI</div>
+    <div class="timer-wrap">
+      <span style="font-size:12px;color:var(--muted);">Time Remaining</span>
+      <div class="timer" id="timer-display">45:00</div>
+    </div>
+    <button class="btn-leave" onclick="showLeaveMod()">🚪 Leave Interview</button>
+  </div>
+
+  <div class="interview-layout">
+    <!-- Camera Panel -->
+    <div class="camera-panel">
+      <div class="cam-box">
+        <video id="cam-video" autoplay muted playsinline></video>
+        <div class="cam-overlay">
+          <span class="cam-status" id="cam-status">● Camera Active</span>
+          <span class="face-indicator" id="face-indicator" title="Face detection"></span>
+        </div>
+      </div>
+      <div class="session-info">
+        <div class="session-info-row"><span class="si-lbl">Role</span><span class="si-val" id="si-role">—</span></div>
+        <div class="session-info-row"><span class="si-lbl">Mode</span><span class="si-val" id="si-mode">—</span></div>
+        <div class="session-info-row"><span class="si-lbl">Room</span><span class="si-val" id="si-room" style="font-family:monospace;color:var(--accent2);">—</span></div>
+        <div class="session-info-row" id="si-proctoring-row"><span class="si-lbl">Proctoring</span><span class="si-val" style="color:var(--green);">● Active</span></div>
+      </div>
+    </div>
+
+    <!-- Q&A Panel -->
+    <div class="qa-panel">
+      <!-- MCQ Mode -->
+      <div id="mcq-area" style="display:none;">
+        <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:6px;" id="mcq-job-title">MCQ Exam</div>
+        <div style="color:var(--muted);font-size:13px;margin-bottom:20px;">Answer all 10 questions and click Submit when done.</div>
+        <div class="q-progress" id="q-dots"></div>
+        <div class="question-card" id="question-card">
+          <div class="q-num" id="q-num">Question 1 of 10</div>
+          <div class="q-text" id="q-text">Loading question…</div>
+          <div class="options" id="options"></div>
+        </div>
+        <div class="q-nav">
+          <button class="btn-nav" onclick="prevQ()">← Previous</button>
+          <button class="btn-nav" onclick="nextQ()">Next →</button>
+          <button class="btn-submit" onclick="showSubmitConfirm()">✓ Submit Exam</button>
+        </div>
+      </div>
+
+      <!-- AI Interview Mode -->
+      <div id="ai-area" style="display:none;">
+        <div class="ai-video-box">
+          <div class="ai-avatar-center">
+            <img class="ai-avatar-img" src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Alex&backgroundColor=1e3a5f&radius=50" alt="AI Interviewer" onerror="this.style.display='none'">
+          </div>
+          <div class="ai-name-tag">🤖 Alex — AI Interviewer</div>
+          <div class="ai-speak-indicator" id="ai-speak-bars" style="display:none;">
+            <div class="ai-bar"></div><div class="ai-bar"></div><div class="ai-bar"></div><div class="ai-bar"></div>
+          </div>
+        </div>
+        <div class="ai-question-box">
+          <div class="ai-q-label">Current Question</div>
+          <div class="ai-q-text" id="ai-q-text">Preparing your interview…</div>
+        </div>
+        <div class="ai-answer-box">
+          <div class="ai-a-label">Your Answer</div>
+          <textarea class="ai-answer-textarea" id="ai-answer-input" placeholder="Type your answer here…"></textarea>
+          <div class="ai-action-row">
+            <span id="ai-q-counter" style="font-size:13px;color:var(--muted);align-self:center;"></span>
+            <button id="ai-next-btn" onclick="aiNextQuestion()" style="padding:11px 24px;background:var(--accent);border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;">Next Question →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Recruiter Mode -->
+      <div id="live-area" style="display:none;">
+        <!-- Waiting for recruiter overlay -->
+        <div id="recruiter-waiting" style="padding:48px 32px;text-align:center;">
+          <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,var(--accent),#6d83f3);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 24px;box-shadow:0 8px 24px rgba(67,97,238,0.25);">⏳</div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;margin-bottom:10px;color:var(--text);">Waiting for Recruiter</div>
+          <div style="font-size:14px;line-height:1.8;color:var(--muted);max-width:420px;margin:0 auto 28px;">
+            Your interview hasn't started yet. The recruiter needs to join before you can begin. Keep your camera on and stay on this page.
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:10px;padding:12px 24px;background:rgba(67,97,238,0.07);border:1px solid rgba(67,97,238,0.18);border-radius:50px;font-size:13px;color:var(--accent);">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.4s infinite;"></span>
+            Waiting for recruiter to join…
+          </div>
+          <style>@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.85)}}</style>
+        </div>
+        <!-- Active session content (shown after recruiter joins) -->
+        <div id="recruiter-active" style="display:none;padding-top:20px;text-align:center;color:var(--muted);">
+          <div style="font-size:48px;margin-bottom:16px;">🎥</div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:700;margin-bottom:8px;color:var(--text);">Live Recruiter Session Active</div>
+          <div style="font-size:14px;line-height:1.7;">Your recruiter has joined. Answer questions verbally as they ask them. Your camera and proctoring are active.</div>
+          <div style="margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:8px 18px;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:50px;font-size:13px;color:#059669;font-weight:600;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#059669;animation:pulse 1.4s infinite;"></span>
+            Recruiter Connected
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-// ── STATE ──────────────────────────────────────────────────────────────────────
-let currentUser=null, socket=null, sessionData=null, examStarted=false;
-let camStream=null, peerConn=null, speechRec=null, isRecording=false;
-let mcqQuestions=[], currentQ=0, mcqAnswers={};
-let aiQuestions=[], aiCurrentQ=0, aiTranscript=[], aiTotalScore=0;
-let examStartTime=Date.now(), timerInterval=null;
-let violations=0, gazeAlerts=0;
+const params = new URLSearchParams(location.search);
+const ROOM_CODE = params.get('room');
+let sessionData = null, questions = [], answers = {}, currentQ = 0;
+let timerSec = 45 * 60, timerInterval = null;
+let deviceCheckInterval = null, faceCheckInterval = null;
+let aiQuestions = [], aiCurrentQ = 0, aiTranscript = [];
+let deviceKicked = false, kickClearSec = 0, kickInterval = null;
+let socket = null;
+// FIX: flag to pause proctoring checks during rules page and room scan
+let proctoringActive = false;
 
-// ── FALLBACK QUESTIONS (used if API key is missing) ────────────────────────────
-const FALLBACK_QUESTIONS = {
-  default: [
-    {id:1, question:"Tell me about yourself and your background in this field.", expected_keywords:["experience","skills","background"]},
-    {id:2, question:"What are your strongest technical skills and how have you applied them?", expected_keywords:["technical","skills","project"]},
-    {id:3, question:"Describe a challenging project you worked on and how you handled it.", expected_keywords:["challenge","solution","team"]},
-    {id:4, question:"How do you approach debugging a complex problem you've never seen before?", expected_keywords:["debug","systematic","research","logs"]},
-    {id:5, question:"What is the difference between synchronous and asynchronous programming?", expected_keywords:["sync","async","blocking","callback","promise"]},
-    {id:6, question:"Explain how you would design a simple REST API for a user management system.", expected_keywords:["REST","endpoint","GET","POST","authentication"]},
-    {id:7, question:"What is version control and why is it important in software development?", expected_keywords:["git","commit","branch","merge","collaboration"]},
-    {id:8, question:"How do you ensure the quality of your code?", expected_keywords:["testing","review","unit test","documentation"]},
-    {id:9, question:"Where do you see yourself professionally in the next 2-3 years?", expected_keywords:["growth","goals","learning","leadership"]},
-    {id:10, question:"Do you have any questions for us about the role or the team?", expected_keywords:["team","culture","challenges","growth"]}
-  ]
-};
-
-// ── INIT ───────────────────────────────────────────────────────────────────────
 async function init() {
-  const auth = await fetch('/api/check-auth').then(r=>r.json());
-  if (!auth.authenticated) return window.location.href='index.html';
-  // Recruiters/admins must never land on the candidate interview page
-  if (auth.is_admin) return window.location.href='recruiter_dashboard.html';
-  currentUser = auth;
-  document.getElementById('user-name').textContent = auth.full_name || auth.username;
-  await loadRoles();
-  setupViolationMonitors();
-  // Auto-join if room code passed via URL from test.html
-  const params = new URLSearchParams(window.location.search);
-  const roomCode = params.get('room');
-  if (roomCode && roomCode.length >= 6) {
-    await autoJoinByCode(roomCode.toUpperCase());
-  }
-}
-
-async function autoJoinByCode(code) {
-  const inp = document.getElementById('room-code-input');
-  if (inp) inp.value = code;
-  const data = await fetch('/api/join-session/' + code).then(r=>r.json());
-  if (!data.success) {
-    if (data.message === 'already_submitted') return showAlreadySubmitted();
-    // Show a clear error in the UI — wrong room or not their session
-    document.getElementById('mode-selector').innerHTML = `
-      <div style="text-align:center;padding:60px 20px;">
-        <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
-        <h2 style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;margin-bottom:12px;">Cannot Join Session</h2>
-        <p style="color:var(--muted);font-size:14px;max-width:420px;margin:0 auto 24px;line-height:1.7;">
-          ${data.message || 'Session not found or not assigned to your account.'}
-        </p>
-        <button onclick="window.location.href='test.html'" style="padding:12px 28px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">
-          ← Back to Dashboard
-        </button>
-      </div>`;
-    return;
-  }
-  sessionData = data.session;
-  if (data.voice_config) sessionData.voice_config = data.voice_config;
-  await showSetupScreen(data);
-}
-
-async function loadRoles() {
+  if (!ROOM_CODE) { alert('No room code found. Please join via your email link.'); return; }
   try {
-    const data = await fetch('/api/job-roles').then(r=>r.json());
-    const sel = document.getElementById('role-select');
-    sel.innerHTML = data.roles.map(r=>`<option value="${r}">${r}</option>`).join('');
-  } catch(e) {
-    console.error('Could not load roles:', e);
-  }
-}
-
-// ── FULLSCREEN ─────────────────────────────────────────────────────────────────
-document.getElementById('fs-btn').addEventListener('click', async () => {
-  try {
-    await document.documentElement.requestFullscreen();
-    document.getElementById('fs-overlay').style.display = 'none';
-    await initCamera();
-  } catch(e) {
-    // Allow continuing without fullscreen for dev/testing
-    document.getElementById('fs-overlay').style.display = 'none';
-    await initCamera();
-  }
-});
-
-// ── JOIN / START ───────────────────────────────────────────────────────────────
-
-// ══════════════════════════════════════════════════════════════════════════════
-//  PRE-EXAM SETUP + 360° ROOM SCAN
-// ══════════════════════════════════════════════════════════════════════════════
-
-// ── State ──────────────────────────────────────────────────────────────────────
-let setupStep        = 1;           // current step (1=cam, 2=scan, 3=rules)
-let setupCamStream   = null;        // camera stream shared across setup steps
-let setupFaceOk      = false;       // step 1: face clearly detected
-let scanComplete     = false;       // step 2: all 4 directions scanned
-let scanDevicesFound = [];          // devices flagged during room scan
-let pendingJoinData  = null;        // holds join API response until exam starts
-
-const SCAN_DIRECTIONS = [
-  { id: 'front', label: 'Face Forward',        icon: '👤', desc: 'Look straight at the camera' },
-  { id: 'left',  label: 'Turn Camera Left',    icon: '⬅️', desc: 'Slowly pan to your left'    },
-  { id: 'right', label: 'Turn Camera Right',   icon: '➡️', desc: 'Slowly pan to your right'   },
-  { id: 'desk',  label: 'Show Your Desk',      icon: '⬇️', desc: 'Tilt down to show desk'     },
-];
-let scanDirIndex     = -1;   // which direction we're on (-1 = not started)
-let scanCountTimer   = null;
-let scanAutoInterval = null;
-
-// ── Entry point called from joinOrStart ────────────────────────────────────────
-async function showSetupScreen(joinData) {
-  pendingJoinData = joinData;
-  document.getElementById('setup-overlay').style.display = 'flex';
-  setupStep = 1;
-  renderSetupStep();
-  // Step 1 is Rules — no camera needed yet. Camera starts when user proceeds to step 2.
-  document.getElementById('setup-next-btn').classList.remove('locked');
-  document.getElementById('setup-next-btn').textContent = 'I Understand, Continue →';
-  document.getElementById('setup-hint').textContent = 'Please read all rules carefully before continuing.';
-}
-
-// ── Camera init (shared for step 1 & 2) ───────────────────────────────────────
-async function startSetupCamera() {
-  try {
-    setupCamStream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480},audio:false});
-    // Feed into both step 1 and step 2 video elements
-    const v1 = document.getElementById('setup-cam-video');
-    const v2 = document.getElementById('scan-cam-video');
-    if (v1) v1.srcObject = setupCamStream;
-    if (v2) v2.srcObject = setupCamStream;
-    document.getElementById('chk-cam').textContent = '✓ Working';
-    document.getElementById('chk-cam').className   = 'chk-st ok';
-    // Start polling face check
-    startSetupFacePoll();
-  } catch(e) {
-    document.getElementById('chk-cam').textContent = '✗ Denied';
-    document.getElementById('chk-cam').className   = 'chk-st bad';
-    document.getElementById('setup-face-badge').textContent = '❌ Camera denied';
-    document.getElementById('setup-face-badge').className   = 'cam-face-status bad';
-  }
-}
-
-// ── Step 1: Live face check polling ───────────────────────────────────────────
-let facePollTimer = null;
-function startSetupFacePoll() {
-  clearInterval(facePollTimer);
-  facePollTimer = setInterval(runSetupFaceCheck, 1800);
-  setTimeout(runSetupFaceCheck, 600);
-}
-
-async function runSetupFaceCheck() {
-  if (setupStep !== 2) return;
-  const video = document.getElementById('setup-cam-video');
-  if (!video || !video.videoWidth) return;
-
-  // Brightness check
-  const c = document.createElement('canvas');
-  c.width = video.videoWidth; c.height = video.videoHeight;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(video, 0, 0);
-  const px = ctx.getImageData(0, 0, c.width, c.height).data;
-  let bright = 0;
-  for (let i = 0; i < px.length; i += 4) bright += (px[i]+px[i+1]+px[i+2])/3;
-  bright /= px.length / 4;
-  const goodLight = bright > 38;
-  const el_light  = document.getElementById('chk-light');
-  el_light.textContent = goodLight ? '✓ Good' : '✗ Too dark — add more light';
-  el_light.className   = 'chk-st ' + (goodLight ? 'ok' : 'bad');
-
-  // Face detection via backend
-  const img = c.toDataURL('image/jpeg', 0.7);
-  try {
-    const res = await fetch('/detect-face', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({image: img, session_id: null})
-    }).then(r=>r.json());
-
-    const badge  = document.getElementById('setup-face-badge');
-    const chkF   = document.getElementById('chk-face');
-    const chkA   = document.getElementById('chk-alone');
-
-    if (res.face_detected) {
-      setupFaceOk = true;
-      badge.textContent = '✅ Face detected!';
-      badge.className   = 'cam-face-status ok';
-      chkF.textContent  = '✓ Detected'; chkF.className = 'chk-st ok';
-      chkA.textContent  = '✓ Only you'; chkA.className = 'chk-st ok';
-    } else if (res.num_faces > 1) {
-      setupFaceOk = false;
-      badge.textContent = '⚠️ Multiple faces!';
-      badge.className   = 'cam-face-status bad';
-      chkF.textContent  = '✗ Multiple'; chkF.className = 'chk-st bad';
-      chkA.textContent  = '✗ Others visible'; chkA.className = 'chk-st bad';
-    } else {
-      setupFaceOk = false;
-      badge.textContent = '👤 Adjust position…';
-      badge.className   = 'cam-face-status warn';
-      chkF.textContent  = '✗ Not detected'; chkF.className = 'chk-st bad';
-      chkA.textContent  = 'Waiting…';       chkA.className = 'chk-st pending';
-    }
-
-    // Unlock next button when face + light are good
-    const ready = setupFaceOk && goodLight;
-    const btn   = document.getElementById('setup-next-btn');
-    if (ready) {
-      btn.classList.remove('locked');
-      document.getElementById('setup-hint').textContent = 'Looking good! Click Continue to proceed to the 360° room scan.';
-    } else {
-      btn.classList.add('locked');
-      document.getElementById('setup-hint').textContent = setupFaceOk
-        ? 'Add more light to your room to continue.'
-        : 'Position your face clearly in the camera to continue.';
-    }
-  } catch(e) {}
-}
-
-// ── Step navigation ────────────────────────────────────────────────────────────
-function renderSetupStep() {
-  [1,2,3].forEach(n => {
-    document.getElementById('step-'+n).classList.toggle('active', n === setupStep);
-    const dot = document.getElementById('sdot-'+n);
-    const lbl = document.getElementById('slbl-'+n);
-    if (n < setupStep)       { dot.classList.add('done'); dot.classList.remove('active'); dot.textContent='✓'; lbl.classList.add('done'); lbl.classList.remove('active'); }
-    else if (n === setupStep){ dot.classList.add('active'); dot.classList.remove('done'); dot.textContent=n; lbl.classList.add('active'); lbl.classList.remove('done'); }
-    else                     { dot.classList.remove('active','done'); dot.textContent=n; lbl.classList.remove('active','done'); }
-    if (n < 3) {
-      const con = document.getElementById('scon-'+n);
-      con.classList.toggle('done', n < setupStep);
-    }
-  });
-}
-
-function setupNext() {
-  const btn = document.getElementById('setup-next-btn');
-  if (btn.classList.contains('locked')) return;
-  if (setupStep === 1) {
-    // Rules → Camera
-    setupStep = 2;
-    renderSetupStep();
-    btn.classList.add('locked');
-    btn.textContent = 'Continue →';
-    document.getElementById('setup-hint').textContent = 'Your face must be clearly detected before continuing.';
-    // Now start the camera
-    startSetupCamera();
-  } else if (setupStep === 2) {
-    // Camera → Room Scan
-    setupStep = 3;
-    renderSetupStep();
-    setStep2UI();
-    document.getElementById('setup-hint').textContent = 'Click "Start Room Scan" to begin the 360° scan.';
-    btn.classList.add('locked');
-    btn.textContent = 'Begin Interview →';
-  } else if (setupStep === 3) {
-    beginExam();
-  }
-}
-
-// ── Step 3: Room Scan ──────────────────────────────────────────────────────────
-function setStep2UI() {
-  clearInterval(facePollTimer); // Stop face polling when entering room scan
-  // Reset direction items
-  SCAN_DIRECTIONS.forEach(d => {
-    const el = document.getElementById('dir-'+d.id);
-    el.className = 'dir-item';
-    document.getElementById('dir-'+d.id+'-result').textContent = '—';
-    document.getElementById('dir-'+d.id+'-result').className   = 'dir-result pending';
-  });
-  document.getElementById('scan-banner').style.display = 'none';
-  document.getElementById('devices-found').innerHTML   = '';
-  scanDirIndex     = -1;
-  scanComplete     = false;
-  scanDevicesFound = [];
-  document.getElementById('scan-dir-label').textContent = 'Press Start Scan below';
-  document.getElementById('scan-countdown-wrap').style.display = 'none';
-  // Show the start scan button again
-  const startWrap = document.getElementById('scan-start-wrap');
-  if (startWrap) startWrap.style.display = 'block';
-}
-
-async function startRoomScan() {
-  // Hide the start button
-  const startWrap = document.getElementById('scan-start-wrap');
-  if (startWrap) startWrap.style.display = 'none';
-  document.getElementById('setup-hint').textContent = 'Scanning in progress…';
-  scanDirIndex = 0;
-  await runNextScanDirection();
-}
-
-async function runNextScanDirection() {
-  if (scanDirIndex >= SCAN_DIRECTIONS.length) {
-    finishRoomScan();
-    return;
-  }
-  const dir = SCAN_DIRECTIONS[scanDirIndex];
-
-  // Mark current as active
-  SCAN_DIRECTIONS.forEach((d,i) => {
-    document.getElementById('dir-'+d.id).className = i === scanDirIndex ? 'dir-item active' : 'dir-item';
-  });
-
-  // Update label
-  document.getElementById('scan-dir-label').textContent = dir.icon + ' ' + dir.label;
-  document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap scanning';
-
-  // Show countdown (5 seconds for user to position)
-  await runScanCountdown(5, dir);
-}
-
-function runScanCountdown(seconds, dir) {
-  return new Promise(resolve => {
-    let remaining = seconds;
-    const numEl  = document.getElementById('scan-ring-num');
-    const fillEl = document.getElementById('scan-ring-fill');
-    const wrap   = document.getElementById('scan-countdown-wrap');
-    const circumference = 88; // 2π×14
-
-    wrap.style.display = 'block';
-    numEl.textContent   = remaining;
-    fillEl.style.strokeDashoffset = circumference;
-
-    const tick = setInterval(async () => {
-      remaining--;
-      numEl.textContent = remaining;
-      fillEl.style.strokeDashoffset = circumference * (remaining / seconds);
-
-      if (remaining <= 0) {
-        clearInterval(tick);
-        wrap.style.display = 'none';
-        // Capture frame and analyse
-        await captureAndAnalyseScan(dir);
-        resolve();
-      }
-    }, 1000);
-  });
-}
-
-async function captureAndAnalyseScan(dir) {
-  // Flash effect
-  const flash = document.getElementById('scan-flash');
-  flash.classList.add('flash');
-  setTimeout(() => flash.classList.remove('flash'), 300);
-
-  const video = document.getElementById('scan-cam-video');
-  if (!video || !video.videoWidth) {
-    markDirResult(dir.id, false, null);
-    proceedScan();
-    return;
-  }
-  const c = document.createElement('canvas');
-  c.width = video.videoWidth; c.height = video.videoHeight;
-  c.getContext('2d').drawImage(video, 0, 0);
-  const img = c.toDataURL('image/jpeg', 0.75);
-
-  try {
-    const res = await fetch('/detect-device', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({image: img, session_id: null})
-    }).then(r=>r.json());
-
-    const deviceFound = res.success && res.phone_detected;
-    markDirResult(dir.id, deviceFound, res.device_type, res.confidence);
-
-    if (deviceFound) {
-      scanDevicesFound.push({
-        direction: dir.label,
-        device_type: res.device_type,
-        confidence: res.confidence
-      });
-    }
-  } catch(e) {
-    markDirResult(dir.id, false, null);
-  }
-
-  proceedScan();
-}
-
-function markDirResult(dirId, flagged, deviceType, confidence) {
-  const el  = document.getElementById('dir-'+dirId);
-  const res = document.getElementById('dir-'+dirId+'-result');
-  if (flagged) {
-    el.className      = 'dir-item done-warn';
-    const icons = {phone:'📱',tablet:'📟',laptop:'💻',earphones:'🎧',bluetooth_earpiece:'🎧'};
-    const lbl   = deviceType ? (deviceType.replace(/_/g,' ')) : 'device';
-    res.textContent   = (icons[deviceType]||'⚠️') + ' ' + lbl + ' found';
-    res.className     = 'dir-result warn';
-    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap bad';
-  } else {
-    el.className      = 'dir-item done-ok';
-    res.textContent   = '✓ Clear';
-    res.className     = 'dir-result ok';
-    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap ok';
-  }
-}
-
-function proceedScan() {
-  scanDirIndex++;
-  setTimeout(runNextScanDirection, 800);
-}
-
-function finishRoomScan() {
-  scanComplete = true;
-  const banner  = document.getElementById('scan-banner');
-  const devList = document.getElementById('devices-found');
-
-  if (scanDevicesFound.length === 0) {
-    banner.textContent = `✅ Room scan complete — no devices detected. You're good to proceed!`;
-    banner.className   = 'scan-result-banner clear';
-    banner.style.display = 'block';
-    document.getElementById('setup-next-btn').classList.remove('locked');
-    document.getElementById('setup-hint').textContent = 'All clear! Click Begin Interview to start.';
-    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap ok';
-  } else {
-    banner.innerHTML   = `⚠️ <strong>${scanDevicesFound.length} device(s) detected</strong> during room scan. Please remove them before continuing.`;
-    banner.className   = 'scan-result-banner flagged';
-    banner.style.display = 'block';
-    devList.innerHTML  = scanDevicesFound.map(d => {
-      const icons = {phone:'📱',tablet:'📟',laptop:'💻',earphones:'🎧',bluetooth_earpiece:'🎧'};
-      return `<div class="device-row">
-        <div class="dev-icon">${icons[d.device_type]||'⚠️'}</div>
-        <div class="dev-info"><strong>${(d.device_type||'device').replace(/_/g,' ')}</strong> — seen during "${d.direction}"</div>
-        <div class="dev-conf">${Math.round((d.confidence||0)*100)}% confidence</div>
-      </div>`;
-    }).join('');
-    // Still allow continue — we flag it but don't block (recruiter will see it)
-    document.getElementById('setup-next-btn').classList.remove('locked');
-    document.getElementById('setup-next-btn').className = 'btn-setup-next danger';
-    document.getElementById('setup-hint').textContent = '⚠️ Devices found. Remove them, then continue.';
-    document.getElementById('scan-cam-wrap').className = 'scan-cam-wrap bad';
-  }
-}
-
-// ── Step 3: Begin exam ────────────────────────────────────────────────────────
-function beginExam() {
-  clearInterval(facePollTimer);
-  if (setupCamStream) { setupCamStream.getTracks().forEach(t=>t.stop()); setupCamStream=null; }
-  document.getElementById('setup-overlay').style.display = 'none';
-  // Log any devices found during scan as pre-exam violations
-  if (scanDevicesFound.length > 0) {
-    scanDevicesFound.forEach(d => {
-      fetch('/log-violation', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          violation_type: 'device_detected_pre_exam',
-          session_id: sessionData?.id,
-          device_data: d
-        })
-      });
-    });
-  }
-  startSession(pendingJoinData);
-  initCamera();
-}
-
-// ── Patch joinOrStart to show setup screen ─────────────────────────────────────
-
-function showAlreadySubmitted() {
-  document.getElementById('mode-selector').innerHTML = `
-    <div style="text-align:center;padding:60px 20px;">
-      <div style="font-size:64px;margin-bottom:16px;">🔒</div>
-      <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:800;margin-bottom:12px;">Interview Already Submitted</h2>
-      <p style="color:var(--muted);font-size:14px;max-width:400px;margin:0 auto;line-height:1.7;">
-        Your recruiter is reviewing your performance.<br>
-        Retakes are only possible if your recruiter assigns a new session.
-      </p>
-    </div>`;
-}
-
-async function joinOrStart() {
-  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-  const role = document.getElementById('role-select').value;
-
-  if (code.length >= 6) {
-    const data = await fetch(`/api/join-session/${code}`).then(r=>r.json());
+    const data = await fetch(`/api/join-session/${ROOM_CODE}`).then(r=>r.json());
     if (!data.success) {
-      if (data.message === 'already_submitted') return showAlreadySubmitted();
-      return alert(data.message || 'Session not found');
-    }
-    sessionData = data.session;
-    if (data.voice_config) sessionData.voice_config = data.voice_config;
-    await showSetupScreen(data);
-  } else {
-    if (!role) return alert('Please select a job role');
-    const data = await fetch('/api/create-session', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({job_role: role, mode: 'ai_interview'})
-    }).then(r=>r.json());
-    if (!data.success) return alert(data.message || 'Error creating session');
-    sessionData = data.session;
-    const joined = await fetch(`/api/join-session/${data.room_code}`).then(r=>r.json());
-    if (joined.voice_config) sessionData.voice_config = joined.voice_config;
-    await showSetupScreen(joined);
-  }
-}
-
-function startSession(data) {
-  sessionData = data.session;
-  document.getElementById('mode-selector').style.display = 'none';
-  examStarted = true;
-  examStartTime = Date.now();
-  fetch(`/api/start-session/${sessionData.id}`, {method:'POST'});
-  // Start device detection only now — exam has begun
-  setTimeout(() => { setInterval(runDeviceCheck, 6000); }, 3000);
-
-  if (sessionData.mode === 'mcq') {
-    mcqQuestions = data.questions || [];
-    startMCQ();
-  } else if (sessionData.mode === 'ai_interview') {
-    startAIInterview();
-  } else if (sessionData.mode === 'live_recruiter') {
-    startLiveInterview(data.ice_servers || []);
-  }
-
-  startTimer();
-  initSocket();
-}
-
-// ── CAMERA & PROCTORING ────────────────────────────────────────────────────────
-async function initCamera() {
-  try {
-    camStream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});
-    document.getElementById('proctor-cam').srcObject = camStream;
-    document.getElementById('cam-status-overlay').style.display = 'none';
-    setStatus('face-status','ok','✅ Camera active');
-    setTimeout(startProctoring, 1500);
-  } catch(e) {
-    setStatus('face-status','bad','❌ Camera denied');
-    logVio('camera_denied');
-  }
-}
-
-let proctoringWarmup = true;
-function startProctoring() {
-  setTimeout(() => { proctoringWarmup = false; }, 20000);
-  setInterval(runFaceCheck, 3000);
-  setInterval(runGazeCheck, 4000);
-  // Device detection is started separately in startSession() after exam begins
-  setInterval(updateScore, 5000);
-}
-
-async function captureFrame() {
-  const video = document.getElementById('proctor-cam');
-  if (!video || !video.videoWidth) return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  return canvas.toDataURL('image/jpeg', 0.7);
-}
-
-let faceMissStreak = 0;
-const FACE_MISS_THRESHOLD = 3;
-async function runFaceCheck() {
-  const img = await captureFrame(); if (!img) return;
-  const res = await fetch('/detect-face', {method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
-  if (!res) return;
-  if (res.face_detected) {
-    faceMissStreak = 0;
-    setStatus('face-status','ok','✅ Face detected');
-  } else if (res.num_faces > 1) {
-    faceMissStreak = 0;
-    logVio('multiple_faces');
-    setStatus('face-status','bad','🚫 Multiple faces detected!');
-  } else {
-    faceMissStreak++;
-    if (faceMissStreak === FACE_MISS_THRESHOLD) logVio('no_face');
-    const lbl = faceMissStreak >= FACE_MISS_THRESHOLD
-      ? '⚠️ Face not visible — re-centre yourself'
-      : `👤 Face unclear… (${faceMissStreak}/${FACE_MISS_THRESHOLD})`;
-    setStatus('face-status', faceMissStreak >= FACE_MISS_THRESHOLD ? 'bad' : 'warn', lbl);
-  }
-}
-
-let gazeStreak = 0;
-const GAZE_THRESHOLD = 3;
-async function runGazeCheck() {
-  const img = await captureFrame(); if (!img) return;
-  const res = await fetch('/analyze-gaze', {method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
-  if (!res?.success) return;
-  const g = res.gaze;
-  if (g.looking_away) {
-    gazeStreak++;
-    if (gazeStreak === GAZE_THRESHOLD) { gazeAlerts++; document.getElementById('gaze-count').textContent = gazeAlerts; showVioToast('gaze_away'); }
-    setStatus('gaze-status','bad',`👁️ Looking ${g.direction} — face the screen`);
-  } else {
-    gazeStreak = 0;
-    setStatus('gaze-status','ok','👁️ Gaze: On screen');
-  }
-}
-
-async function runDeviceCheck() {
-  const img = await captureFrame(); if (!img) return;
-  const res = await fetch('/detect-device', {method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({image:img,session_id:sessionData?.id})}).then(r=>r.json()).catch(()=>null);
-  if (!res) return;
-  if (res.phone_detected) {
-    const icon  = DEVICE_TYPE_ICONS[res.device_type] || '⚠️';
-    const label = DEVICE_TYPE_NAMES[res.device_type] || (res.device_type||'Device');
-    setStatus('device-status','bad',`${icon} ${label} detected! (${Math.round(res.confidence*100)}%)`);
-    showVioToast('device_detected', res.device_type);
-    logVio('device_detected');
-  } else {
-    setStatus('device-status','ok','✅ No devices detected');
-  }
-}
-
-async function updateScore() {
-  const res = await fetch(`/get-credibility-score?session_id=${sessionData?.id||''}`).then(r=>r.json()).catch(()=>null);
-  if (!res?.success) return;
-  const s = res.credibility_score;
-  const el = document.getElementById('cred-score');
-  el.textContent = s;
-  el.style.color = s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e';
-  document.getElementById('vio-count').textContent = res.total_violations;
-  violations = res.total_violations;
-}
-
-function setStatus(id, type, text) {
-  const el = document.getElementById(id);
-  el.className = 'status-pill ' + (type==='ok'?'ok':type==='warn'?'warn':'bad');
-  el.textContent = text;
-}
-
-
-// ── VIOLATION TOASTS ───────────────────────────────────────────────────────────
-const VIO_CFG = {
-  no_face:           {icon:'👤', title:'Face Not Detected',           msg:'Re-centre yourself in front of the camera.',    sev:'red'},
-  multiple_faces:    {icon:'👥', title:'Multiple Faces Detected',     msg:'Only you must be visible on camera.',           sev:'red'},
-  gaze_away:         {icon:'👁️', title:'Looking Away',               msg:'Keep your eyes on the screen.',                 sev:'yellow'},
-  tab_switch:        {icon:'🔀', title:'Tab Switch Detected',         msg:'Do not leave the exam window.',                 sev:'red'},
-  exit_fullscreen:   {icon:'⛶',  title:'Fullscreen Exited',           msg:'Stay in fullscreen for the entire exam.',       sev:'red'},
-  right_click:       {icon:'🖱️', title:'Right Click Blocked',         msg:'Right-clicking is not allowed.',               sev:'yellow'},
-  copy_attempt:      {icon:'📋', title:'Copy Attempt',                msg:'Copying is disabled during the exam.',          sev:'yellow'},
-  paste_attempt:     {icon:'📋', title:'Paste Attempt',               msg:'Pasting is disabled during the exam.',          sev:'yellow'},
-  devtools:          {icon:'🔧', title:'DevTools Detected',           msg:'Developer tools are not allowed.',              sev:'red'},
-  screenshot_attempt:{icon:'📸', title:'Screenshot Attempt',          msg:'Screenshots are not allowed.',                  sev:'red'},
-  camera_denied:     {icon:'📷', title:'Camera Denied',               msg:'Camera access is required for proctoring.',     sev:'red'},
-  device_detected:   {icon:'⚠️', title:'Device Detected',             msg:'An electronic device was detected.',            sev:'red'},
-};
-const DEVICE_TYPE_ICONS = {phone:'📱',tablet:'📟',laptop:'💻',earphones:'🎧',bluetooth_earpiece:'🎧'};
-const DEVICE_TYPE_NAMES = {phone:'Phone',tablet:'Tablet',laptop:'Laptop / Screen',earphones:'Earphones',bluetooth_earpiece:'Bluetooth Earpiece'};
-
-function showVioToast(type, deviceType) {
-  let cfg = VIO_CFG[type] || {icon:'⚠️', title:type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()), msg:'Violation recorded.', sev:'red'};
-  if ((type === 'device_detected') && deviceType && DEVICE_TYPE_NAMES[deviceType]) {
-    cfg = {...cfg, icon: DEVICE_TYPE_ICONS[deviceType], title: DEVICE_TYPE_NAMES[deviceType] + ' Detected'};
-  }
-  const dur = 5000;
-  const container = document.getElementById('vio-toast-container');
-  if (!container) return;
-  const existing = container.querySelectorAll('.vio-toast');
-  if (existing.length >= 5) existing[0].remove();
-  const el = document.createElement('div');
-  el.className = 'vio-toast vio-' + (cfg.sev||'red');
-  el.innerHTML = `<div class="vio-toast-icon">${cfg.icon}</div>
-    <div class="vio-toast-body"><div class="vio-toast-title">⚠️ ${cfg.title}</div><div class="vio-toast-msg">${cfg.msg}</div></div>
-    <div class="vio-toast-x" onclick="dismissToast(this.parentElement)">✕</div>
-    <div class="vio-toast-timer" style="--dur:${dur}ms"></div>`;
-  container.appendChild(el);
-  setTimeout(() => dismissToast(el), dur);
-}
-function dismissToast(el) {
-  if (!el||el.classList.contains('dismissing')) return;
-  el.classList.add('dismissing');
-  setTimeout(() => el.remove(), 300);
-}
-
-function logVio(type) {
-  if (typeof proctoringWarmup!=='undefined'&&proctoringWarmup) return;
-  violations++;
-  showVioToast(type);
-  fetch('/log-violation',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({violation_type:type,session_id:sessionData?.id})});
-  const log = document.getElementById('vio-log');
-  if (log.querySelector('div[style]')) log.innerHTML = '';
-  const item = document.createElement('div');
-  item.className = 'vio-item';
-  item.textContent = `${new Date().toLocaleTimeString()}: ${type.replace(/_/g,' ')}`;
-  log.appendChild(item);
-  log.scrollTop = log.scrollHeight;
-  document.getElementById('vio-count').textContent = violations;
-  // violation logged to proctoring sidebar
-  updateScore();
-}
-
-// ── MCQ ────────────────────────────────────────────────────────────────────────
-function startMCQ() {
-  document.getElementById('mcq-area').style.display = 'block';
-  document.getElementById('mcq-title').textContent = `MCQ: ${sessionData.job_role}`;
-  buildDots(); renderQ();
-}
-
-function buildDots() {
-  const el = document.getElementById('q-dots');
-  el.innerHTML = mcqQuestions.map((_,i)=>`<div class="qdot ${i===0?'curr':''}" id="dot-${i}" onclick="goQ(${i})"></div>`).join('');
-}
-
-function renderQ() {
-  const q = mcqQuestions[currentQ];
-  if (!q) return;
-  document.getElementById('q-num').textContent = `Question ${currentQ+1} of ${mcqQuestions.length}`;
-  document.getElementById('q-text').textContent = q.question_text || q.question;
-  document.getElementById('q-counter').textContent = `${Object.keys(mcqAnswers).length}/${mcqQuestions.length}`;
-  document.getElementById('q-answered').textContent = `${Object.keys(mcqAnswers).length} answered`;
-  const opts = q.options || {a:q.option_a,b:q.option_b,c:q.option_c,d:q.option_d};
-  document.getElementById('q-options').innerHTML = Object.entries(opts).map(([k,v])=>`
-    <div class="opt ${mcqAnswers[currentQ]===k?'selected':''}" onclick="selectOpt('${k}')">
-      <div class="opt-letter">${k.toUpperCase()}</div>
-      <span>${v}</span>
-    </div>`).join('');
-  document.querySelectorAll('.qdot').forEach((d,i)=>{
-    d.className = 'qdot';
-    if (mcqAnswers[i]) d.classList.add('ans');
-    if (i===currentQ) d.classList.add('curr');
-  });
-  document.getElementById('btn-prev').style.opacity = currentQ>0?1:0.3;
-  document.getElementById('btn-next').textContent = currentQ<mcqQuestions.length-1?'Next →':'Review';
-}
-
-function selectOpt(k) { mcqAnswers[currentQ] = k; renderQ(); }
-function navQ(dir) { goQ(currentQ+dir); }
-function goQ(idx) { if (idx<0||idx>=mcqQuestions.length) return; currentQ=idx; renderQ(); }
-function confirmSubmitMCQ() {
-  const unanswered = mcqQuestions.length - Object.keys(mcqAnswers).length;
-  if (unanswered>0 && !confirm(`${unanswered} question(s) unanswered. Submit anyway?`)) return;
-  submitExam('mcq');
-}
-
-// ── AI INTERVIEW ───────────────────────────────────────────────────────────────
-async function startAIInterview() {
-  document.getElementById('ai-area').style.display = 'block';
-  document.getElementById('ai-loading').style.display = 'flex';
-  document.getElementById('ai-q-box').style.display = 'none';
-  document.getElementById('ai-answer-area').style.display = 'none';
-  document.getElementById('ai-error-box').style.display = 'none';
-  setAIStatus('Connecting to AI engine…');
-
-  startAIPipCamera(); // show candidate in PiP corner
-  initAvatarCanvas(); // start realistic canvas renderer
-  await loadAIQuestions();
-}
-
-async function loadAIQuestions() {
-  try {
-    document.getElementById('ai-load-detail').textContent = 'Generating personalized questions for ' + sessionData.job_role + '…';
-
-    const res = await fetch('/api/ai-generate-questions', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({job_role: sessionData.job_role})
-    });
-
-    const data = await res.json();
-    aiQuestions = data.questions || [];
-
-    if (!aiQuestions.length) {
-      throw new Error('No questions returned from server');
-    }
-
-    // Success — hide loader, show interview
-    document.getElementById('ai-loading').style.display = 'none';
-    document.getElementById('ai-q-box').style.display = 'block';
-    document.getElementById('ai-answer-area').style.display = 'block';
-    setAIStatus('Alex is ready. Listen carefully…');
-    updateAIProgress();
-
-    // Small delay so user sees Alex before question types
-    setTimeout(() => typeQuestion(aiQuestions[0]), 800);
-
-  } catch(err) {
-    console.error('AI question load error:', err);
-
-    // Use fallback questions so the interview still works
-    const fallbackKey = sessionData.job_role in FALLBACK_QUESTIONS
-      ? sessionData.job_role : 'default';
-    aiQuestions = FALLBACK_QUESTIONS[fallbackKey] || FALLBACK_QUESTIONS.default;
-
-    document.getElementById('ai-loading').style.display = 'none';
-    document.getElementById('ai-error-box').style.display = 'block';
-    document.getElementById('ai-error-msg').textContent =
-      'AI engine not connected (API key may not be set). Using standard questions instead. Set ANTHROPIC_API_KEY and restart for full AI experience.';
-
-    // Still start the interview with fallback questions after 3 seconds
-    setTimeout(() => {
-      document.getElementById('ai-error-box').style.display = 'none';
-      document.getElementById('ai-q-box').style.display = 'block';
-      document.getElementById('ai-answer-area').style.display = 'block';
-      setAIStatus('Starting with standard questions…');
-      updateAIProgress();
-      typeQuestion(aiQuestions[0]);
-    }, 3000);
-  }
-}
-
-function retryLoadQuestions() {
-  document.getElementById('ai-error-box').style.display = 'none';
-  document.getElementById('ai-loading').style.display = 'flex';
-  aiQuestions = []; aiCurrentQ = 0; aiTranscript = []; aiTotalScore = 0;
-  loadAIQuestions();
-}
-
-// ── TYPE ANIMATION — Alex types like a human ──────────────────────────────────
-function typeQuestion(q) {
-  const qtext = q.question || q.question_text || '';
-  const el = document.getElementById('ai-q-text');
-  document.getElementById('ai-q-num').textContent = `Question ${aiCurrentQ+1} of ${aiQuestions.length}`;
-  document.getElementById('ai-answer').value = '';
-  document.getElementById('feedback-box').style.display = 'none';
-  document.getElementById('send-btn').disabled = true;  // disable until typing done
-
-  setAIStatus('Alex is asking…');
-  setAvatarSpeaking(true);
-  el.innerHTML = '<span class="cursor"></span>';
-
-  let i = 0;
-  // Variable typing speed — feels more human
-  function typeNext() {
-    if (i >= qtext.length) {
-      // Done typing
-      el.innerHTML = qtext;
-      setAvatarSpeaking(false);
-      setAIStatus('Your turn to answer');
-      document.getElementById('send-btn').disabled = false;
-      document.getElementById('ai-answer').focus();
-
-      // Speak the question out loud using configured voice
-      if ('speechSynthesis' in window) {
-        speechSynthesis.cancel();
-        const cfg = getVoiceConfig();
-        const utt = new SpeechSynthesisUtterance(qtext);
-        utt.rate   = cfg.speed;
-        utt.pitch  = cfg.pitch;
-        utt.volume = 1;
-        utt.lang   = cfg.accent;
-        const voices = speechSynthesis.getVoices();
-        const picked = pickVoiceForConfig(voices, cfg);
-        if (picked) utt.voice = picked;
-        utt.onstart = () => setAvatarSpeaking(true);
-        utt.onend   = () => setAvatarSpeaking(false);
-        utt.onerror = () => setAvatarSpeaking(false);
-        speechSynthesis.speak(utt);
+      if (data.message === 'already_submitted') {
+        window.location.href = 'test.html';
+        return;
       }
-      return;
+      alert(data.message || 'Could not join session'); window.location.href = 'test.html'; return;
     }
-
-    el.innerHTML = qtext.substring(0, i+1) + '<span class="cursor"></span>';
-    i++;
-
-    // Vary speed: slower at punctuation (feels natural), faster in middle of words
-    const ch = qtext[i-1];
-    const delay = (ch === '.' || ch === '?' || ch === '!') ? 280
-                : (ch === ',') ? 120
-                : (ch === ' ') ? 45
-                : 22 + Math.random() * 15;
-    setTimeout(typeNext, delay);
+    sessionData = data.session;
+    sessionData.ice_servers = data.ice_servers || [];
+    questions   = data.questions || [];
+    document.getElementById('si-role').textContent = sessionData.job_role;
+    document.getElementById('si-mode').textContent = (sessionData.mode||'mcq').replace('_',' ');
+    document.getElementById('si-room').textContent = ROOM_CODE;
+    await startCamera();
+    document.getElementById('loading-screen').style.display = 'none';
+    // Show RULES PAGE first → then 360° scan (both awaited in sequence)
+    await showRulesAndScan();
+    document.getElementById('interview-ui').style.display = 'block';
+    initSocket();
+    loadInterviewMode();
+    // For live_recruiter mode, wait for recruiter before starting session
+    if (sessionData.mode === 'live_recruiter') {
+      // Don't start session/timer/proctoring until recruiter joins
+      // initSocket already handles the recruiter_joined event
+    } else {
+      await startSession();
+      startTimer();
+      startProctoring();
+    }
+  } catch(e) {
+    console.error(e);
+    alert('Error loading session. Please try again.');
+    window.location.href = 'test.html';
   }
-
-  // Short pause before Alex starts typing (like a human thinking)
-  setTimeout(typeNext, 600);
 }
 
-// ── AI Avatar: speaking state ─────────────────────────────────────────────────
-let aiCallSeconds = 0, aiCallTimerInterval = null;
-
-function setAvatarSpeaking(s) {
-  const call = document.getElementById('ai-video-call');
-  const wave = document.getElementById('ai-audio-wave');
-  const mic  = document.getElementById('ai-mic-icon');
-  const img  = document.getElementById('ai-avatar-img-wrap');
-  if (call) call.classList.toggle('speaking', s);
-  if (wave) wave.classList.toggle('active', s);
-  if (mic)  mic.classList.toggle('active', s);
-  if (img)  img.classList.toggle('talking', s);
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
+    document.getElementById('cam-video').srcObject = stream;
+  } catch(e) {
+    document.getElementById('cam-status').textContent = '⚠ Camera error';
+    document.getElementById('cam-status').classList.add('bad');
+  }
 }
 
-function startAICallTimer() {
-  if (aiCallTimerInterval) return;
-  aiCallTimerInterval = setInterval(() => {
-    aiCallSeconds++;
-    const m = String(Math.floor(aiCallSeconds / 60)).padStart(2,'0');
-    const s = String(aiCallSeconds % 60).padStart(2,'0');
-    const el = document.getElementById('ai-call-timer');
-    if (el) el.textContent = `${m}:${s}`;
+async function startSession() {
+  await fetch(`/api/start-session/${sessionData.id}`, {method:'POST'});
+}
+
+// ── Timer ──────────────────────────────────────────────────────────────────────
+function startTimer() {
+  timerSec = sessionData.mode === 'ai_interview' ? 50*60 : 45*60;
+  timerInterval = setInterval(() => {
+    timerSec--;
+    const m = Math.floor(timerSec/60), s = timerSec%60;
+    const el = document.getElementById('timer-display');
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    el.classList.toggle('warn', timerSec <= 300);
+    if (timerSec <= 0) { clearInterval(timerInterval); submitInterview('timeout'); }
   }, 1000);
 }
 
-// ── PiP camera ────────────────────────────────────────────────────────────────
-async function startAIPipCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
-    const pip = document.getElementById('pip-cam');
-    if (pip) pip.srcObject = stream;
-  } catch(e) { console.log('PiP cam not available'); }
-}
+// ── Proctoring ─────────────────────────────────────────────────────────────────
 
-function initAvatarCanvas() { startAICallTimer(); }
+// ══════════════════════════════════════════════════════════════════════════════
+// 360° ROOM SCAN
+// ══════════════════════════════════════════════════════════════════════════════
+const SCAN_STEPS = [
+  { label: '📷 Face the camera directly — we can see you clearly', duration: 4000 },
+  { label: '⬅️ Slowly rotate LEFT — show the left side of your room', duration: 5000 },
+  { label: '↩️ Return to center — face the camera again', duration: 3000 },
+  { label: '➡️ Slowly rotate RIGHT — show the right side of your room', duration: 5000 },
+  { label: '↩️ Return to center again', duration: 2000 },
+  { label: '⬇️ Tilt down — show your desk and keyboard area', duration: 3000 },
+  { label: '⬆️ Return to normal position', duration: 2000 },
+  { label: '✅ Hold still — completing scan…', duration: 2000 },
+];
+const TOTAL_SCAN_MS = SCAN_STEPS.reduce((a, s) => a + s.duration, 0);
+let scanFrames = [], scanRunning = false;
 
-function setAIStatus(txt) {
-  document.getElementById('ai-status').textContent = txt;
-}
-
-function updateAIProgress() {
-  const pct = (aiCurrentQ / Math.max(aiQuestions.length, 1)) * 100;
-  document.getElementById('ai-progress').style.width = pct + '%';
-}
-
-// ── SUBMIT AI ANSWER ──────────────────────────────────────────────────────────
-async function submitAIAnswer() {
-  const answer = document.getElementById('ai-answer').value.trim();
-  if (!answer) return alert('Please write your answer before submitting.');
-
-  if (isRecording) toggleVoice(); // stop recording first
-
-  document.getElementById('send-btn').disabled = true;
-  setAIStatus('Alex is evaluating your answer…');
-  setAvatarSpeaking(true);
-
-  const q = aiQuestions[aiCurrentQ];
-  let evData = {score: 5, feedback: 'Good answer. Keep being specific with examples.', follow_up: null};
-
-  try {
-    const res = await fetch('/api/ai-evaluate-answer', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        question: q.question || q.question_text,
-        answer,
-        job_role: sessionData.job_role,
-        expected_keywords: q.expected_keywords || []
-      })
-    });
-    evData = await res.json();
-  } catch(e) {
-    // Fallback scoring by keyword match
-    const keywords = q.expected_keywords || [];
-    const matches = keywords.filter(kw => answer.toLowerCase().includes(kw.toLowerCase())).length;
-    evData.score = Math.min(10, 4 + Math.round((matches / Math.max(keywords.length,1)) * 6));
-    evData.feedback = `You scored ${evData.score}/10. ${matches} of ${keywords.length} key concepts mentioned.`;
-  }
-
-  setAvatarSpeaking(false);
-  aiTotalScore += evData.score || 5;
-  aiTranscript.push({
-    question: q.question || q.question_text,
-    answer,
-    score: evData.score,
-    feedback: evData.feedback
+// ── Rules Page ────────────────────────────────────────────────────────────────
+function showRulesAndScan() {
+  return new Promise(resolve => {
+    // Step 1: show rules page
+    const overlay = document.getElementById('rules-overlay');
+    overlay.classList.add('show');
+    // proceedToScan will be called when user clicks the button
+    window._rulesResolve = async () => {
+      overlay.classList.remove('show');
+      // Step 2: immediately chain into the 360° room scan
+      await showRoomScan();
+      // Step 3: resolve the combined promise so init() can continue
+      resolve();
+    };
   });
+}
 
-  // Show feedback
-  document.getElementById('feedback-box').style.display = 'block';
-  document.getElementById('fb-score').textContent = `${evData.score}/10`;
-  document.getElementById('fb-text').textContent = evData.feedback || '';
-
-  // Feedback speech removed — scores shown in UI only
-
-  // Decide next step
-  const hasFollowUp = evData.follow_up && typeof evData.follow_up === 'string' && evData.follow_up.trim();
-  aiCurrentQ++;
-  updateAIProgress();
-
-  if (aiCurrentQ >= aiQuestions.length && !hasFollowUp) {
-    setTimeout(finishAIInterview, 2500);
-  } else {
-    if (hasFollowUp) {
-      // Insert follow-up at current position
-      aiQuestions.splice(aiCurrentQ, 0, {
-        question: evData.follow_up,
-        expected_keywords: []
-      });
-    }
-    setTimeout(() => {
-      document.getElementById('send-btn').disabled = false;
-      typeQuestion(aiQuestions[aiCurrentQ]);
-    }, 3000);
+function proceedToScan() {
+  if (window._rulesResolve) {
+    const fn = window._rulesResolve;
+    window._rulesResolve = null;
+    fn();
   }
 }
 
-async function finishAIInterview() {
-  setAIStatus('Generating your full evaluation report…');
-  setAvatarSpeaking(true);
+function showRoomScan() {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('room-scan-overlay');
+    overlay.style.display = 'flex';
+    // Mirror the already-started camera into scan video
+    const scanVid = document.getElementById('scan-video');
+    const camVid  = document.getElementById('cam-video');
+    if (camVid.srcObject) scanVid.srcObject = camVid.srcObject;
+    // Store resolve so scan completion can call it
+    window._scanResolve = resolve;
+  });
+}
 
-  let evalData = {
-    overall_score: Math.round((aiTotalScore / Math.max(aiTranscript.length,1)) * 10),
-    summary: 'Interview completed. Good effort overall.',
-    recommendation: 'Maybe'
-  };
+async function startRoomScan() {
+  if (scanRunning) return;
+  scanRunning = true;
+  scanFrames = [];
+  const btn  = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.textContent = '🔴 Scanning…';
 
-  try {
-    const res = await fetch('/api/ai-final-evaluation', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({transcript: aiTranscript, job_role: sessionData.job_role})
+  let elapsed = 0;
+  const stepDivs = ['sstep-0','sstep-1','sstep-2','sstep-3'];
+
+  for (let i = 0; i < SCAN_STEPS.length; i++) {
+    const step = SCAN_STEPS[i];
+
+    // Update instruction
+    document.getElementById('scan-instruction').textContent = step.label;
+
+    // Update step indicators (map scan steps to 4 visible steps)
+    const visIdx = Math.floor(i / 2);
+    stepDivs.forEach((id, idx) => {
+      const el = document.getElementById(id);
+      if (idx < visIdx) { el.className = 'scan-step done'; }
+      else if (idx === visIdx) { el.className = 'scan-step active'; }
+      else { el.className = 'scan-step'; }
     });
-    evalData = await res.json();
-  } catch(e) {
-    console.warn('Final evaluation fallback used');
-  }
 
-  setAvatarSpeaking(false);
-  const aiOverallScore = evalData.overall_score || Math.round((aiTotalScore/Math.max(aiTranscript.length,1))*10);
-  submitExam('ai_interview', aiOverallScore, evalData);
-}
+    // Capture a frame at start of each step
+    const frame = await captureScanFrame();
+    if (frame) {
+      const fIdx = scanFrames.length;
+      scanFrames.push(frame);
+      const thumb = document.getElementById('sf' + fIdx);
+      if (thumb) {
+        thumb.classList.add('captured');
+        thumb.innerHTML = `<img src="${frame}" style="width:100%;height:100%;object-fit:cover;">`;
+      }
+    }
 
-// ── VOICE INPUT ────────────────────────────────────────────────────────────────
-function toggleVoice() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    return alert('Speech recognition not supported. Please type your answer instead.');
-  }
-  if (isRecording) {
-    speechRec?.stop();
-    isRecording = false;
-    document.getElementById('voice-btn').className = 'btn-voice';
-    document.getElementById('voice-btn').innerHTML = '🎤 Start Recording';
-  } else {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    speechRec = new SR();
-    speechRec.continuous = true;
-    speechRec.interimResults = true;
-    speechRec.lang = 'en-IN';
+    // Animate progress arc and bar during this step
+    const stepStart = Date.now();
+    await new Promise(res => {
+      const tick = setInterval(() => {
+        const stepElapsed = Date.now() - stepStart;
+        const stepPct = Math.min(stepElapsed / step.duration, 1);
+        elapsed += (stepPct * step.duration / SCAN_STEPS.length);
+        const totalPct = Math.min((elapsed / TOTAL_SCAN_MS) * SCAN_STEPS.length / SCAN_STEPS.length +
+          (i / SCAN_STEPS.length), 1);
+        const pct = (i + stepPct) / SCAN_STEPS.length;
 
-    // Keep accumulated finalized text so pauses/restarts don't wipe it
-    let committedText = document.getElementById('ai-answer').value.trim();
-    if (committedText) committedText += ' ';
+        // Arc
+        const circ = 276.46;
+        document.getElementById('scan-arc-circle').setAttribute(
+          'stroke-dashoffset', (circ * (1 - pct)).toFixed(2)
+        );
+        // Bar
+        document.getElementById('scan-progress-fill').style.width = (pct * 100).toFixed(1) + '%';
 
-    speechRec.onresult = e => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const res = e.results[i];
-        if (res.isFinal) {
-          committedText += res[0].transcript + ' ';
-        } else {
-          interim += res[0].transcript;
+        if (stepElapsed >= step.duration) {
+          clearInterval(tick);
+          res();
         }
-      }
-      document.getElementById('ai-answer').value = (committedText + interim).trim();
-    };
+      }, 80);
+    });
+  }
 
-    // Auto-restart after silence cutoff so recording keeps going
-    speechRec.onend = () => {
-      if (isRecording) {
-        try { speechRec.start(); } catch(err) {}
-      }
-    };
+  // Mark all steps done
+  stepDivs.forEach(id => document.getElementById(id).className = 'scan-step done');
 
-    speechRec.onerror = e => {
-      if (e.error === 'no-speech') return; // silence — onend will restart
-      isRecording = false;
-      document.getElementById('voice-btn').className = 'btn-voice';
-      document.getElementById('voice-btn').innerHTML = '🎤 Start Recording';
-    };
+  // Final frame
+  const finalFrame = await captureScanFrame();
+  if (finalFrame) scanFrames.push(finalFrame);
 
-    speechRec.start();
-    isRecording = true;
-    document.getElementById('voice-btn').className = 'btn-voice recording';
-    document.getElementById('voice-btn').innerHTML = '⏹ Stop Recording';
+  document.getElementById('scan-progress-fill').style.width = '100%';
+  document.getElementById('scan-arc-circle').setAttribute('stroke-dashoffset', '0');
+  document.getElementById('scan-instruction').textContent = '⏳ Analysing your environment…';
+  document.getElementById('scan-status').textContent = 'Sending scan to server…';
+  document.getElementById('scan-status').className = 'scan-status';
+
+  // Send frames to backend
+  await submitScanFrames();
+}
+
+async function captureScanFrame() {
+  const video = document.getElementById('scan-video');
+  if (!video || !video.videoWidth) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 320; canvas.height = 240;
+  canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+  return canvas.toDataURL('image/jpeg', 0.6);
+}
+
+async function submitScanFrames() {
+  try {
+    const resp = await fetch('/api/room-scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ session_id: sessionData.id, frames: scanFrames })
+    });
+    const data = await resp.json();
+
+    if (data.issues && data.issues.length > 0) {
+      document.getElementById('scan-status').textContent = '⚠ Issues found: ' + data.issues.join(', ');
+      document.getElementById('scan-status').className = 'scan-status warn';
+      document.getElementById('scan-instruction').textContent = '⚠️ Concerns noted. Interview will proceed but violations logged.';
+    } else {
+      document.getElementById('scan-status').textContent = '✅ Environment looks clean!';
+      document.getElementById('scan-status').className = 'scan-status ok';
+      document.getElementById('scan-instruction').textContent = '✅ Scan complete. Starting your interview…';
+    }
+
+    const btn = document.getElementById('scan-btn');
+    btn.textContent = '▶ Enter Interview';
+    btn.disabled = false;
+    btn.onclick = completeScan;
+
+    // Auto-proceed after 2 seconds if clean
+    if (!data.issues || data.issues.length === 0) {
+      setTimeout(completeScan, 2000);
+    }
+  } catch(e) {
+    console.error('Scan submit error:', e);
+    document.getElementById('scan-status').textContent = 'Scan could not be verified — proceeding anyway.';
+    document.getElementById('scan-status').className = 'scan-status warn';
+    setTimeout(completeScan, 1500);
   }
 }
 
-// ── LIVE RECRUITER ─────────────────────────────────────────────────────────────
-async function startLiveInterview(iceServers) {
-  document.getElementById('live-area').style.display = 'block';
+function completeScan() {
+  document.getElementById('room-scan-overlay').style.display = 'none';
+  if (window._scanResolve) { window._scanResolve(); window._scanResolve = null; }
+}
+
+// FIX: register browser event listeners only once at page load, but only log
+// when proctoringActive is true (set by startProctoring). This prevents tab_switch
+// violations firing while candidate is reading the rules page before the interview.
+document.addEventListener('visibilitychange', () => {
+  if (proctoringActive && document.hidden) logViolation('tab_switch');
+});
+document.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  if (proctoringActive) logViolation('right_click');
+});
+document.addEventListener('keydown', e => {
+  if (proctoringActive && (e.ctrlKey||e.metaKey) && e.key==='c') logViolation('copy_attempt');
+});
+
+function startProctoring() {
+  proctoringActive = true;   // FIX: mark as active so checks start logging
+  faceCheckInterval = setInterval(checkFace, 4000);
+  deviceCheckInterval = setInterval(checkDevice, 7000);
+}
+
+async function captureFrame() {
+  const video = document.getElementById('cam-video');
+  if (!video.videoWidth) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = 320; canvas.height = 240;
+  canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+  return canvas.toDataURL('image/jpeg', 0.7);
+}
+
+async function checkFace() {
+  if (!proctoringActive || deviceKicked) return;  // FIX: don't check during rules/scan
+  const img = await captureFrame();
+  if (!img) return;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-    document.getElementById('local-video').srcObject = stream;
-    peerConn = new RTCPeerConnection({iceServers});
-    stream.getTracks().forEach(t => peerConn.addTrack(t, stream));
-    peerConn.ontrack = e => { document.getElementById('remote-video').srcObject = e.streams[0]; };
-    peerConn.onicecandidate = e => {
-      if (e.candidate) socket?.emit('webrtc_ice_candidate', {candidate:e.candidate, room:sessionData.room_code});
-    };
-    const offer = await peerConn.createOffer();
-    await peerConn.setLocalDescription(offer);
-    socket?.emit('webrtc_offer', {sdp:offer, room:sessionData.room_code});
-  } catch(e) { console.error('WebRTC error:', e); }
+    const data = await fetch('/detect-face', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:img, session_id:sessionData.id})}).then(r=>r.json());
+    const ok = data.face_detected && data.num_faces === 1;
+    document.getElementById('face-indicator').className = 'face-indicator' + (ok?'':' bad');
+    document.getElementById('cam-status').className = 'cam-status' + (ok?'':' bad');
+    document.getElementById('cam-status').textContent = ok?'● Camera Active':data.num_faces===0?'⚠ Face not detected':'⚠ Multiple faces';
+  } catch(e){}
 }
 
-// ── SOCKETIO ───────────────────────────────────────────────────────────────────
-function initSocket() {
-  socket = io();
-  socket.on('connect', ()=>{ socket.emit('join_room_event', {room:sessionData?.room_code, role:'candidate'}); });
-  socket.on('webrtc_offer', async data=>{ if(!peerConn) return; await peerConn.setRemoteDescription(data.sdp); const ans=await peerConn.createAnswer(); await peerConn.setLocalDescription(ans); socket.emit('webrtc_answer',{sdp:ans,room:sessionData.room_code}); });
-  socket.on('webrtc_answer', async data=>{ await peerConn?.setRemoteDescription(data.sdp); });
-  socket.on('webrtc_ice_candidate', async data=>{ await peerConn?.addIceCandidate(new RTCIceCandidate(data.candidate)); });
-  socket.on('recruiter_message', data=>{
-    const box=document.getElementById('recruiter-msgs');
-    const msg=document.createElement('div');
-    msg.className='rmsg recruiter';
-    msg.innerHTML=`<div class="rmsg-from">Recruiter</div>${data.message}`;
-    box.appendChild(msg); box.scrollTop=box.scrollHeight;
-  });
-  socket.on('interview_ended', ()=>{ alert('The recruiter has ended the interview.'); submitExam('live_recruiter'); });
+async function checkDevice() {
+  if (!proctoringActive || deviceKicked) return;  // FIX: don't check during rules/scan
+  const img = await captureFrame();
+  if (!img) return;
+  try {
+    const data = await fetch('/detect-device', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:img, session_id:sessionData.id})}).then(r=>r.json());
+    if (data.phone_detected) {
+      kickCandidateOut();
+    }
+  } catch(e){}
 }
 
-// ── TIMER ──────────────────────────────────────────────────────────────────────
-function startTimer() {
-  let left = 45*60;
-  timerInterval = setInterval(()=>{
-    const m=Math.floor(left/60), s=left%60;
-    const el=document.getElementById('timer');
-    el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    if (left<=300) el.classList.add('warn');
-    if (left===0) { clearInterval(timerInterval); submitExam(sessionData?.mode||'mcq'); }
-    left--;
-  },1000);
+function kickCandidateOut() {
+  deviceKicked = true;
+  clearInterval(deviceCheckInterval);
+  const overlay = document.getElementById('device-kicked-overlay');
+  overlay.style.display = 'flex';
+  kickClearSec = 10;
+  document.getElementById('kick-countdown').textContent = kickClearSec;
+  kickInterval = setInterval(() => {
+    kickClearSec--;
+    document.getElementById('kick-countdown').textContent = kickClearSec;
+    if (kickClearSec <= 0) clearInterval(kickInterval);
+  }, 1000);
 }
 
-// ── SUBMIT ─────────────────────────────────────────────────────────────────────
-async function submitExam(mode, aiScore=0, aiFeedback={}) {
+async function requestRejoin() {
+  if (kickClearSec > 0) {
+    alert(`Please wait ${kickClearSec} more seconds before trying to rejoin.`);
+    return;
+  }
+  // Do one final device check
+  const img = await captureFrame();
+  if (!img) { alert('Camera not ready'); return; }
+  const data = await fetch('/detect-device', {method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({image:img, session_id:sessionData.id})}).then(r=>r.json());
+  if (data.phone_detected) {
+    kickClearSec = 10;
+    document.getElementById('kick-countdown').textContent = kickClearSec;
+    kickInterval = setInterval(()=>{ kickClearSec--; document.getElementById('kick-countdown').textContent=kickClearSec; if(kickClearSec<=0) clearInterval(kickInterval); },1000);
+    alert('Device still detected! Please ensure the area is clear of all prohibited devices.');
+    return;
+  }
+  // Clear — allow back in
+  deviceKicked = false;
+  document.getElementById('device-kicked-overlay').style.display = 'none';
+  deviceCheckInterval = setInterval(checkDevice, 7000);
+}
+
+async function logViolation(type) {
+  try {
+    await fetch('/log-violation', {method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({violation_type:type, session_id:sessionData.id})});
+  } catch(e){}
+}
+
+// ── MCQ ────────────────────────────────────────────────────────────────────────
+function loadInterviewMode() {
+  const mode = sessionData.mode;
+  if (mode === 'mcq') { document.getElementById('mcq-area').style.display='block'; loadMCQ(); }
+  else if (mode === 'ai_interview') { document.getElementById('ai-area').style.display='block'; loadAI(); }
+  else if (mode === 'live_recruiter') { document.getElementById('live-area').style.display='block'; }
+}
+
+function loadMCQ() {
+  document.getElementById('mcq-job-title').textContent = `📝 ${sessionData.job_role} — MCQ Exam`;
+  renderDots();
+  renderQuestion();
+}
+
+function renderDots() {
+  document.getElementById('q-dots').innerHTML = questions.map((q,i) =>
+    `<div class="qdot ${answers[i]?'ans':''} ${i===currentQ?'curr':''}" onclick="goToQ(${i})" title="Q${i+1}"></div>`
+  ).join('');
+}
+
+function renderQuestion() {
+  if (!questions.length) return;
+  const q = questions[currentQ];
+  document.getElementById('q-num').textContent = `Question ${currentQ+1} of ${questions.length}`;
+  document.getElementById('q-text').textContent = q.question_text;
+  const opts = ['a','b','c','d'];
+  document.getElementById('options').innerHTML = opts.map(k=>`
+    <div class="opt ${answers[currentQ]===k?'selected':''}" onclick="selectOpt('${k}')">
+      <div class="opt-letter">${k.toUpperCase()}</div>
+      <div>${q.options[k]}</div>
+    </div>`).join('');
+  renderDots();
+}
+
+function selectOpt(key) {
+  answers[currentQ] = key;
+  renderQuestion();
+}
+function nextQ() { if (currentQ<questions.length-1) { currentQ++; renderQuestion(); } }
+function prevQ() { if (currentQ>0) { currentQ--; renderQuestion(); } }
+function goToQ(i) { currentQ=i; renderQuestion(); }
+
+function showSubmitConfirm() {
+  const answered = Object.keys(answers).length;
+  const unanswered = questions.length - answered;
+  const msg = unanswered > 0
+    ? `You have ${unanswered} unanswered question(s). Submit anyway?`
+    : 'Submit your exam now?';
+  if (confirm(msg)) submitInterview('manual');
+}
+
+// ── AI Interview ───────────────────────────────────────────────────────────────
+async function loadAI() {
+  document.getElementById('ai-q-text').textContent = 'Generating your interview questions…';
+  try {
+    const data = await fetch('/api/ai-generate-questions', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({job_role:sessionData.job_role})}).then(r=>r.json());
+    aiQuestions = data.questions || [];
+    aiCurrentQ = 0;
+    displayAIQuestion();
+  } catch(e) {
+    document.getElementById('ai-q-text').textContent = 'Error loading questions. Please leave and rejoin.';
+  }
+}
+
+function displayAIQuestion() {
+  if (aiCurrentQ >= aiQuestions.length) { submitInterview('ai_complete'); return; }
+  const q = aiQuestions[aiCurrentQ];
+  document.getElementById('ai-q-text').textContent = q.question || q.question_text;
+  document.getElementById('ai-answer-input').value = '';
+  document.getElementById('ai-q-counter').textContent = `${aiCurrentQ+1} / ${aiQuestions.length}`;
+  const isLast = aiCurrentQ >= aiQuestions.length - 1;
+  const btn = document.getElementById('ai-next-btn');
+  btn.textContent = isLast ? '✓ Finish Interview' : 'Next Question →';
+  // Speak the question
+  speakText(q.question || q.question_text);
+  document.getElementById('ai-speak-bars').style.display='flex';
+}
+
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.9; utt.lang = 'en-US';
+  utt.onend = () => document.getElementById('ai-speak-bars').style.display='none';
+  speechSynthesis.speak(utt);
+}
+
+async function aiNextQuestion() {
+  const answer = document.getElementById('ai-answer-input').value.trim();
+  if (!answer) { alert('Please type your answer before continuing.'); return; }
+  const q = aiQuestions[aiCurrentQ];
+  // Evaluate in background
+  try {
+    const evalData = await fetch('/api/ai-evaluate-answer', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question:q.question||q.question_text, answer, job_role:sessionData.job_role, expected_keywords:q.expected_keywords||[]})}).then(r=>r.json());
+    aiTranscript.push({question:q.question||q.question_text, answer, score:evalData.score||5, feedback:evalData.feedback||''});
+  } catch(e) {
+    aiTranscript.push({question:q.question||q.question_text, answer, score:5, feedback:''});
+  }
+  aiCurrentQ++;
+  if (aiCurrentQ >= aiQuestions.length) { submitInterview('ai_complete'); }
+  else { displayAIQuestion(); }
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────────
+async function submitInterview(reason='manual') {
   clearInterval(timerInterval);
-  if (camStream) camStream.getTracks().forEach(t=>t.stop());
-  if (speechSynthesis) speechSynthesis.cancel();
+  clearInterval(faceCheckInterval);
+  clearInterval(deviceCheckInterval);
+  speechSynthesis?.cancel();
+  document.getElementById('submitting-overlay').style.display='flex';
 
-  const answers = {};
-  if (mode==='mcq') {
-    Object.entries(mcqAnswers).forEach(([idx,val])=>{ answers[`q${parseInt(idx)+1}`]=val; });
+  let payload = {session_id: sessionData.id, answers, mode: sessionData.mode, job_role: sessionData.job_role};
+
+  if (sessionData.mode === 'ai_interview') {
+    // Get final AI evaluation
+    try {
+      const finalEval = await fetch('/api/ai-final-evaluation', {method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({transcript:aiTranscript, job_role:sessionData.job_role})}).then(r=>r.json());
+      payload.ai_overall_score = finalEval.overall_score || 0;
+      payload.ai_feedback = finalEval;
+    } catch(e) { payload.ai_overall_score=0; payload.ai_feedback={}; }
   }
 
-  const duration = Math.floor((Date.now()-examStartTime)/1000);
-  const body = {
-    session_id: sessionData?.id,
-    job_role: sessionData?.job_role || 'General',
-    mode, answers,
-    duration_seconds: duration,
-    ai_overall_score: aiScore,
-    ai_feedback: aiFeedback,
-  };
-
   try {
-    const res = await fetch('/submit-test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const data = await res.json();
-    if (data.success) window.location.href = data.redirect;
-    else alert('Submission error: ' + (data.error||'Unknown'));
-  } catch(e) { alert('Network error submitting exam'); }
+    const data = await fetch('/submit-test', {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}).then(r=>r.json());
+    if (data.success) {
+      window.location.href = `interview_complete.html?session=${sessionData.id}&sub=${data.submission_id}`;
+    } else {
+      window.location.href = `results.html?id=${data.submission_id||0}`;
+    }
+  } catch(e) {
+    alert('Submission failed. Please contact your recruiter.'); location.reload();
+  }
 }
 
-// ── VIOLATION MONITORS ─────────────────────────────────────────────────────────
-function setupViolationMonitors() {
-  document.addEventListener('visibilitychange', ()=>{ if(examStarted&&document.hidden) logVio('tab_switch'); });
-  document.addEventListener('contextmenu', e=>{ if(examStarted){e.preventDefault();logVio('right_click');} });
-  document.addEventListener('copy', e=>{ if(examStarted){e.preventDefault();logVio('copy_attempt');} });
-  document.addEventListener('paste', e=>{ if(examStarted){e.preventDefault();logVio('paste_attempt');} });
-  document.addEventListener('keydown', e=>{
-    if (!examStarted) return;
-    if (e.keyCode===123||(e.ctrlKey&&e.shiftKey&&[73,74].includes(e.keyCode))||(e.ctrlKey&&e.keyCode===85)) {
-      e.preventDefault(); logVio('devtools');
-    }
-    if (e.key==='PrintScreen'||(e.metaKey&&e.shiftKey&&['3','4','5','s'].includes(e.key))) {
-      e.preventDefault(); logVio('screenshot_attempt');
+// ── Leave ──────────────────────────────────────────────────────────────────────
+function showLeaveMod() { document.getElementById('leave-modal').style.display='flex'; }
+function closeLeaveMod() { document.getElementById('leave-modal').style.display='none'; }
+function confirmLeave() { submitInterview('left_early'); }
+
+// ── Socket ─────────────────────────────────────────────────────────────────────
+function initSocket() {
+  socket = io(window.location.origin, {
+    transports: ['polling', 'websocket'],
+    withCredentials: true,
+    extraHeaders: {
+      'ngrok-skip-browser-warning': 'true'
     }
   });
-  document.addEventListener('fullscreenchange', ()=>{
-    if (!examStarted) return;
-    if (!document.fullscreenElement) {
-      logVio('exit_fullscreen');
+
+  // FIX: Queue to hold an offer that arrives before peerConn is ready
+  let pendingOffer = null;
+
+  socket.on('connect', () => {
+    socket.emit('join_room_event', {room: ROOM_CODE, role: 'candidate'});
+    // FIX: Tell the recruiter we're ready so they know to send the WebRTC offer
+    socket.emit('candidate_ready', {room: ROOM_CODE});
+  });
+
+  socket.on('interview_ended', ()=>{ alert('The recruiter has ended the session.'); submitInterview('recruiter_ended'); });
+
+  // Recruiter joined → unlock the live session
+  socket.on('recruiter_joined', async () => {
+    if (sessionData && sessionData.mode === 'live_recruiter') {
+      const waiting = document.getElementById('recruiter-waiting');
+      const active  = document.getElementById('recruiter-active');
+      if (waiting) waiting.style.display = 'none';
+      if (active)  active.style.display  = 'block';
+      // Now start the actual session
+      await startSession();
+      startTimer();
+      startProctoring();
+    }
+    // FIX: Re-announce readiness so recruiter can send offer even if they joined first
+    socket.emit('candidate_ready', {room: ROOM_CODE});
+  });
+
+  // FIX: Handle WebRTC offer — set up peer connection first, then apply offer
+  socket.on('webrtc_offer', async data => {
+    try {
+      if (!peerConn) {
+        // Store offer and set up peer connection, then apply it
+        pendingOffer = data;
+        await setupCandidatePeerConn();
       }
+      if (pendingOffer) {
+        await peerConn.setRemoteDescription(new RTCSessionDescription(pendingOffer.sdp));
+        const answer = await peerConn.createAnswer();
+        await peerConn.setLocalDescription(answer);
+        socket.emit('webrtc_answer', {sdp: answer, room: ROOM_CODE});
+        pendingOffer = null;
+      }
+    } catch(e) { console.error('WebRTC offer error:', e); }
   });
-  }
 
-// ── VOICE CONFIG ───────────────────────────────────────────────────────────────
-// Default voice settings (used if recruiter didn't configure or for non-AI modes)
-const DEFAULT_VOICE_CFG = {
-  gender: 'female',
-  accent: 'en-IN',
-  tone: 'professional',
-  speed: 0.90,
-  pitch: 1.05
-};
+  socket.on('webrtc_answer', async data => {
+    try { await peerConn?.setRemoteDescription(new RTCSessionDescription(data.sdp)); }
+    catch(e) { console.error('WebRTC answer error:', e); }
+  });
 
-// Tone → speech parameter adjustments
-const TONE_PARAMS = {
-  professional: {speedMod: 0,     pitchMod: 0},
-  friendly:     {speedMod: 0.10,  pitchMod: 0.10},
-  formal:       {speedMod: -0.08, pitchMod: -0.10},
-  energetic:    {speedMod: 0.25,  pitchMod: 0.15},
-  calm:         {speedMod: -0.12, pitchMod: -0.07}
-};
+  socket.on('webrtc_ice_candidate', async data => {
+    try { await peerConn?.addIceCandidate(new RTCIceCandidate(data.candidate)); }
+    catch(e) { console.error('ICE candidate error:', e); }
+  });
 
-function getVoiceConfig() {
-  // Read from localStorage (set by recruiter dashboard when creating session)
-  const roomCode = new URLSearchParams(window.location.search).get('room') || '';
-  let cfg = { ...DEFAULT_VOICE_CFG };
-  try {
-    const stored = localStorage.getItem('voice_cfg_' + roomCode);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      cfg = { ...DEFAULT_VOICE_CFG, ...parsed };
+  // Recruiter text message
+  socket.on('recruiter_message', data => {
+    // Show a non-intrusive toast notification for recruiter messages
+    if (data.message && !data.message.startsWith('[')) {
+      showRecruiterMessage(data.message);
     }
-  } catch(e) {}
-  // Apply tone modifiers on top of base speed/pitch
-  const toneMod = TONE_PARAMS[cfg.tone] || TONE_PARAMS.professional;
-  cfg.speed = Math.max(0.5, Math.min(1.8, cfg.speed + toneMod.speedMod));
-  cfg.pitch = Math.max(0.5, Math.min(2.0, cfg.pitch + toneMod.pitchMod));
-  return cfg;
+  });
 }
 
-function pickVoiceForConfig(voices, cfg) {
-  const femaleName = /zira|female|samantha|victoria|karen|moira|fiona|alice|kate|susan|catherine|heera|veena|raveena|aria|jenny|sonia|ava|nicky/i;
-  const maleName   = /david|mark|daniel|james|richard|ryan|tom|guy|lee|rishi|george|fred|william/i;
-
-  // 1. Try exact lang match
-  let pool = voices.filter(v => v.lang === cfg.accent);
-  // 2. Try language family (en-IN → en-*)
-  if (!pool.length) pool = voices.filter(v => v.lang.startsWith(cfg.accent.split('-')[0]));
-  // 3. Fallback: all voices
-  if (!pool.length) pool = voices;
-  if (!pool.length) return null;
-
-  if (cfg.gender === 'female') {
-    // Prefer named female voice, then any from pool
-    return pool.find(v => femaleName.test(v.name))
-        || pool.find(v => !maleName.test(v.name))
-        || pool[0];
+// FIX: Candidate-side peer connection setup (receives offer, sends answer)
+let peerConn = null;
+async function setupCandidatePeerConn() {
+  if (peerConn) return;
+  const iceServers = sessionData?.ice_servers || [];
+  peerConn = new RTCPeerConnection({iceServers});
+  // Add local camera stream to peer connection so recruiter sees candidate
+  const camVideo = document.getElementById('cam-video');
+  if (camVideo.srcObject) {
+    camVideo.srcObject.getTracks().forEach(t => peerConn.addTrack(t, camVideo.srcObject));
   }
-  if (cfg.gender === 'male') {
-    return pool.find(v => maleName.test(v.name))
-        || pool[pool.length - 1];
+  peerConn.onicecandidate = e => {
+    if (e.candidate) socket.emit('webrtc_ice_candidate', {candidate: e.candidate, room: ROOM_CODE});
+  };
+  peerConn.ontrack = e => {
+    // If candidate receives recruiter's stream (optional), could show it
+    console.log('Received track from recruiter');
+  };
+}
+
+function showRecruiterMessage(text) {
+  // Create a toast for recruiter messages
+  let toast = document.getElementById('recruiter-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'recruiter-toast';
+    toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1a2035;border:1px solid #4361ee;border-radius:12px;padding:14px 20px;max-width:320px;z-index:5000;color:#e8edf5;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+    document.body.appendChild(toast);
   }
-  // neutral
-  return pool[0];
+  toast.innerHTML = `<div style="font-size:11px;color:#6aa3ff;font-weight:700;margin-bottom:6px;text-transform:uppercase;">💬 Recruiter</div>${text}`;
+  toast.style.display = 'block';
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 8000);
 }
 
 init();

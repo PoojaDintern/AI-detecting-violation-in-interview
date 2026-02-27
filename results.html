@@ -7,24 +7,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0f1117;
-  --bg2: #161b27;
-  --s: #1a2035;
-  --s2: #1e2640;
-  --border: #2a3350;
-  --border2: #334066;
-  --accent: #4f8ef7;
-  --accent2: #6aa3ff;
-  --accent-light: rgba(79,142,247,0.12);
-  --accent-glow: rgba(79,142,247,0.2);
-  --green: #10b981;
-  --red: #ef4444;
-  --yellow: #f59e0b;
-  --text: #e8edf5;
-  --text2: #c5cde0;
-  --muted: #7a88a8;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.4);
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
 }
 
 
@@ -35,7 +38,7 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);mi
 .back-btn:hover{color:var(--text);border-color:var(--accent);}
 /* HEADER CARD */
 .result-header{background:var(--s);border:1px solid var(--border);border-radius:20px;padding:36px;margin-bottom:24px;text-align:center;position:relative;overflow:hidden;}
-.result-header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(13,31,60,0.08) 0%,transparent 70%);}
+.result-header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(67,97,238,0.06) 0%,transparent 70%);}
 .result-header h1{font-family:'Playfair Display', serif;font-size:30px;font-weight:800;margin-bottom:6px;position:relative;}
 .candidate-info{font-size:15px;color:var(--muted);position:relative;}
 .candidate-info strong{color:var(--text);}
@@ -43,7 +46,7 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);mi
 .scores-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
 .score-card{background:var(--s);border:1px solid var(--border);border-radius:18px;padding:28px;text-align:center;}
 .circle-wrap{position:relative;width:140px;height:140px;margin:0 auto 16px;}
-.circle-bg{fill:none;stroke:var(--s2);stroke-width:10;}
+.circle-bg{fill:none;stroke:#e2e8f4;stroke-width:10;}
 .circle-fill{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1.2s ease;transform:rotate(-90deg);transform-origin:50% 50%;}
 .circle-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .circle-val{font-family:'Playfair Display', serif;font-size:36px;font-weight:800;}
@@ -52,8 +55,8 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);mi
 .score-desc{font-size:13px;color:var(--muted);}
 /* VERDICT */
 .verdict{padding:20px 28px;border-radius:14px;text-align:center;margin-bottom:24px;font-family:'Playfair Display', serif;font-size:22px;font-weight:700;}
-.verdict.passed{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#34d399;}
-.verdict.failed{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
+.verdict.passed{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);color:#059669;}
+.verdict.failed{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);color:#991b1b;}
 /* CARDS */
 .card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
 .card-title{font-family:'Playfair Display', serif;font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
@@ -77,22 +80,22 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);mi
 .vio-type{font-size:13px;font-weight:500;}
 .vio-time{font-size:11px;color:var(--muted);}
 /* AI FEEDBACK */
-.ai-summary{background:rgba(13,31,60,0.04);border:1px solid rgba(13,31,60,0.15);border-radius:12px;padding:18px;margin-bottom:16px;font-size:14px;line-height:1.7;color:#c4b5fd;}
+.ai-summary{background:rgba(67,97,238,0.03);border:1px solid rgba(13,31,60,0.15);border-radius:12px;padding:18px;margin-bottom:16px;font-size:14px;line-height:1.7;color:#c4b5fd;}
 .strength-list,.improve-list{display:flex;flex-direction:column;gap:6px;}
 .item-row{display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:8px;font-size:13px;}
-.item-row.strength{background:rgba(16,185,129,.07);}
-.item-row.improve{background:rgba(245,158,11,.07);}
+.item-row.strength{background:rgba(5,150,105,.07);}
+.item-row.improve{background:rgba(217,119,6,.07);}
 /* BUTTONS */
 .action-row{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
 .btn{padding:13px 24px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans', sans-serif;transition:all .25s;border:none;}
-.btn-primary{background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(13,31,60,0.2);}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(67,97,238,0.08);}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(13,31,60,0.3);}
 .btn-secondary{background:var(--s2);color:var(--text);border:1px solid var(--border);}
 .btn-secondary:hover{border-color:var(--accent);color:var(--accent2);}
-.btn-retake{background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);}
-.btn-retake:hover{background:rgba(16,185,129,.22);}
+.btn-retake{background:rgba(5,150,105,.08);color:#047857;border:1px solid rgba(5,150,105,.25);}
+.btn-retake:hover{background:rgba(5,150,105,.16);}
 /* RETAKE MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:999;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 .modal-bg.show{display:flex;}
 .modal-card{background:var(--s);border:1px solid var(--border);border-radius:20px;padding:36px;max-width:460px;width:100%;}
 .modal-card h2{font-family:'Playfair Display', serif;font-size:24px;margin-bottom:10px;}
@@ -100,7 +103,7 @@ body{font-family:'DM Sans', sans-serif;background:var(--bg);color:var(--text);mi
 .modal-card select{width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans', sans-serif;outline:none;margin-bottom:10px;}
 .mode-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
 .mm{border:2px solid var(--border);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;font-size:12px;transition:all .2s;}
-.mm:hover,.mm.sel{border-color:var(--accent);background:rgba(13,31,60,0.06);}
+.mm:hover,.mm.sel{border-color:var(--accent);background:rgba(67,97,238,0.05);}
 .mm-icon{font-size:22px;margin-bottom:4px;}
 .mm-lbl{font-weight:600;}
 .modal-btns{display:flex;gap:10px;}
@@ -117,8 +120,8 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(circle at 20% 20%, rgba(13,31,60,0.05) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, rgba(37,99,235,0.04) 0%, transparent 50%);
+  background-image: radial-gradient(circle at 20% 20%, rgba(67,97,238,0.04) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(99,122,255,0.03) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -146,10 +149,10 @@ table {
 }
 
 /* Stat top bar glow */
-.stat.blue::before { background: linear-gradient(90deg, var(--accent), #4a6fa5); }
-.stat.green::before { background: linear-gradient(90deg, var(--green), #34d399); }
+.stat.blue::before { background: linear-gradient(90deg, #4361ee, #6d83f3); }
+.stat.green::before { background: linear-gradient(90deg, #059669, #10b981); }
 .stat.yellow::before { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
-.stat.red::before { background: linear-gradient(90deg, var(--red), #fc8181); }
+.stat.red::before { background: linear-gradient(90deg, #dc2626, #ef4444); }
 .stat.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
 .stat.teal::before { background: linear-gradient(90deg, #0d9488, #2dd4bf); }
 
@@ -184,8 +187,8 @@ body::before {
   position: fixed;
   inset: 0;
   background-image: 
-    radial-gradient(ellipse at 15% 25%, rgba(13,31,60,0.06) 0%, transparent 45%),
-    radial-gradient(ellipse at 85% 75%, rgba(13,31,60,0.03) 0%, transparent 45%);
+    radial-gradient(ellipse at 15% 25%, rgba(67,97,238,0.05) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 75%, rgba(67,97,238,0.02) 0%, transparent 45%);
   pointer-events: none;
   z-index: 0;
 }
@@ -240,7 +243,7 @@ async function init() {
   currentUser = auth;
 
   // ── CANDIDATES: blocked from viewing scores/report entirely ──────────────────
-  if (!auth.is_admin) {
+  if (auth.role === 'candidate') {
     document.getElementById('results-content').innerHTML = `
       <div style="max-width:580px;margin:0 auto;padding:20px 0 60px;">
 
@@ -248,7 +251,7 @@ async function init() {
         <div style="text-align:center;margin-bottom:36px;">
           <div style="display:inline-flex;align-items:center;justify-content:center;
                       width:90px;height:90px;border-radius:50%;
-                      background:rgba(16,185,129,.12);border:2px solid rgba(16,185,129,.35);
+                      background:rgba(5,150,105,.08);border:2px solid rgba(16,185,129,.35);
                       font-size:44px;margin-bottom:20px;
                       animation:confirmPop .55s cubic-bezier(.34,1.56,.64,1) both;">✅</div>
           <h1 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:800;
@@ -259,7 +262,7 @@ async function init() {
         </div>
 
         <!-- Confidentiality notice -->
-        <div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.28);
+        <div style="background:rgba(217,119,6,.07);border:1px solid rgba(245,158,11,.28);
                     border-radius:13px;padding:16px 20px;margin-bottom:20px;
                     display:flex;align-items:flex-start;gap:13px;">
           <div style="font-size:22px;flex-shrink:0;">🔒</div>
@@ -289,7 +292,7 @@ async function init() {
                 <div style="display:flex;flex-direction:column;align-items:center;gap:0;">
                   <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
                               display:flex;align-items:center;justify-content:center;font-size:16px;
-                              background:${state==='done'?'rgba(16,185,129,.15)':state==='active'?'rgba(79,142,247,.15)':'rgba(255,255,255,.05)'};
+                              background:${state==='done'?'rgba(5,150,105,.1)':state==='active'?'rgba(79,142,247,.15)':'rgba(255,255,255,.05)'};
                               border:1.5px solid ${state==='done'?'rgba(16,185,129,.4)':state==='active'?'rgba(79,142,247,.4)':'rgba(255,255,255,.1)'};">
                     ${icon}
                   </div>
@@ -464,7 +467,7 @@ function renderResults(data) {
     <div class="card">
       <div class="card-title">🤖 AI Evaluation</div>
       <div class="ai-summary">${aiFeedback.summary}</div>
-      ${aiFeedback.recommendation?`<div style="margin-bottom:16px;padding:12px 16px;background:rgba(13,31,60,0.06);border-radius:10px;font-size:14px;font-weight:600;">Recommendation: <span style="color:var(--accent2)">${aiFeedback.recommendation}</span></div>`:''}
+      ${aiFeedback.recommendation?`<div style="margin-bottom:16px;padding:12px 16px;background:rgba(67,97,238,0.05);border-radius:10px;font-size:14px;font-weight:600;">Recommendation: <span style="color:var(--accent2)">${aiFeedback.recommendation}</span></div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         ${aiFeedback.strengths?.length?`<div><div style="font-size:12px;color:var(--green);font-weight:700;text-transform:uppercase;margin-bottom:8px;letter-spacing:.04em;">Strengths</div><div class="strength-list">${aiFeedback.strengths.map(s=>`<div class="item-row strength">✅ ${s}</div>`).join('')}</div></div>`:''}
         ${aiFeedback.improvements?.length?`<div><div style="font-size:12px;color:var(--yellow);font-weight:700;text-transform:uppercase;margin-bottom:8px;letter-spacing:.04em;">Improve</div><div class="improve-list">${aiFeedback.improvements.map(s=>`<div class="item-row improve">📈 ${s}</div>`).join('')}</div></div>`:''}
@@ -473,8 +476,8 @@ function renderResults(data) {
 
     <div class="action-row">
       <button class="btn btn-primary" onclick="window.location.href='/download-report/${sub.id}'">📥 Download PDF Report</button>
-      ${!currentUser.is_admin ? `<button class="btn btn-retake" onclick="showRetakeModal()">🔄 Retake Exam (Score Resets)</button>` : ''}
-      ${currentUser.is_admin ? `<button class="btn btn-secondary" onclick="window.location.href='recruiter_dashboard.html'">← Dashboard</button>` : ''}
+      ${currentUser.role === 'candidate' ? `<button class="btn btn-retake" onclick="showRetakeModal()">🔄 Retake Exam (Score Resets)</button>` : ''}
+      ${currentUser.role !== 'candidate' ? `<button class="btn btn-secondary" onclick="window.location.href='recruiter_dashboard.html'">← Dashboard</button>` : ''}
     </div>
   `;
 

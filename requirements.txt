@@ -6,6 +6,7 @@ Flask-SocketIO==5.3.6
 Flask-CORS==4.0.0
 
 # Database Drivers
+psycopg2-binary==2.9.9
 pyodbc==5.0.1
 SQLAlchemy==2.0.23
 
@@ -27,6 +28,12 @@ python-engineio==4.8.0
 # Event-driven networking (for SocketIO)
 eventlet==0.33.3
 greenlet==3.0.1
+
+# AI - Gemini
+google-generativeai==0.7.2
+
+# Email via Resend (no per-user SMTP setup needed)
+resend==2.0.0
 
 # Additional utilities
 python-dotenv==1.0.0
