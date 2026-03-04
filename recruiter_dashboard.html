@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Recruiter Dashboard — RecruitAI</title>
+<title>Company Dashboard — RecruitAI</title>
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
@@ -126,7 +126,17 @@ tr:hover td{background:rgba(79,142,247,0.03);}
 <div class="topbar">
   <div class="brand">🤖 RecruitAI</div>
   <div class="topbar-right">
-    <span>Welcome, <strong id="admin-name">…</strong></span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div id="company-logo-wrap" style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0;">
+        <img id="company-logo-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+        <span id="company-logo-initials">?</span>
+      </div>
+      <div style="line-height:1.3;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);" id="admin-name">…</div>
+        <div style="font-size:11px;color:var(--muted);" id="company-tagline">Company Account</div>
+      </div>
+    </div>
+    <button onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⚙️ Settings</button>
     <a href="/logout" class="logout-btn">Logout</a>
   </div>
 </div>
@@ -138,11 +148,11 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <div class="nav-item" data-page="applicants" onclick="showPage('applicants',this)"><span class="nav-icon">👥</span>Applicants</div>
     <div class="nav-item" data-page="create" onclick="showPage('create',this)"><span class="nav-icon">➕</span>Create Interview</div>
     <div class="nav-item" data-page="sessions" onclick="showPage('sessions',this)"><span class="nav-icon">📋</span>Sessions</div>
-    <div class="nav-item" data-page="live" onclick="showPage('live',this)"><span class="nav-icon">🔴</span>Live Monitor</div>
-    <div class="nav-item" data-page="candidates" onclick="showPage('candidates',this)"><span class="nav-icon">🧑‍💼</span>Candidates</div>
     <div class="nav-item" data-page="scheduled" onclick="showPage('scheduled',this)"><span class="nav-icon">📅</span>Scheduled</div>
+    <div class="nav-item" data-page="interviewers" onclick="showPage('interviewers',this)"><span class="nav-icon">🎙️</span>Interviewers</div>
     <div class="nav-item" data-page="emailsettings" onclick="showPage('emailsettings',this)"><span class="nav-icon">📧</span>Email Settings</div>
     <div class="nav-item" data-page="roundconfig" onclick="showPage('roundconfig',this)"><span class="nav-icon">🎯</span>Round Config</div>
+    <div class="nav-item" data-page="profile" onclick="showPage('profile',this)"><span class="nav-icon">🏢</span>Company Profile</div>
   </div>
 
   <div class="main">
@@ -191,8 +201,9 @@ tr:hover td{background:rgba(79,142,247,0.03);}
             <input type="text" id="jp-job-title" placeholder="e.g., Senior Software Engineer">
           </div>
           <div class="fg">
-            <label>Company Name <span style="color:var(--red)">*</span></label>
-            <input type="text" id="jp-company" placeholder="e.g., Acme Corp">
+            <label>Company Name</label>
+            <input type="text" id="jp-company" placeholder="Auto-filled from your account" readonly style="background:var(--bg2);cursor:not-allowed;color:var(--muted);">
+            <div style="font-size:11px;color:var(--muted2);margin-top:4px;">🔒 Locked to your company account</div>
           </div>
         </div>
         <div class="form-row">
@@ -251,6 +262,21 @@ tr:hover td{background:rgba(79,142,247,0.03);}
             </select>
           </div>
         </div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Salary Package <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;">( optional )</span></label>
+            <input type="text" id="jp-package" placeholder="e.g., ₹8–12 LPA, $80,000–$100,000/yr, Competitive">
+          </div>
+          <div class="fg">
+            <label>Work Mode</label>
+            <select id="jp-work-mode">
+              <option value="">Select mode…</option>
+              <option value="On-site">On-site</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div style="display:flex;gap:12px;margin-bottom:32px;">
@@ -273,7 +299,18 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       <div class="page-sub">Select a posting to see who applied, then schedule interviews</div>
       <div id="applicants-role-select-card">
         <div class="card">
-          <div class="card-title">🎯 Your Job Postings</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+            <div class="card-title" style="margin-bottom:0;">🎯 Your Job Postings</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label style="font-size:12px;color:var(--muted);font-weight:600;">Filter:</label>
+              <input type="text" id="apps-company-filter" placeholder="Search by company or role…" oninput="filterApplicantPostings(this.value)" style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;width:220px;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+              <select id="apps-status-filter" onchange="filterApplicantPostings(document.getElementById('apps-company-filter').value)" style="padding:7px 11px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
           <div id="applicants-posting-list"><div class="empty">Loading…</div></div>
         </div>
       </div>
@@ -281,7 +318,10 @@ tr:hover td{background:rgba(79,142,247,0.03);}
         <div class="card">
           <div class="card-title">
             <span id="applicants-job-title">Applicants</span>
-            <button class="btn-sm btn-blue" style="margin-left:auto;" onclick="clearApplicantView()">← Back</button>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+              <input type="text" id="apps-candidate-filter" placeholder="Search candidates…" oninput="filterCandidateList(this.value)" style="padding:6px 11px;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;width:180px;">
+              <button class="btn-sm btn-blue" onclick="clearApplicantView()">← Back</button>
+            </div>
           </div>
           <div id="applicants-list"><div class="empty">Loading…</div></div>
         </div>
@@ -378,27 +418,21 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       </div>
     </div>
 
-    <!-- LIVE MONITOR -->
-    <div class="page" id="page-live">
-      <div class="page-title">🔴 Live Monitor</div>
-      <div class="page-sub">Active interview sessions — real-time</div>
-      <div class="live-grid" id="live-grid"><div class="empty" style="grid-column:1/-1">No active sessions</div></div>
-    </div>
-
-    <!-- CANDIDATES -->
-    <div class="page" id="page-candidates">
-      <div class="page-title">Candidates</div>
-      <div class="page-sub">All registered candidates</div>
-      <div class="card"><div id="candidates-table"><div class="empty">Loading…</div></div></div>
-    </div>
-
     <!-- SCHEDULED INTERVIEWS PAGE -->
     <div class="page" id="page-scheduled">
       <div class="page-title">📅 Scheduled Interviews</div>
-      <div class="page-sub">All upcoming and past interviews — join, monitor or view results</div>
+      <div class="page-sub">Track all interviews by status — upcoming, live, or completed</div>
+
+      <!-- Tab bar -->
+      <div style="display:flex;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:5px;margin-bottom:24px;width:fit-content;">
+        <button id="sched-tab-upcoming" onclick="setSchedTab('upcoming')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--accent);color:#fff;">🗓️ Upcoming</button>
+        <button id="sched-tab-live" onclick="setSchedTab('live')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);">🔴 Live</button>
+        <button id="sched-tab-completed" onclick="setSchedTab('completed')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);">✅ Completed</button>
+      </div>
+
       <div class="card" style="padding:0;overflow:hidden;">
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-          <div style="font-weight:700;font-size:14px;">🗓️ All Scheduled Sessions</div>
+          <div style="font-weight:700;font-size:14px;" id="sched-tab-label">🗓️ Upcoming Interviews</div>
           <button onclick="loadScheduled()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🔄 Refresh</button>
         </div>
         <div id="scheduled-table" style="max-height:520px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;">
@@ -407,54 +441,124 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       </div>
     </div>
 
+    <!-- INTERVIEWERS PAGE -->
+    <div class="page" id="page-interviewers">
+      <div class="page-title">🎙️ Assigned Interviewers</div>
+      <div class="page-sub">Track interviewers assigned to each interview round — view their status, scores and feedback</div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-weight:700;font-size:14px;">🎙️ All Interviewer Assignments</div>
+          <button onclick="loadInterviewersPage()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🔄 Refresh</button>
+        </div>
+        <div id="interviewers-table" style="max-height:600px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div class="empty">Loading…</div>
+        </div>
+      </div>
+    </div>
+
     <!-- EMAIL SETTINGS PAGE -->
     <div class="page" id="page-emailsettings">
       <div class="page-title">📧 Email Settings</div>
-      <div class="page-sub">Connect your Gmail once — emails send automatically every time you schedule an interview</div>
+      <div class="page-sub">Connect your email provider — emails send automatically every time you schedule an interview</div>
 
-      <div id="email-status-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;max-width:560px;"></div>
+      <div id="email-status-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;max-width:100%;"></div>
 
-      <div class="card" style="max-width:560px;">
-        <div class="card-title">📧 Your Gmail Connection</div>
-        <div style="background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.18);border-radius:12px;padding:18px;margin-bottom:22px;">
-          <div style="font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:12px;">⚡ One-time setup — 3 simple steps:</div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
-              <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">1</span>
-              <span>Go to your Google Account → <strong>Security</strong> → Turn on <strong>2-Step Verification</strong></span>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
-              <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">2</span>
-              <span>Visit <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--accent);font-weight:600;">myaccount.google.com/apppasswords</a> → Create App Password → Name it <strong>RecruitAI</strong> → Copy the 16-char password</span>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
-              <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">3</span>
-              <span>Paste your Gmail and App Password below → Click <strong>Save &amp; Test</strong></span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <!-- LEFT: Gmail -->
+        <div class="card">
+          <div class="card-title">📧 Gmail Connection</div>
+          <div style="background:linear-gradient(135deg,rgba(234,67,53,.06),rgba(234,67,53,.02));border:1px solid rgba(234,67,53,.2);border-radius:12px;padding:18px;margin-bottom:22px;">
+            <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:12px;">⚡ One-time setup — 3 simple steps:</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#ea4335;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">1</span>
+                <span>Go to your Google Account → <strong>Security</strong> → Turn on <strong>2-Step Verification</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#ea4335;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">2</span>
+                <span>Visit <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#ea4335;font-weight:600;">myaccount.google.com/apppasswords</a> → Create App Password → Name it <strong>RecruitAI</strong> → Copy the 16-char password</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#ea4335;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">3</span>
+                <span>Paste your Gmail and App Password below → Click <strong>Save &amp; Test</strong></span>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="fg" style="margin-bottom:16px;">
-          <label>Your Gmail Address</label>
-          <input type="email" id="es-email" placeholder="yourname@gmail.com" style="width:100%;padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="updateEmailPreview()">
-        </div>
-        <div class="fg" style="margin-bottom:8px;">
-          <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(16-char password — NOT your Gmail login password)</span></label>
-          <div style="position:relative;">
-            <input type="password" id="es-pass" placeholder="abcd efgh ijkl mnop" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-            <button onclick="togglePassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;" title="Show/hide">👁</button>
+          <div class="fg" style="margin-bottom:16px;">
+            <label>Your Gmail Address</label>
+            <input type="email" id="es-email" placeholder="yourname@gmail.com" style="width:100%;padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#ea4335'" onblur="this.style.borderColor='var(--border)'" oninput="updateEmailPreview()">
           </div>
-          <div id="pass-hint" style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep your existing saved password</div>
+          <div class="fg" style="margin-bottom:8px;">
+            <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(16-char — NOT your Gmail login password)</span></label>
+            <div style="position:relative;">
+              <input type="password" id="es-pass" placeholder="abcd efgh ijkl mnop" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#ea4335'" onblur="this.style.borderColor='var(--border)'">
+              <button onclick="togglePassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;" title="Show/hide">👁</button>
+            </div>
+            <div id="pass-hint" style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep your existing saved password</div>
+          </div>
+          <div id="email-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:4px;font-size:12px;color:var(--muted);">
+            📬 Candidates will receive emails <strong>from</strong>: <span id="preview-addr" style="color:#ea4335;font-weight:600;"></span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
+            <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:12px 28px;background:#ea4335;">💾 Save &amp; Test Gmail</button>
+            <button onclick="clearEmailSettings()" style="padding:12px 20px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Disconnect</button>
+          </div>
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">🔒 <strong>Secure:</strong> App Password stored in DB, never shown again</div>
+            <div style="background:rgba(234,67,53,.06);border:1px solid rgba(234,67,53,.15);border-radius:9px;padding:12px;font-size:12px;color:#b91c1c;line-height:1.6;">✉️ <strong>Personal:</strong> Candidates see your Gmail as sender</div>
+          </div>
         </div>
-        <div id="email-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:4px;font-size:12px;color:var(--muted);">
-          📬 Candidates will receive emails <strong>from</strong>: <span id="preview-addr" style="color:var(--accent2);font-weight:600;"></span>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
-          <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:12px 28px;">💾 Save &amp; Test Connection</button>
-          <button onclick="clearEmailSettings()" style="padding:12px 20px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Disconnect</button>
-        </div>
-        <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">🔒 <strong>Secure:</strong> App Password is stored in DB, never shown again</div>
-          <div style="background:rgba(67,97,238,.06);border:1px solid rgba(67,97,238,.15);border-radius:9px;padding:12px;font-size:12px;color:var(--accent2);line-height:1.6;">✉️ <strong>Personal:</strong> Candidates see your Gmail as sender</div>
+
+        <!-- RIGHT: Outlook -->
+        <div class="card">
+          <div class="card-title">🔵 Outlook / Microsoft 365</div>
+          <div id="outlook-status-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;"></div>
+          <div style="background:linear-gradient(135deg,rgba(0,120,212,.06),rgba(0,120,212,.02));border:1px solid rgba(0,120,212,.2);border-radius:12px;padding:18px;margin-bottom:22px;">
+            <div style="font-size:13px;font-weight:700;color:#0078d4;margin-bottom:12px;">⚡ Setup steps for Outlook / Microsoft 365:</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">1</span>
+                <span>Go to <a href="https://account.microsoft.com/security" target="_blank" style="color:#0078d4;font-weight:600;">account.microsoft.com/security</a> → Enable <strong>Two-step verification</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">2</span>
+                <span>Under Advanced security → <strong>App passwords</strong> → Create a new app password for <strong>RecruitAI</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">3</span>
+                <span>Enter your Outlook email and the app password below → Click <strong>Save &amp; Test</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">4</span>
+                <span><strong>SMTP Server:</strong> smtp-mail.outlook.com &nbsp;·&nbsp; <strong>Port:</strong> 587 (STARTTLS)</span>
+              </div>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:16px;">
+            <label>Your Outlook / Microsoft Email</label>
+            <input type="email" id="ol-email" placeholder="yourname@outlook.com" style="width:100%;padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#0078d4'" onblur="this.style.borderColor='var(--border)'" oninput="updateOutlookPreview()">
+            <div style="font-size:11px;color:var(--muted2);margin-top:4px;">Supports @outlook.com, @hotmail.com, @live.com, @microsoft.com</div>
+          </div>
+          <div class="fg" style="margin-bottom:8px;">
+            <label>App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(NOT your Microsoft login password)</span></label>
+            <div style="position:relative;">
+              <input type="password" id="ol-pass" placeholder="App password from Microsoft account" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#0078d4'" onblur="this.style.borderColor='var(--border)'">
+              <button onclick="toggleOutlookPassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;" title="Show/hide">👁</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep your existing saved password</div>
+          </div>
+          <div id="outlook-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:4px;font-size:12px;color:var(--muted);">
+            📬 Candidates will receive emails <strong>from</strong>: <span id="outlook-preview-addr" style="color:#0078d4;font-weight:600;"></span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
+            <button onclick="saveOutlookSettings()" id="ol-save-btn" style="padding:12px 28px;background:#0078d4;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;">💾 Save &amp; Test Outlook</button>
+            <button onclick="clearOutlookSettings()" style="padding:12px 20px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Disconnect</button>
+          </div>
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:rgba(0,120,212,.06);border:1px solid rgba(0,120,212,.15);border-radius:9px;padding:12px;font-size:12px;color:#0078d4;line-height:1.6;">🔒 <strong>Secure:</strong> Stored encrypted, never shown again</div>
+            <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">✉️ <strong>Works with:</strong> Outlook, Hotmail, Microsoft 365</div>
+          </div>
         </div>
       </div>
     </div>
@@ -572,8 +676,198 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       </div><!-- /inner width wrapper -->
     </div><!-- /page-roundconfig -->
 
+    <!-- COMPANY PROFILE PAGE -->
+    <div class="page" id="page-profile">
+      <div class="page-title">🏢 Company Profile &amp; Settings</div>
+      <div class="page-sub">Manage your company details, branding and account security</div>
+
+      <div id="profile-save-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <!-- LEFT COL -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Company Logo & Avatar -->
+          <div class="card">
+            <div class="card-title">🖼️ Company Logo</div>
+            <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;">
+              <div style="position:relative;">
+                <div id="profile-logo-preview" style="width:90px;height:90px;border-radius:18px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#fff;overflow:hidden;border:3px solid var(--border);">
+                  <img id="profile-logo-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                  <span id="profile-logo-letter">?</span>
+                </div>
+                <label for="profile-logo-input" style="position:absolute;bottom:-6px;right:-6px;width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);" title="Upload logo">📷</label>
+                <input type="file" id="profile-logo-input" accept="image/*" style="display:none;" onchange="previewLogo(this)">
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:14px;" id="profile-company-display">Your Company</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px;">Click the camera icon to upload your logo</div>
+                <div style="font-size:11px;color:var(--muted2);margin-top:2px;">Recommended: 200×200px, PNG or JPG, max 2MB</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Company Info -->
+          <div class="card">
+            <div class="card-title">🏢 Company Information</div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Company Name <span style="color:var(--red)">*</span></label>
+              <input type="text" id="prof-company-name" placeholder="Your company's full legal name">
+            </div>
+            <div class="form-row">
+              <div class="fg">
+                <label>Industry</label>
+                <select id="prof-industry">
+                  <option value="">Select industry…</option>
+                  <option>Technology</option>
+                  <option>Finance &amp; Banking</option>
+                  <option>Healthcare</option>
+                  <option>Education</option>
+                  <option>E-Commerce &amp; Retail</option>
+                  <option>Manufacturing</option>
+                  <option>Consulting</option>
+                  <option>Media &amp; Entertainment</option>
+                  <option>Real Estate</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Company Size</label>
+                <select id="prof-size">
+                  <option value="">Select size…</option>
+                  <option>1–10 employees</option>
+                  <option>11–50 employees</option>
+                  <option>51–200 employees</option>
+                  <option>201–1000 employees</option>
+                  <option>1000+ employees</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Company Website</label>
+              <input type="url" id="prof-website" placeholder="https://yourcompany.com">
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label>About / Description</label>
+              <textarea id="prof-about" placeholder="Brief description of your company, culture and what you do…" style="min-height:90px;"></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COL -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Account Settings -->
+          <div class="card">
+            <div class="card-title">👤 Contact Person</div>
+            <div class="form-row">
+              <div class="fg">
+                <label>First Name</label>
+                <input type="text" id="prof-firstname" placeholder="e.g. Rahul">
+              </div>
+              <div class="fg">
+                <label>Last Name</label>
+                <input type="text" id="prof-lastname" placeholder="e.g. Sharma">
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label>Contact Email <span style="color:var(--muted2);font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;">(login email)</span></label>
+              <input type="email" id="prof-email" placeholder="contact@yourcompany.com" readonly style="background:var(--bg2);cursor:not-allowed;color:var(--muted);">
+              <div style="font-size:11px;color:var(--muted2);margin-top:4px;">🔒 Email cannot be changed. Contact support to update it.</div>
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="card">
+            <div class="card-title">🔑 Change Password</div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Current Password</label>
+              <div style="position:relative;">
+                <input type="password" id="prof-cur-pass" placeholder="Your current password" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                <button onclick="toggleProfPassVis('prof-cur-pass')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;">👁</button>
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>New Password</label>
+              <div style="position:relative;">
+                <input type="password" id="prof-new-pass" placeholder="Min 8 characters" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="checkPassStrength(this.value)">
+                <button onclick="toggleProfPassVis('prof-new-pass')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;">👁</button>
+              </div>
+              <div id="pass-strength-bar" style="height:4px;border-radius:2px;margin-top:8px;transition:all .3s;background:var(--border);"></div>
+              <div id="pass-strength-label" style="font-size:11px;color:var(--muted2);margin-top:4px;"></div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label>Confirm New Password</label>
+              <div style="position:relative;">
+                <input type="password" id="prof-conf-pass" placeholder="Re-enter new password" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                <button onclick="toggleProfPassVis('prof-conf-pass')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;">👁</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save button -->
+          <button class="btn-primary" onclick="saveCompanyProfile()" style="padding:14px 32px;font-size:15px;width:100%;">💾 Save All Changes</button>
+
+        </div>
+      </div>
+    </div>
+
   </div><!-- /.main -->
 </div><!-- /.layout -->
+
+<!-- FOOTER -->
+<footer style="background:var(--s);border-top:1px solid var(--border);padding:32px 48px;margin-top:0;position:relative;z-index:1;">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;align-items:start;">
+    <!-- Brand -->
+    <div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);margin-bottom:10px;">🤖 RecruitAI</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;max-width:280px;">AI-powered hiring platform for modern companies. Automate interviews, proctoring and candidate evaluation — all in one place.</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:16px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulseDot 2s infinite;"></div>
+        <span style="font-size:12px;color:#059669;font-weight:600;">All systems operational</span>
+      </div>
+    </div>
+    <!-- Platform -->
+    <div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">Platform</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <a onclick="showPage('overview',document.querySelector('[data-page=overview]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Dashboard</a>
+        <a onclick="showPage('jobs',document.querySelector('[data-page=jobs]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Job Postings</a>
+        <a onclick="showPage('scheduled',document.querySelector('[data-page=scheduled]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Scheduled Interviews</a>
+        <a onclick="showPage('interviewers',document.querySelector('[data-page=interviewers]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Interviewers</a>
+      </div>
+    </div>
+    <!-- Settings -->
+    <div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">Settings</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <a onclick="showPage('emailsettings',document.querySelector('[data-page=emailsettings]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Email Settings</a>
+        <a onclick="showPage('roundconfig',document.querySelector('[data-page=roundconfig]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Round Config</a>
+        <a onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Company Profile</a>
+        <a href="/logout" style="font-size:13px;color:var(--red);text-decoration:none;transition:color .15s;" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">Logout</a>
+      </div>
+    </div>
+    <!-- Security -->
+    <div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">Security & Trust</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">🔒 <span>SSL Encrypted</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">🧠 <span>AI Proctoring</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">🛡️ <span>GDPR Compliant</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">📊 <span>Data Analytics</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="max-width:1200px;margin:24px auto 0;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="font-size:12px;color:var(--muted2);">© 2025 RecruitAI · Powered by Gemini AI · Built for modern hiring</div>
+    <div style="font-size:12px;color:var(--muted2);display:flex;gap:20px;">
+      <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted2)'">Privacy Policy</span>
+      <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted2)'">Terms of Service</span>
+      <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted2)'">Support</span>
+    </div>
+  </div>
+</footer>
 
 <!-- Schedule Interview Modal -->
 <div class="modal-overlay hidden" id="schedule-modal">
@@ -823,11 +1117,27 @@ window.fetch = (url, opts={}) => {
 let socket, selectedMode='mcq', schedMode='mcq', lastCreatedSession=null;
 let currentApplicationId=null, allSubmissionsData=[];
 
+let _companyName = '';
+
 async function init() {
   const auth = await fetch('/api/check-auth').then(r=>r.json());
   if (!auth.authenticated || (auth.role !== 'recruiter' && auth.role !== 'admin')) { window.location.href='index.html'; return; }
-  document.getElementById('admin-name').textContent = auth.full_name || auth.username;
-  await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadCandidates(), loadMyPostings()]);
+  // Company-centric display
+  _companyName = auth.company_name || auth.full_name || auth.username;
+  document.getElementById('admin-name').textContent = _companyName;
+  document.getElementById('company-tagline').textContent = auth.full_name ? auth.full_name + ' · Company Account' : 'Company Account';
+  // Logo initials
+  const initials = _companyName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('company-logo-initials').textContent = initials;
+  if (auth.logo_url) {
+    document.getElementById('company-logo-img').src = auth.logo_url;
+    document.getElementById('company-logo-img').style.display = 'block';
+    document.getElementById('company-logo-initials').style.display = 'none';
+  }
+  // Lock company name in job posting form
+  const jpComp = document.getElementById('jp-company');
+  if (jpComp) jpComp.value = _companyName;
+  await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadMyPostings()]);
   initSocket();
 }
 
@@ -901,17 +1211,97 @@ function renderPostingGrid(postings) {
     </div>`).join('')}</div>`;
 }
 
+let _allApplicantPostings = [];
+
 function renderPostingList(postings) {
+  _allApplicantPostings = postings;
+  _renderFilteredPostings(postings);
+}
+
+function filterApplicantPostings(query) {
+  const q = (query||'').toLowerCase().trim();
+  const statusFilter = document.getElementById('apps-status-filter')?.value || '';
+  let filtered = _allApplicantPostings;
+  if (q) {
+    filtered = filtered.filter(p =>
+      p.company_name.toLowerCase().includes(q) ||
+      p.job_role.toLowerCase().includes(q) ||
+      p.job_section.toLowerCase().includes(q) ||
+      (p.job_title||'').toLowerCase().includes(q)
+    );
+  }
+  if (statusFilter === 'active') filtered = filtered.filter(p => p.is_active);
+  else if (statusFilter === 'inactive') filtered = filtered.filter(p => !p.is_active);
+  _renderFilteredPostings(filtered);
+}
+
+function _renderFilteredPostings(postings) {
   const el = document.getElementById('applicants-posting-list');
-  if (!postings.length) { el.innerHTML='<div class="empty">No postings yet. Go to Job Postings to add roles.</div>'; return; }
+  if (!postings.length) { el.innerHTML='<div class="empty">No postings match your filter. Try a different search.</div>'; return; }
   el.innerHTML = postings.map(p=>`
-    <div onclick="viewApplicants(${p.id},'${p.job_role} at ${p.company_name}')" style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+    <div onclick="viewApplicants(${p.id},'${(p.job_title||p.job_role).replace(/'/g,"\\'")} at ${p.company_name.replace(/'/g,"\\'")}')" style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
       <div style="flex:1;">
-        <div style="font-weight:600;font-size:14px;">${p.job_role}</div>
-        <div style="font-size:12px;color:var(--muted);">${p.company_name} · ${p.job_section}</div>
+        <div style="font-weight:700;font-size:14px;">${p.job_title||p.job_role}</div>
+        <div style="font-size:12px;color:var(--muted);">🏢 ${p.company_name} · ${p.job_section}</div>
+        ${p.salary_package?`<div style="font-size:11px;color:var(--green);margin-top:2px;">💰 ${p.salary_package}</div>`:''}
       </div>
-      <span class="badge badge-blue">👥 ${p.application_count}</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="badge badge-blue">👥 ${p.application_count} applied</span>
+        <span class="badge ${p.is_active?'badge-green':'badge-red'}" style="font-size:10px;">${p.is_active?'Active':'Inactive'}</span>
+      </div>
       <span style="color:var(--muted);">→</span>
+    </div>`).join('');
+}
+
+let _allCandidateApps = [];
+
+async function viewApplicants(postingId, title) {
+  document.getElementById('applicants-role-select-card').style.display='none';
+  document.getElementById('applicants-list-card').style.display='block';
+  document.getElementById('applicants-job-title').textContent='👥 '+title;
+  const el=document.getElementById('applicants-list');
+  el.innerHTML='<div class="empty">Loading…</div>';
+  // Clear candidate filter
+  const cf = document.getElementById('apps-candidate-filter');
+  if (cf) cf.value = '';
+  // Switch page
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-applicants').classList.add('active');
+  document.querySelector('[data-page="applicants"]').classList.add('active');
+  const data = await fetch(`/api/job-postings/${postingId}/applications`).then(r=>r.json());
+  _allCandidateApps = data.applications||[];
+  renderCandidateList(_allCandidateApps);
+}
+
+function filterCandidateList(query) {
+  const q = (query||'').toLowerCase().trim();
+  const filtered = q ? _allCandidateApps.filter(a =>
+    a.candidate_name.toLowerCase().includes(q) ||
+    (a.candidate_username||'').toLowerCase().includes(q) ||
+    (a.candidate_email||'').toLowerCase().includes(q) ||
+    (a.status||'').toLowerCase().includes(q)
+  ) : _allCandidateApps;
+  renderCandidateList(filtered);
+}
+
+function renderCandidateList(apps) {
+  const el = document.getElementById('applicants-list');
+  if (!apps.length) { el.innerHTML='<div class="empty">No applicants match your search</div>'; return; }
+  const statusBadge = {applied:'<span class="badge badge-blue">Applied</span>',shortlisted:'<span class="badge badge-yellow">Shortlisted</span>',interview_scheduled:'<span class="badge badge-green">Interview Scheduled</span>',rejected:'<span class="badge badge-red">Rejected</span>'};
+  el.innerHTML = apps.map(a=>`
+    <div class="applicant-card">
+      <div class="applicant-avatar">${(a.candidate_name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:150px;">
+        <div style="font-weight:600;font-size:14px;">${a.candidate_name}</div>
+        <div style="font-size:12px;color:var(--muted);">@${a.candidate_username} · ${a.candidate_email}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Applied ${a.applied_at.split(' ')[0]}</div>
+        ${a.cover_note?`<div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic;background:var(--s);padding:8px 10px;border-radius:6px;">"${a.cover_note}"</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        ${statusBadge[a.status]||a.status}
+        ${a.status!=='interview_scheduled'?`<button class="btn-sm btn-green" onclick="openScheduleModal(${a.id},'${a.candidate_name.replace(/'/g,"\\'")}','${a.job_role}','${a.company_name.replace(/'/g,"\\'")}',(${a.posting_id||0}))">📅 Schedule</button>`:'<span style="font-size:11px;color:var(--green);">✓ Scheduled</span>'}
+      </div>
     </div>`).join('');
 }
 
@@ -968,12 +1358,15 @@ function jpShowError(msg) {
 
 function jpResetForm() {
   if (!confirm('Reset the form? All entered data will be lost.')) return;
-  ['jp-job-title','jp-company','jp-desc'].forEach(id=>{
+  ['jp-job-title','jp-desc','jp-package'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
-  ['jp-section','jp-role','jp-experience','jp-job-type'].forEach(id=>{
+  ['jp-section','jp-role','jp-experience','jp-job-type','jp-work-mode'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
+  // Company name stays locked — re-fill from _companyName
+  const jpComp = document.getElementById('jp-company');
+  if (jpComp) jpComp.value = _companyName;
   jpSkills = [];
   jpRenderSkills();
   document.getElementById('jp-success-alert').style.display='none';
@@ -984,15 +1377,16 @@ async function createJobPosting() {
   const section   = document.getElementById('jp-section').value;
   const role      = document.getElementById('jp-role').value;
   const jobTitle  = document.getElementById('jp-job-title').value.trim();
-  const company   = document.getElementById('jp-company').value.trim();
+  const company   = _companyName; // always use locked company name
   const desc      = document.getElementById('jp-desc').value.trim();
   const experience= document.getElementById('jp-experience').value;
   const jobType   = document.getElementById('jp-job-type').value;
+  const pkg       = document.getElementById('jp-package')?.value?.trim() || '';
+  const workMode  = document.getElementById('jp-work-mode')?.value || '';
 
   // Validation
   if (!section)    { jpShowError('⚠️ Please select a Department / Section.'); return; }
   if (!role)       { jpShowError('⚠️ Please select a Job Role.'); return; }
-  if (!company)    { jpShowError('⚠️ Company Name is required.'); return; }
   if (!desc)       { jpShowError('⚠️ Job Description is required.'); return; }
   if (!jpSkills.length) { jpShowError('⚠️ Please add at least one required skill.'); return; }
   if (!experience) { jpShowError('⚠️ Please select the experience level required.'); return; }
@@ -1014,6 +1408,8 @@ async function createJobPosting() {
         skills_required: jpSkills,
         experience_required: experience,
         job_type: jobType,
+        package: pkg,
+        work_mode: workMode,
       })
     });
     const data = await res.json();
@@ -1034,37 +1430,6 @@ async function deletePosting(id) {
   if (!confirm('Close this job posting? Candidates will no longer see it.')) return;
   const data = await fetch(`/api/job-postings/${id}`,{method:'DELETE'}).then(r=>r.json());
   if (data.success) { showToast('✅ Posting closed'); await loadMyPostings(); }
-}
-
-async function viewApplicants(postingId, title) {
-  document.getElementById('applicants-role-select-card').style.display='none';
-  document.getElementById('applicants-list-card').style.display='block';
-  document.getElementById('applicants-job-title').textContent='👥 '+title;
-  const el=document.getElementById('applicants-list');
-  el.innerHTML='<div class="empty">Loading…</div>';
-  // Switch page
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-applicants').classList.add('active');
-  document.querySelector('[data-page="applicants"]').classList.add('active');
-  const data = await fetch(`/api/job-postings/${postingId}/applications`).then(r=>r.json());
-  const apps = data.applications||[];
-  if (!apps.length) { el.innerHTML='<div class="empty">No applicants yet for this role</div>'; return; }
-  const statusBadge = {applied:'<span class="badge badge-blue">Applied</span>',shortlisted:'<span class="badge badge-yellow">Shortlisted</span>',interview_scheduled:'<span class="badge badge-green">Interview Scheduled</span>',rejected:'<span class="badge badge-red">Rejected</span>'};
-  el.innerHTML = apps.map(a=>`
-    <div class="applicant-card">
-      <div class="applicant-avatar">${(a.candidate_name||'?')[0].toUpperCase()}</div>
-      <div style="flex:1;min-width:150px;">
-        <div style="font-weight:600;font-size:14px;">${a.candidate_name}</div>
-        <div style="font-size:12px;color:var(--muted);">@${a.candidate_username} · ${a.candidate_email}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Applied ${a.applied_at.split(' ')[0]}</div>
-        ${a.cover_note?`<div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic;background:var(--s);padding:8px 10px;border-radius:6px;">"${a.cover_note}"</div>`:''}
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-        ${statusBadge[a.status]||a.status}
-        ${a.status!=='interview_scheduled'?`<button class="btn-sm btn-green" onclick="openScheduleModal(${a.id},'${a.candidate_name.replace(/'/g,"\\'")}','${a.job_role}','${a.company_name.replace(/'/g,"\\'")}',(${a.posting_id||0}))">📅 Schedule</button>`:'<span style="font-size:11px;color:var(--green);">✓ Scheduled</span>'}
-      </div>
-    </div>`).join('');
 }
 
 function clearApplicantView() {
@@ -1430,14 +1795,16 @@ function scoreColor(s) { return s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e'; }
 function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
+  const pg = document.getElementById('page-'+name);
+  if (pg) pg.classList.add('active');
   if (el) el.classList.add('active');
   if (name==='overview'||name==='sessions') loadDashboard();
-  if (name==='candidates') loadCandidates();
   if (name==='jobs'||name==='applicants') loadMyPostings();
   if (name==='emailsettings') loadEmailSettings();
   if (name==='roundconfig') { loadRoundConfigPage(); updateVoicePreview(); }
   if (name==='scheduled') loadScheduled();
+  if (name==='interviewers') loadInterviewersPage();
+  if (name==='profile') loadCompanyProfile();
 }
 function initSocket() {
   socket=io();
@@ -1446,69 +1813,376 @@ function initSocket() {
 }
 function showToast(msg,dur=3500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
 
-// ── Scheduled Interviews ───────────────────────────────────────────────────────
+// ── Scheduled Interviews (tabbed) ──────────────────────────────────────────────
+let _schedAllData = [];
+let _currentSchedTab = 'upcoming';
+
+function setSchedTab(tab) {
+  _currentSchedTab = tab;
+  // Update tab button styles
+  ['upcoming','live','completed'].forEach(t => {
+    const btn = document.getElementById('sched-tab-'+t);
+    if (!btn) return;
+    if (t === tab) {
+      btn.style.background = t==='live' ? '#dc2626' : 'var(--accent)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--muted)';
+    }
+  });
+  const labels = { upcoming:'🗓️ Upcoming Interviews', live:'🔴 Live / Active Interviews', completed:'✅ Completed Interviews' };
+  const lbl = document.getElementById('sched-tab-label');
+  if (lbl) lbl.textContent = labels[tab];
+  renderScheduledTab();
+}
+
+function renderScheduledTab() {
+  const el = document.getElementById('scheduled-table');
+  if (!el) return;
+  const now = new Date();
+  let filtered = [];
+  if (_currentSchedTab === 'upcoming') {
+    filtered = _schedAllData.filter(s => {
+      const st = s.session_status || 'pending';
+      return st !== 'completed' && st !== 'abandoned' && st !== 'active';
+    });
+  } else if (_currentSchedTab === 'live') {
+    filtered = _schedAllData.filter(s => (s.session_status || '') === 'active');
+  } else {
+    filtered = _schedAllData.filter(s => {
+      const st = s.session_status || '';
+      return st === 'completed' || st === 'abandoned';
+    });
+  }
+
+  if (!filtered.length) {
+    const emptyMsgs = { upcoming:'No upcoming interviews scheduled', live:'No live sessions right now', completed:'No completed interviews yet' };
+    el.innerHTML = `<div class="empty">${emptyMsgs[_currentSchedTab]}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(s => {
+    const st = s.session_status || 'pending';
+    const isLive = (s.interview_mode || '') === 'live_recruiter';
+    const isDone = st === 'completed' || st === 'abandoned';
+    const isActive = st === 'active';
+    const modeLabel = (s.interview_mode || 'mcq').replace(/_/g,' ').toUpperCase();
+    const modeColors = {'mcq':'rgba(67,97,238,.1);color:var(--accent2)','ai interview':'rgba(124,58,237,.1);color:#7c3aed','live recruiter':'rgba(5,150,105,.1);color:#059669'};
+    const modeColor = modeColors[(s.interview_mode||'mcq').replace(/_/g,' ')] || 'rgba(67,97,238,.1);color:var(--accent2)';
+    let actionBtn = '';
+    if (!s.room_code) {
+      actionBtn = '<span style="color:var(--muted);font-size:12px;">No room</span>';
+    } else if (isDone) {
+      actionBtn = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Session ended</div>
+        <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;width:100%;">📋 View Results</button>`;
+    } else if (isActive) {
+      const lbl = isLive ? '🎥 Rejoin Session' : '👁 Monitor Live';
+      actionBtn = `<div style="font-size:11px;color:#059669;margin-bottom:4px;font-weight:600;">● In progress</div>
+        <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(5,150,105,.12);color:#059669;border:1px solid rgba(5,150,105,.3);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
+    } else {
+      const lbl = isLive ? '🎥 Join Session' : '👁 Monitor';
+      actionBtn = `<button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
+    }
+    return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
+      <div style="min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.candidate_name||'—'}</div>
+          <span style="background:${modeColor};padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;">${modeLabel}</span>
+          ${isDone?`<span style="background:rgba(100,116,139,.1);color:var(--muted);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">${st==='abandoned'?'⚠ ABANDONED':'✅ COMPLETED'}</span>`:isActive?`<span style="background:rgba(5,150,105,.1);color:#059669;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">● LIVE</span>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">💼 ${s.job_role||'—'} &nbsp;·&nbsp; 🏢 ${s.company_name||''} &nbsp;·&nbsp; 🗓️ ${(s.scheduled_at||'—').split(' ')[0]}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <code style="background:var(--bg2);color:var(--accent2);padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;letter-spacing:1px;">${s.room_code||'—'}</code>
+          ${s.room_code?`<button onclick="navigator.clipboard.writeText('${s.room_code}');showToast('Room code copied!')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;" title="Copy">📋</button>`:''}
+          ${s.round_name?`<span style="font-size:11px;color:var(--muted);">Round: <strong>${s.round_name}</strong></span>`:''}
+          ${isDone && s.session_score!=null?`<span style="font-size:11px;font-weight:700;color:${s.session_score>=60?'#059669':'#dc2626'};">Score: ${s.session_score}%</span>`:''}
+          ${isDone && s.session_credibility!=null?`<span style="font-size:11px;color:var(--muted);">Credibility: <strong>${s.session_credibility}</strong></span>`:''}
+        </div>
+      </div>
+      <div style="min-width:130px;text-align:right;">
+        ${actionBtn}
+        ${s.calendar_link?`<a href="${s.calendar_link}" target="_blank" style="display:inline-block;margin-top:6px;font-size:11px;color:var(--accent2);text-decoration:none;">📅 Calendar</a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 async function loadScheduled() {
   const el = document.getElementById('scheduled-table');
   if (!el) return;
   el.innerHTML = '<div class="empty">Loading…</div>';
   try {
     const data = await fetch('/api/my-scheduled-interviews').then(r=>r.json());
-    if (!data.success || !data.scheduled.length) {
-      el.innerHTML = '<div class="empty">No scheduled interviews yet</div>';
+    _schedAllData = (data.success && data.scheduled) ? data.scheduled : [];
+    renderScheduledTab();
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Failed to load scheduled interviews</div>';
+  }
+}
+
+// ── Outlook Settings ──────────────────────────────────────────────────────────
+function updateOutlookPreview() {
+  const email = (document.getElementById('ol-email')?.value||'').trim();
+  const preview = document.getElementById('outlook-preview');
+  const addr = document.getElementById('outlook-preview-addr');
+  if (preview && addr) {
+    if (email.includes('@')) { preview.style.display='block'; addr.textContent=email; }
+    else { preview.style.display='none'; }
+  }
+}
+
+function toggleOutlookPassVis() {
+  const inp = document.getElementById('ol-pass');
+  if (inp) inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+function showOutlookBanner(type, html) {
+  const b = document.getElementById('outlook-status-banner');
+  if (!b) return;
+  b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.gap = '10px';
+  if (type==='success') { b.style.background='rgba(5,150,105,.08)'; b.style.border='1.5px solid rgba(5,150,105,.25)'; b.style.color='#065f46'; }
+  else if (type==='warn') { b.style.background='rgba(0,120,212,.08)'; b.style.border='1.5px solid rgba(0,120,212,.25)'; b.style.color='#0078d4'; }
+  else { b.style.background='rgba(220,38,38,.07)'; b.style.border='1.5px solid rgba(220,38,38,.2)'; b.style.color='#991b1b'; }
+  b.innerHTML = html;
+}
+
+async function saveOutlookSettings() {
+  const email = document.getElementById('ol-email').value.trim();
+  const pass  = document.getElementById('ol-pass').value.replace(/ /g,'').trim();
+  if (!email) { showOutlookBanner('error','<span>❌</span> Please enter your Outlook email'); return; }
+  const validDomains = ['@outlook.com','@hotmail.com','@live.com','@microsoft.com'];
+  const isValid = validDomains.some(d=>email.endsWith(d)) || email.includes('@');
+  if (!isValid) { showOutlookBanner('warn','<span>⚠️</span> Please enter a valid Outlook/Microsoft email'); return; }
+  const btn = document.getElementById('ol-save-btn');
+  btn.disabled=true; btn.textContent='⏳ Testing connection…';
+  try {
+    const data = await fetch('/api/recruiter/outlook-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({smtp_email:email,smtp_app_password:pass,smtp_provider:'outlook'})}).then(r=>r.json());
+    if (data.success) {
+      showOutlookBanner('success',`<span style="font-size:20px;">✅</span> <div><strong>Outlook connected!</strong><br><span style="font-weight:400;font-size:13px;">Emails will send from ${email}</span></div>`);
+      document.getElementById('ol-pass').value='';
+      document.getElementById('ol-pass').placeholder='✓ Password saved';
+      showToast('✅ Outlook connected!');
+    } else {
+      showOutlookBanner('error',`<span>❌</span> ${data.message||'Connection failed — check your app password'}`);
+    }
+  } catch(e) { showOutlookBanner('error','<span>❌</span> Network error — please try again'); }
+  finally { btn.disabled=false; btn.innerHTML='💾 Save &amp; Test Outlook'; }
+}
+
+async function clearOutlookSettings() {
+  if (!confirm('Disconnect Outlook? Emails will not be sent until you reconnect.')) return;
+  await fetch('/api/recruiter/outlook-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({smtp_email:'',smtp_app_password:'',smtp_provider:'outlook'})});
+  document.getElementById('ol-email').value='';
+  document.getElementById('ol-pass').value='';
+  document.getElementById('ol-pass').placeholder='App password from Microsoft account';
+  document.getElementById('outlook-preview').style.display='none';
+  showOutlookBanner('warn','<span>⚠️</span> <div><strong>Outlook disconnected</strong><br><span style="font-weight:400;font-size:13px;">Reconnect to resume email notifications</span></div>');
+  showToast('Outlook disconnected');
+}
+
+// ── Company Profile Functions ──────────────────────────────────────────────────
+async function loadCompanyProfile() {
+  try {
+    const data = await fetch('/api/recruiter/profile').then(r=>r.json());
+    if (!data.success) return;
+    const p = data.profile || {};
+    const setVal = (id,val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
+    setVal('prof-company-name', p.company_name || _companyName);
+    setVal('prof-firstname', p.first_name);
+    setVal('prof-lastname', p.last_name);
+    setVal('prof-email', p.email);
+    setVal('prof-industry', p.industry);
+    setVal('prof-size', p.company_size);
+    setVal('prof-website', p.website);
+    setVal('prof-about', p.about);
+    document.getElementById('profile-company-display').textContent = p.company_name || _companyName;
+    document.getElementById('profile-logo-letter').textContent = (p.company_name||_companyName||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    if (p.logo_url) {
+      document.getElementById('profile-logo-img').src = p.logo_url;
+      document.getElementById('profile-logo-img').style.display = 'block';
+      document.getElementById('profile-logo-letter').style.display = 'none';
+    }
+  } catch(e) { console.error('Profile load failed',e); }
+}
+
+function previewLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2*1024*1024) { showToast('⚠️ Logo must be under 2MB'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('profile-logo-img');
+    const letter = document.getElementById('profile-logo-letter');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    letter.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function checkPassStrength(val) {
+  const bar = document.getElementById('pass-strength-bar');
+  const lbl = document.getElementById('pass-strength-label');
+  if (!bar || !lbl) return;
+  if (!val) { bar.style.width='0'; bar.style.background='var(--border)'; lbl.textContent=''; return; }
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [{w:'25%',c:'#ef4444',t:'Weak'},{w:'50%',c:'#f59e0b',t:'Fair'},{w:'75%',c:'#3b82f6',t:'Good'},{w:'100%',c:'#10b981',t:'Strong'}];
+  const l = levels[score-1] || levels[0];
+  bar.style.width = l.w; bar.style.background = l.c;
+  lbl.textContent = l.t; lbl.style.color = l.c;
+}
+
+function toggleProfPassVis(fieldId) {
+  const inp = document.getElementById(fieldId);
+  if (inp) inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+function showProfileBanner(type, msg) {
+  const b = document.getElementById('profile-save-banner');
+  if (!b) return;
+  b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.gap = '10px';
+  if (type==='success') { b.style.background='rgba(5,150,105,.08)'; b.style.border='1.5px solid rgba(5,150,105,.25)'; b.style.color='#065f46'; }
+  else { b.style.background='rgba(220,38,38,.07)'; b.style.border='1.5px solid rgba(220,38,38,.2)'; b.style.color='#991b1b'; }
+  b.innerHTML = msg;
+  setTimeout(()=>{ b.style.display='none'; }, 6000);
+}
+
+async function saveCompanyProfile() {
+  const companyName = document.getElementById('prof-company-name')?.value?.trim();
+  const firstName   = document.getElementById('prof-firstname')?.value?.trim();
+  const lastName    = document.getElementById('prof-lastname')?.value?.trim();
+  const curPass     = document.getElementById('prof-cur-pass')?.value;
+  const newPass     = document.getElementById('prof-new-pass')?.value;
+  const confPass    = document.getElementById('prof-conf-pass')?.value;
+
+  if (!companyName) { showProfileBanner('error','<span>❌</span> Company name is required.'); return; }
+
+  // Password change validation (only if filled)
+  if (newPass || confPass || curPass) {
+    if (!curPass) { showProfileBanner('error','<span>❌</span> Please enter your current password to change it.'); return; }
+    if (newPass !== confPass) { showProfileBanner('error','<span>❌</span> New passwords do not match.'); return; }
+    if (newPass.length < 8) { showProfileBanner('error','<span>❌</span> New password must be at least 8 characters.'); return; }
+  }
+
+  // Upload logo if changed
+  let logoUrl = null;
+  const logoInput = document.getElementById('profile-logo-input');
+  if (logoInput?.files?.length) {
+    const formData = new FormData();
+    formData.append('logo', logoInput.files[0]);
+    try {
+      const uploadRes = await fetch('/api/recruiter/upload-logo', { method:'POST', body: formData }).then(r=>r.json());
+      if (uploadRes.url) logoUrl = uploadRes.url;
+    } catch(e) { console.warn('Logo upload failed:', e); }
+  }
+
+  const payload = {
+    company_name: companyName,
+    first_name: firstName,
+    last_name: lastName,
+    industry: document.getElementById('prof-industry')?.value || '',
+    company_size: document.getElementById('prof-size')?.value || '',
+    website: document.getElementById('prof-website')?.value?.trim() || '',
+    about: document.getElementById('prof-about')?.value?.trim() || '',
+    ...(logoUrl ? { logo_url: logoUrl } : {}),
+    ...(newPass ? { current_password: curPass, new_password: newPass } : {}),
+  };
+
+  try {
+    const data = await fetch('/api/recruiter/profile', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+    if (data.success) {
+      _companyName = companyName;
+      document.getElementById('admin-name').textContent = companyName;
+      document.getElementById('profile-company-display').textContent = companyName;
+      const jpComp = document.getElementById('jp-company');
+      if (jpComp) jpComp.value = companyName;
+      // Clear password fields
+      ['prof-cur-pass','prof-new-pass','prof-conf-pass'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      showProfileBanner('success','<span style="font-size:20px;">✅</span> <div><strong>Profile saved!</strong><br><span style="font-weight:400;">Your company details have been updated.</span></div>');
+      showToast('✅ Company profile saved!');
+    } else {
+      showProfileBanner('error','<span>❌</span> ' + (data.message||'Failed to save profile.'));
+    }
+  } catch(e) { showProfileBanner('error','<span>❌</span> Network error. Please try again.'); }
+}
+
+// ── Interviewers Page ─────────────────────────────────────────────────────────
+async function loadInterviewersPage() {
+  const el = document.getElementById('interviewers-table');
+  if (!el) return;
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const schedData = await fetch('/api/my-scheduled-interviews').then(r=>r.json());
+    if (!schedData.success || !schedData.scheduled.length) {
+      el.innerHTML = '<div class="empty">No scheduled interviews yet. Schedule an interview with an interviewer assigned in Round Config to see them here.</div>';
       return;
     }
-    el.innerHTML = data.scheduled.map(s => {
-      const st = s.session_status || 'pending';
-      const isLive = (s.interview_mode || '') === 'live_recruiter';
-      const isDone = st === 'completed' || st === 'abandoned';
-      const isActive = st === 'active';
-      const modeLabel = (s.interview_mode || 'mcq').replace(/_/g,' ').toUpperCase();
-      const modeColors = {
-        'mcq': 'rgba(67,97,238,.1);color:var(--accent2)',
-        'ai interview': 'rgba(124,58,237,.1);color:#7c3aed',
-        'live recruiter': 'rgba(5,150,105,.1);color:#059669'
-      };
-      const modeColor = modeColors[(s.interview_mode||'mcq').replace(/_/g,' ')] || 'rgba(67,97,238,.1);color:var(--accent2)';
-
-      // Build action button based on session state
-      let actionBtn = '';
-      if (!s.room_code) {
-        actionBtn = '<span style="color:var(--muted);font-size:12px;">No room</span>';
-      } else if (isDone) {
-        actionBtn = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">⚠️ Session already ended</div>
-          <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;width:100%;">📋 View Results</button>`;
-      } else if (isActive) {
-        const lbl = isLive ? '🎥 Rejoin Session' : '👁 Monitor Live';
-        actionBtn = `<div style="font-size:11px;color:#059669;margin-bottom:4px;font-weight:600;">● Session in progress</div>
-          <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(5,150,105,.12);color:#059669;border:1px solid rgba(5,150,105,.3);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
-      } else {
-        const lbl = isLive ? '🎥 Join Session' : '👁 Monitor';
-        actionBtn = `<button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
-      }
-
-      return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
-        <div style="min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-            <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.candidate_name || '—'}</div>
-            <span style="background:${modeColor};padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;">${modeLabel}</span>
-            ${isDone ? `<span style="background:rgba(100,116,139,.1);color:var(--muted);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">ENDED</span>` : isActive ? `<span style="background:rgba(5,150,105,.1);color:#059669;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">ACTIVE</span>` : ''}
+    const sessionIds = [...new Set(schedData.scheduled.map(s=>s.session_id).filter(Boolean))];
+    const all = [];
+    await Promise.all(sessionIds.map(async sid => {
+      try {
+        const d = await fetch(`/api/interviewer-assignments/${sid}`).then(r=>r.json());
+        if (d.success && d.assignments.length) all.push(...d.assignments);
+      } catch(e){}
+    }));
+    if (!all.length) {
+      el.innerHTML = `<div class="empty" style="padding:40px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">🎙️</div>
+        <div style="font-weight:700;margin-bottom:6px;">No interviewers assigned yet</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Go to <strong>Round Config</strong>, add an interviewer name &amp; email to a round, then schedule an interview — they'll automatically receive an email with a portal link.</div>
+      </div>`;
+      return;
+    }
+    const statusStyle = {
+      assigned: 'background:rgba(67,97,238,.1);color:var(--accent2);border:1px solid rgba(67,97,238,.2);',
+      seen:     'background:rgba(217,119,6,.1);color:#d97706;border:1px solid rgba(217,119,6,.2);',
+      completed:'background:rgba(5,150,105,.1);color:#047857;border:1px solid rgba(5,150,105,.25);'
+    };
+    const statusLabel = { assigned:'📨 Assigned', seen:'👀 Seen', completed:'✅ Completed' };
+    el.innerHTML = all.map(a => {
+      const ss = statusStyle[a.status] || statusStyle.assigned;
+      const sl = statusLabel[a.status] || a.status;
+      const scoreHtml = a.interviewer_score != null
+        ? `<div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:800;color:${a.interviewer_score>=80?'#059669':a.interviewer_score>=60?'#d97706':'#dc2626'};">${a.interviewer_score}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Score</div>`
+        : `<div style="font-size:12px;color:var(--muted2);font-style:italic;">Awaiting<br>evaluation</div>`;
+      const portalUrl = `${location.origin}/interviewer_portal.html?assignment=${a.id}&email=${encodeURIComponent(a.interviewer_email)}`;
+      return `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+            <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;">${a.interviewer_name}</div>
+            <span style="${ss}padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;">${sl}</span>
           </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">💼 ${s.job_role || '—'} &nbsp;·&nbsp; 🗓️ ${s.scheduled_at || '—'}</div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <code style="background:var(--bg2);color:var(--accent2);padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;letter-spacing:1px;">${s.room_code || '—'}</code>
-            ${s.room_code ? `<button onclick="navigator.clipboard.writeText('${s.room_code}');showToast('Room code copied!')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;" title="Copy">📋</button>` : ''}
-            ${s.round_name ? `<span style="font-size:11px;color:var(--muted);">Round: <strong>${s.round_name}</strong></span>` : ''}
-          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">📧 ${a.interviewer_email}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">👤 Candidate: <strong style="color:var(--text);">${a.candidate_name}</strong></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">💼 ${a.job_role} &nbsp;·&nbsp; 🔄 ${a.round_name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:${a.interviewer_feedback?'10':'0'}px;">🔑 <code style="background:var(--bg2);color:var(--accent2);padding:1px 7px;border-radius:4px;font-size:11px;letter-spacing:.5px;">${a.room_code}</code></div>
+          ${a.interviewer_feedback ? `<div style="padding:10px 12px;background:var(--s);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;font-style:italic;">"${a.interviewer_feedback}"</div>` : ''}
         </div>
-        <div style="min-width:130px;text-align:right;">
-          ${actionBtn}
-          ${s.calendar_link ? `<a href="${s.calendar_link}" target="_blank" style="display:inline-block;margin-top:6px;font-size:11px;color:var(--accent2);text-decoration:none;">📅 Calendar</a>` : ''}
+        <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:110px;">
+          ${scoreHtml}
+          <button onclick="navigator.clipboard.writeText('${portalUrl}');showToast('Portal link copied!')" class="btn-sm btn-blue" style="width:100%;">📋 Copy Link</button>
+          <button onclick="deleteInterviewerAssignment(${a.id},this)" class="btn-sm btn-red" style="width:100%;">🗑 Remove</button>
         </div>
       </div>`;
     }).join('');
   } catch(e) {
-    el.innerHTML = '<div class="empty">Failed to load scheduled interviews</div>';
+    el.innerHTML = '<div class="empty">Failed to load. Please refresh.</div>';
   }
+}
+
+async function deleteInterviewerAssignment(id, btn) {
+  if (!confirm('Remove this interviewer assignment?')) return;
+  btn.disabled = true;
+  const d = await fetch(`/api/delete-interviewer-assignment/${id}`, {method:'DELETE'}).then(r=>r.json());
+  if (d.success) { loadInterviewersPage(); showToast('Assignment removed.'); }
+  else { showToast('Error: ' + d.message); btn.disabled = false; }
 }
 
 // ── Email Settings ─────────────────────────────────────────────────────────────

@@ -120,273 +120,229 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .leave-desc{color:var(--muted);font-size:14px;margin-bottom:24px;line-height:1.6;}
 .leave-btns{display:flex;gap:12px;justify-content:center;}
 
-/* ── 360° Room Scan Overlay ── */
+/* ── 360° Room Scan Overlay — LIGHT THEME ── */
 #room-scan-overlay {
   display:none;
   position:fixed;inset:0;z-index:9999;
-  background:rgba(10,15,40,0.97);
-  align-items:center;justify-content:center;flex-direction:column;
+  background: var(--bg);
+  flex-direction:column;
   font-family:'DM Sans',sans-serif;
+  overflow-y:auto;
 }
-.scan-card {
-  background:#0f172a;border:1px solid rgba(67,97,238,0.3);
-  border-radius:24px;padding:40px 44px;max-width:520px;width:90%;
-  text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.6);
+.scan-topbar {
+  width:100%;background:var(--s);border-bottom:1px solid var(--border);
+  padding:0 24px;height:56px;display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;box-shadow:var(--shadow-sm);
+  position:sticky;top:0;z-index:10;
 }
-.scan-title {
-  font-family:'Playfair Display',serif;font-size:26px;font-weight:800;
-  color:#fff;margin-bottom:8px;
+.scan-topbar-brand { font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;color:var(--accent2); }
+.scan-topbar-right { display:flex;align-items:center;gap:12px; }
+.scan-face-badge {
+  display:flex;align-items:center;gap:7px;padding:5px 13px;
+  border-radius:50px;font-size:12px;font-weight:700;
+  border:1px solid var(--border);background:var(--s2);color:var(--muted);
+  transition:all .3s;
 }
-.scan-sub {
-  color:#94a3b8;font-size:14px;margin-bottom:28px;line-height:1.7;
+.scan-face-badge.ok { background:rgba(5,150,105,0.08);border-color:rgba(5,150,105,0.25);color:var(--green); }
+.scan-face-badge.warn { background:rgba(220,38,38,0.08);border-color:rgba(220,38,38,0.25);color:var(--red); }
+.scan-face-dot { width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block; }
+.scan-btn-top {
+  padding:8px 20px;background:var(--accent);border:none;
+  border-radius:9px;color:#fff;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;
 }
+.scan-btn-top:hover{background:var(--accent2);transform:translateY(-1px);}
+.scan-btn-top:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.scan-body {
+  width:100%;max-width:960px;margin:0 auto;
+  padding:20px 20px 32px;
+  display:grid;grid-template-columns:1fr 320px;gap:18px;
+}
+@media(max-width:680px){ .scan-body{grid-template-columns:1fr;} }
+.scan-left { display:flex;flex-direction:column;gap:12px; }
 .scan-preview {
   width:100%;aspect-ratio:4/3;background:#000;border-radius:14px;
-  overflow:hidden;margin-bottom:20px;position:relative;
-  border:2px solid rgba(67,97,238,0.4);
+  overflow:hidden;position:relative;
+  border:2px solid var(--border);box-shadow:var(--shadow-md);
 }
-.scan-preview video {
-  width:100%;height:100%;object-fit:cover;transform:scaleX(-1);
-}
+.scan-preview video { width:100%;height:100%;object-fit:cover;transform:scaleX(-1); }
 .scan-arc {
   position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   pointer-events:none;
 }
-.scan-arc svg { width:80%;height:80%;opacity:0.5; }
+.scan-arc svg { width:80%;height:80%;opacity:0.55; }
 .scan-arc svg circle.progress {
   transition: stroke-dashoffset 0.3s ease;
-  transform-origin: center;
-  transform: rotate(-90deg);
+  transform-origin: center;transform: rotate(-90deg);
 }
-.scan-steps {
-  display:flex;gap:8px;justify-content:center;margin-bottom:20px;
+.scan-multiface-banner {
+  position:absolute;top:10px;left:10px;right:10px;
+  background:rgba(220,38,38,0.88);border-radius:8px;
+  padding:7px 12px;font-size:12px;font-weight:700;color:#fff;
+  display:none;align-items:center;gap:7px;
+  backdrop-filter:blur(4px);z-index:5;
 }
-.scan-step {
-  display:flex;align-items:center;gap:6px;
-  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
-  border-radius:8px;padding:8px 14px;font-size:12px;color:#94a3b8;
-  transition:all 0.3s;
+.scan-instruction-box {
+  background:var(--s);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;box-shadow:var(--shadow-sm);
 }
-.scan-step.active {
-  background:rgba(67,97,238,0.15);border-color:rgba(67,97,238,0.5);color:#a5b4fc;
-}
-.scan-step.done {
-  background:rgba(5,150,105,0.12);border-color:rgba(5,150,105,0.4);color:#6ee7b7;
-}
-.scan-instruction {
-  font-size:16px;font-weight:600;color:#fff;
-  background:rgba(67,97,238,0.12);border:1px solid rgba(67,97,238,0.3);
-  border-radius:10px;padding:12px 20px;margin-bottom:20px;
-  min-height:48px;display:flex;align-items:center;justify-content:center;
-}
+.scan-instruction-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent2);margin-bottom:5px; }
+.scan-instruction-text { font-size:14px;font-weight:600;color:var(--text);line-height:1.4; }
 .scan-progress-bar {
-  width:100%;height:6px;background:rgba(255,255,255,0.08);
-  border-radius:99px;overflow:hidden;margin-bottom:20px;
+  width:100%;height:6px;background:var(--s2);border-radius:99px;overflow:hidden;border:1px solid var(--border);
 }
 .scan-progress-fill {
-  height:100%;background:linear-gradient(90deg,#4361ee,#7c3aed);
+  height:100%;background:linear-gradient(90deg,var(--accent),#7c3aed);
   border-radius:99px;transition:width 0.4s ease;width:0%;
 }
-.scan-btn {
-  padding:14px 36px;background:var(--accent);border:none;
-  border-radius:12px;color:#fff;font-size:15px;font-weight:700;
-  cursor:pointer;transition:all 0.2s;width:100%;
+.scan-right { display:flex;flex-direction:column;gap:12px; }
+.scan-panel-card { background:var(--s);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow-sm); }
+.scan-panel-title { font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px; }
+.scan-steps-list { display:flex;flex-direction:column;gap:7px; }
+.scan-step {
+  display:flex;align-items:center;gap:10px;
+  padding:8px 11px;border-radius:9px;
+  background:var(--s2);border:1px solid var(--border);
+  font-size:12.5px;color:var(--muted);transition:all 0.3s;
 }
-.scan-btn:hover{background:var(--accent2);transform:translateY(-1px);}
-.scan-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-.scan-frames-grid {
-  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px;
+.scan-step.active {
+  background:var(--accent-light);border-color:rgba(67,97,238,0.3);color:var(--accent2);font-weight:600;
 }
+.scan-step.done { background:rgba(5,150,105,0.07);border-color:rgba(5,150,105,0.25);color:var(--green); }
+.scan-step-icon { font-size:15px;flex-shrink:0; }
+.scan-frames-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:5px; }
 .scan-thumb {
-  aspect-ratio:4/3;background:#1e293b;border-radius:6px;overflow:hidden;
-  border:2px solid rgba(255,255,255,0.05);transition:border-color 0.3s;
+  aspect-ratio:4/3;background:var(--s2);border-radius:6px;overflow:hidden;
+  border:2px solid var(--border);transition:border-color 0.3s;
 }
-.scan-thumb.captured { border-color:rgba(5,150,105,0.6); }
+.scan-thumb.captured { border-color:rgba(5,150,105,0.5); }
 .scan-thumb img { width:100%;height:100%;object-fit:cover; }
-.scan-status {
-  font-size:13px;color:#94a3b8;margin-bottom:16px;min-height:20px;
-}
-.scan-status.warn { color:#f59e0b; }
-.scan-status.ok { color:#10b981; }
+.scan-status-msg { font-size:12.5px;color:var(--muted);font-weight:500;min-height:16px; }
+.scan-status-msg.warn { color:var(--yellow); }
+.scan-status-msg.ok { color:var(--green); }
+.scan-status-msg.err { color:var(--red); }
 
-/* ── Rules Page Overlay ── */
+/* ── Rules Page Overlay — LIGHT THEME matching UI ── */
 #rules-overlay {
   display: none;
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: #080c18;
+  background: var(--bg);
   overflow-y: auto;
   font-family: 'DM Sans', sans-serif;
 }
 #rules-overlay.show { display: block; }
-
-.rules-bg {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 0;
-}
-.rules-bg::before {
-  content: '';
-  position: absolute;
-  top: -20%; left: -10%;
-  width: 60%; height: 60%;
-  background: radial-gradient(ellipse, rgba(67,97,238,0.18) 0%, transparent 70%);
-  animation: driftA 12s ease-in-out infinite alternate;
-}
-.rules-bg::after {
-  content: '';
-  position: absolute;
-  bottom: -10%; right: -10%;
-  width: 50%; height: 50%;
-  background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%);
-  animation: driftB 15s ease-in-out infinite alternate;
-}
-@keyframes driftA { from{transform:translate(0,0)} to{transform:translate(5%,8%)} }
-@keyframes driftB { from{transform:translate(0,0)} to{transform:translate(-5%,-6%)} }
-.rules-grid-bg {
-  position: fixed;
-  inset: 0;
-  background-image: linear-gradient(rgba(67,97,238,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(67,97,238,0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none;
-  z-index: 0;
-}
 .rules-container {
   position: relative;
-  z-index: 1;
   width: 100%;
-  max-width: 960px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 40px 28px 60px;
+  padding: 28px 20px 44px;
 }
-.rules-header { text-align: center; margin-bottom: 36px; animation: fadeSlideUp 0.6s ease both; }
+.rules-header { text-align: center; margin-bottom: 22px; animation: fadeSlideUp 0.5s ease both; }
 .rules-brand {
-  display: inline-flex; align-items: center; gap: 10px;
-  background: rgba(67,97,238,0.1); border: 1px solid rgba(67,97,238,0.25);
-  border-radius: 50px; padding: 8px 20px;
-  font-size: 12px; font-weight: 700; color: #818cf8;
-  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--accent-light); border: 1px solid rgba(67,97,238,0.2);
+  border-radius: 50px; padding: 5px 14px;
+  font-size: 11px; font-weight: 700; color: var(--accent);
+  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px;
 }
 .rules-title {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(26px, 5vw, 42px);
-  font-weight: 800; color: #f1f5ff; line-height: 1.15; margin-bottom: 12px;
+  font-size: clamp(20px, 3.5vw, 28px);
+  font-weight: 800; color: var(--text); line-height: 1.2; margin-bottom: 6px;
 }
-.rules-title span {
-  background: linear-gradient(135deg, #6aa3ff, #818cf8, #a78bfa);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.rules-subtitle { font-size: 15px; color: #64748b; max-width: 540px; margin: 0 auto; line-height: 1.7; }
+.rules-title span { color: var(--accent); }
+.rules-subtitle { font-size: 13px; color: var(--muted); max-width: 440px; margin: 0 auto; line-height: 1.6; }
 .section-card {
-  background: rgba(255,255,255,0.025);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 20px; padding: 26px; margin-bottom: 20px;
+  background: var(--s);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 12px;
+  animation: fadeSlideUp 0.5s ease both;
+  box-shadow: var(--shadow-sm);
 }
-.section-card:nth-child(2) { animation: fadeSlideUp 0.6s 0.08s ease both; }
-.section-card:nth-child(3) { animation: fadeSlideUp 0.6s 0.16s ease both; }
-.section-card:nth-child(4) { animation: fadeSlideUp 0.6s 0.24s ease both; }
-.section-card:nth-child(5) { animation: fadeSlideUp 0.6s 0.32s ease both; }
 .section-heading {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.1em; color: #6aa3ff;
-  display: flex; align-items: center; gap: 8px; margin-bottom: 18px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: var(--accent2);
+  display: flex; align-items: center; gap: 7px; margin-bottom: 12px;
 }
-.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-@media(max-width:600px){ .setup-grid { grid-template-columns: 1fr; } }
-.setup-diagram {
-  background: #0a0f1e;
-  border: 1px solid rgba(67,97,238,0.2);
-  border-radius: 14px;
-  padding: 20px; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; min-height: 200px; position: relative; overflow: hidden;
-}
-.setup-diagram::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 50% 10%, rgba(67,97,238,0.1) 0%, transparent 60%);
-}
-.setup-tips { display: flex; flex-direction: column; gap: 9px; }
+/* Tips — 2 column compact */
+.setup-tips { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+@media(max-width:540px){ .setup-tips { grid-template-columns: 1fr; } }
 .tip-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 11px 14px;
-  background: rgba(255,255,255,0.025); border-radius: 10px; font-size: 13px; color: #94a3b8; line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 9px 11px;
+  background: var(--s2); border-radius: 9px;
+  font-size: 12px; color: var(--text2); line-height: 1.45;
 }
-.tip-item.good { border-left: 3px solid #10b981; }
-.tip-item.bad  { border-left: 3px solid #ef4444; }
-.tip-icon { font-size: 17px; flex-shrink: 0; }
-.tip-text strong { color: #f1f5ff; display: block; font-size: 13px; margin-bottom: 2px; }
-.violations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 11px; margin-top: 4px; }
+.tip-item.good { border-left: 3px solid var(--green); }
+.tip-item.bad  { border-left: 3px solid var(--red); }
+.tip-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.tip-text strong { color: var(--text); display: block; font-size: 12px; margin-bottom: 1px; font-weight: 600; }
+/* Violations compact */
+.violations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 8px; }
 .vio-card {
-  background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.13);
-  border-radius: 12px; padding: 14px; display: flex; gap: 13px;
-  align-items: flex-start; transition: all 0.2s;
+  background: #fff8f8; border: 1px solid rgba(220,38,38,0.1);
+  border-radius: 10px; padding: 11px 12px; display: flex; gap: 10px; align-items: flex-start;
 }
-.vio-card:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.28); }
 .vio-icon-wrap {
-  width: 38px; height: 38px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
 }
-.vio-icon-wrap.sev1 { background: rgba(245,158,11,0.15); }
-.vio-icon-wrap.sev2 { background: rgba(239,68,68,0.15); }
-.vio-icon-wrap.sev3 { background: rgba(220,38,38,0.22); }
-.vio-name { font-size: 13px; font-weight: 700; color: #f1f5ff; margin-bottom: 3px; }
-.vio-desc { font-size: 11.5px; color: #64748b; line-height: 1.5; }
+.vio-icon-wrap.sev1 { background: rgba(245,158,11,0.1); }
+.vio-icon-wrap.sev2 { background: rgba(239,68,68,0.09); }
+.vio-icon-wrap.sev3 { background: rgba(220,38,38,0.13); }
+.vio-name { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.vio-desc { font-size: 10.5px; color: var(--muted); line-height: 1.4; }
 .vio-sev {
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-  padding: 2px 8px; border-radius: 20px; margin-top: 6px; display: inline-block;
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 2px 6px; border-radius: 20px; margin-top: 4px; display: inline-block;
 }
-.vio-sev.s1 { background: rgba(245,158,11,0.15); color: #fbbf24; }
-.vio-sev.s2 { background: rgba(239,68,68,0.15); color: #f87171; }
-.vio-sev.s3 { background: rgba(220,38,38,0.22); color: #fca5a5; }
+.vio-sev.s1 { background: rgba(245,158,11,0.1); color: var(--yellow); }
+.vio-sev.s2 { background: rgba(239,68,68,0.09); color: var(--red); }
+.vio-sev.s3 { background: rgba(220,38,38,0.13); color: var(--red); }
+/* Score bar */
 .score-bar-track {
-  height: 14px; background: rgba(255,255,255,0.06);
-  border-radius: 99px; overflow: hidden; position: relative; margin-bottom: 8px;
+  height: 9px; background: var(--s2); border-radius: 99px; overflow: hidden;
+  margin-bottom: 5px; border: 1px solid var(--border);
 }
-.score-bar-fill {
-  height: 100%; border-radius: 99px;
-  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 38%, #10b981 72%, #10b981 100%);
-}
-.score-bar-labels { display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 14px; }
-.score-levels { display: flex; gap: 10px; flex-wrap: wrap; }
-.score-level {
-  padding: 10px 16px; border-radius: 9px; font-size: 12px; font-weight: 600;
-  text-align: center; min-width: 80px;
-}
-.score-level.fail { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-.score-level.warn { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
-.score-level.pass { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
-.score-level .lvl-num { font-size: 20px; font-weight: 800; display: block; }
-.score-level .lvl-lbl { font-size: 10px; opacity: 0.75; margin-top: 2px; }
-.checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 4px; }
-@media(max-width:560px){ .checklist-grid { grid-template-columns: 1fr; } }
+.score-bar-fill { height: 100%; border-radius: 99px; width: 100%;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 40%, #10b981 75%); }
+.score-bar-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--muted); margin-bottom: 10px; }
+.score-levels { display: flex; gap: 7px; flex-wrap: wrap; }
+.score-level { padding: 7px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; text-align: center; min-width: 68px; }
+.score-level.fail { background: rgba(239,68,68,0.06); color: var(--red); border: 1px solid rgba(239,68,68,0.15); }
+.score-level.warn { background: rgba(245,158,11,0.06); color: var(--yellow); border: 1px solid rgba(245,158,11,0.15); }
+.score-level.pass { background: rgba(5,150,105,0.06); color: var(--green); border: 1px solid rgba(5,150,105,0.15); }
+.score-level .lvl-num { font-size: 15px; font-weight: 800; display: block; }
+.score-level .lvl-lbl { font-size: 9.5px; opacity: 0.8; margin-top: 1px; }
+/* Checklist */
+.checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+@media(max-width:500px){ .checklist-grid { grid-template-columns: 1fr; } }
 .check-item {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 13px; color: #cbd5e1; padding: 10px 13px;
-  background: rgba(255,255,255,0.02); border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.05);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text2); padding: 8px 11px;
+  background: var(--s2); border-radius: 7px; border: 1px solid var(--border);
 }
-.check-item .ci { font-size: 16px; }
-.rules-cta { text-align: center; animation: fadeSlideUp 0.6s 0.38s ease both; }
+.check-item .ci { font-size: 14px; }
+/* CTA */
+.rules-cta { text-align: center; animation: fadeSlideUp 0.5s 0.15s ease both; padding-top: 4px; }
 .rules-cta-btn {
-  display: inline-flex; align-items: center; gap: 12px;
-  padding: 17px 52px;
-  background: linear-gradient(135deg, #4361ee, #6d83f3);
-  border: none; border-radius: 14px;
-  color: #fff; font-size: 16px; font-weight: 700; font-family: 'DM Sans', sans-serif;
-  cursor: pointer; transition: all 0.25s;
-  box-shadow: 0 8px 32px rgba(67,97,238,0.38);
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 38px;
+  background: var(--accent); border: none; border-radius: 11px;
+  color: #fff; font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 6px 20px rgba(67,97,238,0.28);
 }
-.rules-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 48px rgba(67,97,238,0.5); }
-.rules-cta-btn:active { transform: translateY(0); }
-.rules-cta-sub { margin-top: 12px; font-size: 12px; color: #475569; }
-@keyframes fadeSlideUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
-/* Consent checkbox */
-.consent-row { display:flex; align-items:center; gap:10px; margin-bottom:20px; justify-content:center; }
-.consent-row input[type=checkbox] { width:18px; height:18px; accent-color:#4361ee; cursor:pointer; }
-.consent-row label { font-size:13px; color:#94a3b8; cursor:pointer; }
-#rules-cta-btn-main { opacity:0.45; pointer-events:none; transition: all 0.3s; }
+.rules-cta-btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 10px 28px rgba(67,97,238,0.36); }
+.rules-cta-sub { margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+@keyframes fadeSlideUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+.consent-row { display:flex; align-items:center; gap:9px; margin-bottom:14px; justify-content:center; }
+.consent-row input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+.consent-row label { font-size:12.5px; color:var(--muted); cursor:pointer; }
+#rules-cta-btn-main { opacity:0.38; pointer-events:none; transition: all 0.25s; }
 #rules-cta-btn-main.enabled { opacity:1; pointer-events:auto; }
 
 </style>
@@ -404,178 +360,68 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <!-- RULES & SETUP PAGE — shown before 360° scan           -->
 <!-- ══════════════════════════════════════════════════════ -->
 <div id="rules-overlay">
-  <div class="rules-bg"></div>
-  <div class="rules-grid-bg"></div>
   <div class="rules-container">
 
-    <!-- Header -->
     <div class="rules-header">
       <div class="rules-brand">🤖 RecruitAI &nbsp;·&nbsp; Pre-Interview Briefing</div>
-      <div class="rules-title">Before We Begin,<br><span>Read These Rules</span></div>
-      <div class="rules-subtitle">Your interview is AI-proctored. Please read the setup guide and violation rules carefully before starting.</div>
+      <div class="rules-title">Before You Begin — <span>Interview Rules</span></div>
+      <div class="rules-subtitle">Your session is AI-proctored. Read the rules below and confirm your setup before starting.</div>
     </div>
 
-    <!-- 1. Camera & Environment Setup -->
+    <!-- Setup Tips + Violations in 2 columns -->
     <div class="section-card">
-      <div class="section-heading">📷 &nbsp; Camera & Environment Setup</div>
-      <div class="setup-grid">
-        <!-- SVG Diagram -->
-        <div class="setup-diagram">
-          <svg width="180" height="190" viewBox="0 0 180 190" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Monitor / Camera frame at top -->
-            <rect x="55" y="8" width="70" height="50" rx="6" fill="#1e2a4a" stroke="#4361ee" stroke-width="1.5"/>
-            <rect x="61" y="14" width="58" height="38" rx="3" fill="#0d1220"/>
-            <!-- Camera dot -->
-            <circle cx="90" cy="11" r="2.5" fill="#4361ee"/>
-            <!-- Face inside monitor (candidate visible) -->
-            <circle cx="90" cy="33" r="12" fill="#2a3a6a" stroke="#6aa3ff" stroke-width="1"/>
-            <circle cx="86" cy="31" r="2" fill="#6aa3ff" opacity="0.7"/>
-            <circle cx="94" cy="31" r="2" fill="#6aa3ff" opacity="0.7"/>
-            <path d="M85 37 Q90 41 95 37" stroke="#6aa3ff" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-            <!-- Monitor stand -->
-            <rect x="86" y="58" width="8" height="12" rx="2" fill="#2a3560"/>
-            <rect x="74" y="68" width="32" height="4" rx="2" fill="#2a3560"/>
-            <!-- Desk surface -->
-            <rect x="20" y="110" width="140" height="8" rx="3" fill="#1a2240" stroke="#2a3560" stroke-width="1"/>
-            <!-- Person body (simple) -->
-            <ellipse cx="90" cy="155" rx="26" ry="20" fill="#1a2240" stroke="#334177" stroke-width="1.2"/>
-            <!-- Person head -->
-            <circle cx="90" cy="100" r="18" fill="#1e2a50" stroke="#4361ee" stroke-width="1.5"/>
-            <circle cx="84" cy="97" r="2.5" fill="#6aa3ff" opacity="0.8"/>
-            <circle cx="96" cy="97" r="2.5" fill="#6aa3ff" opacity="0.8"/>
-            <path d="M83 105 Q90 110 97 105" stroke="#6aa3ff" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-            <!-- Good posture arrow -->
-            <line x1="135" y1="30" x2="135" y2="100" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"/>
-            <text x="140" y="45" fill="#10b981" font-size="9" font-family="sans-serif" opacity="0.9">Eye</text>
-            <text x="140" y="55" fill="#10b981" font-size="9" font-family="sans-serif" opacity="0.9">level</text>
-            <!-- Distance bracket -->
-            <line x1="22" y1="78" x2="60" y2="78" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.7"/>
-            <text x="24" y="92" fill="#f59e0b" font-size="8.5" font-family="sans-serif" opacity="0.9">50-80cm</text>
-            <!-- Green checkmark badge -->
-            <circle cx="136" cy="148" r="14" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1.2"/>
-            <text x="130" y="153" fill="#10b981" font-size="13">✓</text>
-          </svg>
-          <div style="font-size:11px;color:#475569;margin-top:8px;text-align:center;position:relative;z-index:1;">Correct camera position</div>
-        </div>
-        <!-- Tips -->
-        <div class="setup-tips">
-          <div class="tip-item good">
-            <span class="tip-icon">✅</span>
-            <div class="tip-text"><strong>Face at camera eye-level</strong>Position your camera so your face is centred — not looking up or down at a steep angle.</div>
-          </div>
-          <div class="tip-item good">
-            <span class="tip-icon">✅</span>
-            <div class="tip-text"><strong>50–80 cm from screen</strong>Sit at a comfortable arm's length. Your full face and shoulders should be clearly visible.</div>
-          </div>
-          <div class="tip-item good">
-            <span class="tip-icon">✅</span>
-            <div class="tip-text"><strong>Well-lit, plain background</strong>Use natural or front-facing light. Avoid sitting with a bright window behind you.</div>
-          </div>
-          <div class="tip-item good">
-            <span class="tip-icon">✅</span>
-            <div class="tip-text"><strong>Quiet, private room</strong>Ensure no one else enters during the session. You must be alone in the frame.</div>
-          </div>
-          <div class="tip-item bad">
-            <span class="tip-icon">❌</span>
-            <div class="tip-text"><strong>No phones or extra devices</strong>Remove all visible phones, tablets, smart watches or earpieces before starting.</div>
-          </div>
-          <div class="tip-item bad">
-            <span class="tip-icon">❌</span>
-            <div class="tip-text"><strong>No headphones (unless wired)</strong>Bluetooth earpieces are flagged as a violation. Wired earphones are permitted.</div>
-          </div>
-        </div>
+      <div class="section-heading">📷 &nbsp; Environment Setup</div>
+      <div class="setup-tips">
+        <div class="tip-item good"><span class="tip-icon">✅</span><div class="tip-text"><strong>Face at eye-level</strong>Centre your face in frame, not too high or low.</div></div>
+        <div class="tip-item good"><span class="tip-icon">✅</span><div class="tip-text"><strong>50–80 cm from screen</strong>Full face and shoulders must be clearly visible.</div></div>
+        <div class="tip-item good"><span class="tip-icon">✅</span><div class="tip-text"><strong>Well-lit, plain background</strong>Avoid bright windows behind you.</div></div>
+        <div class="tip-item good"><span class="tip-icon">✅</span><div class="tip-text"><strong>Quiet private room</strong>You must be alone — no one else in frame.</div></div>
+        <div class="tip-item bad"><span class="tip-icon">❌</span><div class="tip-text"><strong>No phones or extra devices</strong>Remove all phones, tablets and smart watches.</div></div>
+        <div class="tip-item bad"><span class="tip-icon">❌</span><div class="tip-text"><strong>No Bluetooth earpieces</strong>Bluetooth earpieces are flagged as a violation.</div></div>
       </div>
     </div>
 
-    <!-- 2. Violations -->
+    <!-- Violations -->
     <div class="section-card">
-      <div class="section-heading">⚠️ &nbsp; What Gets Flagged — Violations & Penalties</div>
+      <div class="section-heading">⚠️ &nbsp; Violations &amp; Penalties</div>
       <div class="violations-grid">
-        <div class="vio-card">
-          <div class="vio-icon-wrap sev2"><span>👤</span></div>
-          <div>
-            <div class="vio-name">Face Not Detected</div>
-            <div class="vio-desc">Your face is not visible in the camera for more than a moment. Stay in frame at all times.</div>
-            <span class="vio-sev s2">Medium — −10 pts</span>
-          </div>
-        </div>
-        <div class="vio-card">
-          <div class="vio-icon-wrap sev2"><span>👥</span></div>
-          <div>
-            <div class="vio-name">Multiple Faces</div>
-            <div class="vio-desc">More than one person is detected in the camera frame. You must be alone.</div>
-            <span class="vio-sev s2">Medium — −10 pts</span>
-          </div>
-        </div>
-        <div class="vio-card">
-          <div class="vio-icon-wrap sev1"><span>👀</span></div>
-          <div>
-            <div class="vio-name">Gaze Away</div>
-            <div class="vio-desc">Your eyes are consistently looking away from the screen. Focus on the interview.</div>
-            <span class="vio-sev s1">Low — −5 pts</span>
-          </div>
-        </div>
-        <div class="vio-card">
-          <div class="vio-icon-wrap sev3"><span>📱</span></div>
-          <div>
-            <div class="vio-name">Device Detected</div>
-            <div class="vio-desc">A phone, tablet, laptop screen or Bluetooth earpiece is visible in your camera view.</div>
-            <span class="vio-sev s3">High — −15 pts</span>
-          </div>
-        </div>
-        <div class="vio-card">
-          <div class="vio-icon-wrap sev2"><span>🪟</span></div>
-          <div>
-            <div class="vio-name">Tab Switch</div>
-            <div class="vio-desc">You switched to another browser tab or application during the interview.</div>
-            <span class="vio-sev s2">Medium — −10 pts</span>
-          </div>
-        </div>
-        <div class="vio-card">
-          <div class="vio-icon-wrap sev1"><span>🖱️</span></div>
-          <div>
-            <div class="vio-name">Right-Click / Copy</div>
-            <div class="vio-desc">Right-clicking or using Ctrl+C during the exam is flagged as a potential cheating attempt.</div>
-            <span class="vio-sev s1">Low — −5 pts</span>
-          </div>
-        </div>
+        <div class="vio-card"><div class="vio-icon-wrap sev2">👤</div><div><div class="vio-name">Face Not Detected</div><div class="vio-desc">Stay in frame at all times.</div><span class="vio-sev s2">−10 pts</span></div></div>
+        <div class="vio-card"><div class="vio-icon-wrap sev2">👥</div><div><div class="vio-name">Multiple Faces</div><div class="vio-desc">Only you may be in the frame.</div><span class="vio-sev s2">−10 pts</span></div></div>
+        <div class="vio-card"><div class="vio-icon-wrap sev1">👀</div><div><div class="vio-name">Gaze Away</div><div class="vio-desc">Keep focus on the screen.</div><span class="vio-sev s1">−5 pts</span></div></div>
+        <div class="vio-card"><div class="vio-icon-wrap sev3">📱</div><div><div class="vio-name">Device Detected</div><div class="vio-desc">No phones, tablets or earpieces.</div><span class="vio-sev s3">Flagged</span></div></div>
+        <div class="vio-card"><div class="vio-icon-wrap sev2">🪟</div><div><div class="vio-name">Tab Switch</div><div class="vio-desc">Switching tabs ends focus.</div><span class="vio-sev s2">−10 pts</span></div></div>
+        <div class="vio-card"><div class="vio-icon-wrap sev1">🖱️</div><div><div class="vio-name">Right-Click / Copy</div><div class="vio-desc">Keyboard shortcuts are monitored.</div><span class="vio-sev s1">−5 pts</span></div></div>
       </div>
     </div>
 
-    <!-- 3. Credibility Score -->
-    <div class="section-card">
-      <div class="section-heading">🛡️ &nbsp; Your Credibility Score</div>
-      <p style="font-size:13px;color:#64748b;margin-bottom:16px;line-height:1.7;">
-        You start with <strong style="color:#f1f5ff;">100 points</strong>. Every violation detected deducts points. Your recruiter sees this score in real-time. You need at least <strong style="color:#34d399;">60 points</strong> to pass.
-      </p>
-      <div class="score-bar-track">
-        <div class="score-bar-fill"></div>
+    <!-- Score + Checklist side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="section-card" style="margin-bottom:0;">
+        <div class="section-heading">🛡️ &nbsp; Credibility Score</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6;">Start at <strong style="color:var(--text);">100 pts</strong>. Need <strong style="color:var(--green);">≥ 60</strong> to pass.</p>
+        <div class="score-bar-track"><div class="score-bar-fill"></div></div>
+        <div class="score-bar-labels"><span>0 Fail</span><span>60 Pass</span><span>100</span></div>
+        <div class="score-levels">
+          <div class="score-level fail"><span class="lvl-num">0–59</span><div class="lvl-lbl">❌ Fail</div></div>
+          <div class="score-level warn"><span class="lvl-num">60–79</span><div class="lvl-lbl">⚠ OK</div></div>
+          <div class="score-level pass"><span class="lvl-num">80+</span><div class="lvl-lbl">✅ Great</div></div>
+        </div>
       </div>
-      <div class="score-bar-labels"><span>0 — Fail</span><span>60 — Pass threshold</span><span>100 — Perfect</span></div>
-      <div class="score-levels">
-        <div class="score-level fail"><span class="lvl-num">0–59</span><div class="lvl-lbl">❌ Fail</div></div>
-        <div class="score-level warn"><span class="lvl-num">60–79</span><div class="lvl-lbl">⚠ Acceptable</div></div>
-        <div class="score-level pass"><span class="lvl-num">80–100</span><div class="lvl-lbl">✅ Excellent</div></div>
-      </div>
-    </div>
-
-    <!-- 4. Pre-interview checklist -->
-    <div class="section-card">
-      <div class="section-heading">✅ &nbsp; Pre-Interview Checklist — Confirm Before Starting</div>
-      <div class="checklist-grid">
-        <div class="check-item"><span class="ci">💡</span> Room is well-lit and bright</div>
-        <div class="check-item"><span class="ci">🤫</span> Quiet environment, no background noise</div>
-        <div class="check-item"><span class="ci">👁️</span> Camera is at eye level, face clearly visible</div>
-        <div class="check-item"><span class="ci">📏</span> Sitting 50–80 cm from the screen</div>
-        <div class="check-item"><span class="ci">📵</span> Phone, tablet and all devices removed</div>
-        <div class="check-item"><span class="ci">🔇</span> Bluetooth earpieces removed</div>
-        <div class="check-item"><span class="ci">🔒</span> Room door closed, no one else present</div>
-        <div class="check-item"><span class="ci">🌐</span> Stable internet connection confirmed</div>
+      <div class="section-card" style="margin-bottom:0;">
+        <div class="section-heading">✅ &nbsp; Quick Checklist</div>
+        <div class="checklist-grid">
+          <div class="check-item"><span class="ci">💡</span> Room well-lit</div>
+          <div class="check-item"><span class="ci">🤫</span> Quiet space</div>
+          <div class="check-item"><span class="ci">👁️</span> Face visible</div>
+          <div class="check-item"><span class="ci">📏</span> 50–80 cm away</div>
+          <div class="check-item"><span class="ci">📵</span> Devices removed</div>
+          <div class="check-item"><span class="ci">🔒</span> Room door closed</div>
+        </div>
       </div>
     </div>
 
     <!-- CTA -->
-    <div class="rules-cta">
+    <div class="rules-cta" style="margin-top:16px;">
       <div class="consent-row">
         <input type="checkbox" id="rules-consent" onchange="document.getElementById('rules-cta-btn-main').classList.toggle('enabled', this.checked)">
         <label for="rules-consent">I have read all rules and my environment is set up correctly</label>
@@ -583,66 +429,103 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <button class="rules-cta-btn" id="rules-cta-btn-main" onclick="proceedToScan()">
         <span>📷</span> Proceed to Room Scan
       </button>
-      <div class="rules-cta-sub">Next: a 360° security scan of your room will be performed (~30 seconds)</div>
+      <div class="rules-cta-sub">Next: a 360° security scan of your room (~30 seconds)</div>
     </div>
 
   </div><!-- /rules-container -->
 </div><!-- /rules-overlay -->
 
-<!-- 360° Room Scan Overlay -->
-<div id="room-scan-overlay" style="display:none;align-items:center;justify-content:center;flex-direction:column;">
-  <div class="scan-card">
-    <div class="scan-title">🔍 Room Security Scan</div>
-    <div class="scan-sub">Before your interview begins, please do a slow 360° scan of your room so we can verify your environment is secure.</div>
+<!-- 360° Room Scan Overlay — LIGHT THEME, button on top, multi-face detection -->
+<div id="room-scan-overlay" style="display:none;flex-direction:column;">
 
-    <div class="scan-preview">
-      <video id="scan-video" autoplay muted playsinline></video>
-      <div class="scan-arc">
-        <svg viewBox="0 0 100 100" fill="none">
-          <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
-          <circle class="progress" id="scan-arc-circle" cx="50" cy="50" r="44"
-            stroke="#4361ee" stroke-width="3"
-            stroke-dasharray="276.46" stroke-dashoffset="276.46"
-            stroke-linecap="round"/>
-        </svg>
+  <!-- Top bar with brand + face badge + START button always visible -->
+  <div class="scan-topbar">
+    <div class="scan-topbar-brand">🔍 360° Room Security Scan</div>
+    <div class="scan-topbar-right">
+      <div class="scan-face-badge" id="scan-face-badge">
+        <span class="scan-face-dot"></span>
+        <span id="scan-face-badge-text">Camera ready</span>
+      </div>
+      <button class="scan-btn-top" id="scan-btn" onclick="startRoomScan()">▶ Start Scan</button>
+    </div>
+  </div>
+
+  <!-- Body: camera left, steps + frames right -->
+  <div class="scan-body">
+    <!-- Left: camera feed -->
+    <div class="scan-left">
+      <div class="scan-preview">
+        <video id="scan-video" autoplay muted playsinline></video>
+        <!-- Multi-face warning inside camera -->
+        <div class="scan-multiface-banner" id="scan-multiface-banner">
+          👥 Multiple faces detected — only you should be in frame!
+        </div>
+        <div class="scan-arc">
+          <svg viewBox="0 0 100 100" fill="none">
+            <circle cx="50" cy="50" r="44" stroke="rgba(67,97,238,0.12)" stroke-width="3"/>
+            <circle class="progress" id="scan-arc-circle" cx="50" cy="50" r="44"
+              stroke="#4361ee" stroke-width="3"
+              stroke-dasharray="276.46" stroke-dashoffset="276.46"
+              stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Instruction box -->
+      <div class="scan-instruction-box">
+        <div class="scan-instruction-label">Current instruction</div>
+        <div class="scan-instruction-text" id="scan-instruction">📷 Position your face in the camera, then press Start Scan above</div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="scan-progress-bar">
+        <div class="scan-progress-fill" id="scan-progress-fill"></div>
+      </div>
+
+      <div class="scan-status-msg" id="scan-status"></div>
+    </div>
+
+    <!-- Right: steps + captured frames -->
+    <div class="scan-right">
+      <div class="scan-panel-card">
+        <div class="scan-panel-title">Scan Steps</div>
+        <div class="scan-steps-list">
+          <div class="scan-step active" id="sstep-0"><span class="scan-step-icon">📷</span> Face the camera</div>
+          <div class="scan-step" id="sstep-1"><span class="scan-step-icon">⬅️</span> Rotate left</div>
+          <div class="scan-step" id="sstep-2"><span class="scan-step-icon">↩️</span> Return to center</div>
+          <div class="scan-step" id="sstep-3"><span class="scan-step-icon">➡️</span> Rotate right</div>
+          <div class="scan-step" id="sstep-4"><span class="scan-step-icon">⬇️</span> Show desk area</div>
+          <div class="scan-step" id="sstep-5"><span class="scan-step-icon">✅</span> Hold still</div>
+        </div>
+      </div>
+
+      <div class="scan-panel-card">
+        <div class="scan-panel-title">Captured Frames</div>
+        <div class="scan-frames-grid" id="scan-frames-grid">
+          <div class="scan-thumb" id="sf0"></div>
+          <div class="scan-thumb" id="sf1"></div>
+          <div class="scan-thumb" id="sf2"></div>
+          <div class="scan-thumb" id="sf3"></div>
+          <div class="scan-thumb" id="sf4"></div>
+          <div class="scan-thumb" id="sf5"></div>
+          <div class="scan-thumb" id="sf6"></div>
+          <div class="scan-thumb" id="sf7"></div>
+        </div>
       </div>
     </div>
-
-    <div class="scan-frames-grid" id="scan-frames-grid">
-      <div class="scan-thumb" id="sf0"></div>
-      <div class="scan-thumb" id="sf1"></div>
-      <div class="scan-thumb" id="sf2"></div>
-      <div class="scan-thumb" id="sf3"></div>
-      <div class="scan-thumb" id="sf4"></div>
-      <div class="scan-thumb" id="sf5"></div>
-      <div class="scan-thumb" id="sf6"></div>
-      <div class="scan-thumb" id="sf7"></div>
-    </div>
-
-    <div class="scan-steps">
-      <div class="scan-step active" id="sstep-0">① Face Camera</div>
-      <div class="scan-step" id="sstep-1">② Rotate Left</div>
-      <div class="scan-step" id="sstep-2">③ Rotate Right</div>
-      <div class="scan-step" id="sstep-3">④ Show Desk</div>
-    </div>
-
-    <div class="scan-instruction" id="scan-instruction">📷 Position your face in the camera, then press Start Scan</div>
-    <div class="scan-progress-bar"><div class="scan-progress-fill" id="scan-progress-fill"></div></div>
-    <div class="scan-status" id="scan-status"></div>
-
-    <button class="scan-btn" id="scan-btn" onclick="startRoomScan()">▶ Start Room Scan</button>
   </div>
 </div>
 
-<!-- Device Kicked Overlay -->
+<!-- Device Warning Overlay (shown max 2 times, then candidate continues with FAIL flag) -->
 <div id="device-kicked-overlay">
-  <div class="kick-icon">🚫📱</div>
-  <div class="kick-title">Device Detected — Interview Paused</div>
-  <div class="kick-desc">A prohibited device (phone, tablet, or other electronic device) was detected by our proctoring system. Remove all devices from the camera view before continuing.<br><br><strong style="color:#fca5a5;">Note: Your credibility score is NOT affected by device detection.</strong></div>
+  <div class="kick-icon" id="kick-icon">🚫📱</div>
+  <div class="kick-title" id="kick-title">Device Detected — Interview Paused</div>
+  <div class="kick-desc" id="kick-desc">A prohibited device was detected by our proctoring system. Remove all devices from the camera view before continuing.<br><br><strong style="color:#fca5a5;">Warning <span id="kick-warn-count">1</span> of 2 — Your interview score will be penalised.</strong></div>
+  <div id="device-type-badge" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:8px 18px;font-size:14px;color:#fca5a5;font-weight:600;"></div>
   <div class="countdown-badge" id="kick-countdown">10</div>
-  <div class="kick-cta">Ensure no devices are visible. Interview resumes after a clean 10-second detection window.</div>
+  <div class="kick-cta" id="kick-cta">Ensure no devices are visible. Interview resumes after a clean 10-second detection window.</div>
   <div style="display:flex;gap:14px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
-    <button onclick="requestRejoin()" style="padding:14px 32px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">✓ I've removed the device — Check Again</button>
+    <button id="kick-rejoin-btn" onclick="requestRejoin()" style="padding:14px 32px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">✓ I've removed the device — Check Again</button>
     <button onclick="leaveFromDeviceScreen()" style="padding:14px 28px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:10px;color:#fca5a5;font-size:14px;font-weight:700;cursor:pointer;">🚪 Leave Interview</button>
   </div>
 </div>
@@ -780,8 +663,25 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             <button onclick="clearVoiceTranscript()" title="Clear voice transcript" style="padding:6px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Clear</button>
           </div>
 
-          <textarea class="ai-answer-textarea" id="ai-answer-input" placeholder="Type your answer here, or use voice recording above — both are supported…"></textarea>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px;margin-bottom:2px;">💡 Voice recordings are appended to your typed answer. You can edit the combined text before submitting.</div>
+          <textarea class="ai-answer-textarea" id="ai-answer-input" placeholder="Type your answer here, or use voice recording above — both are supported…" oninput="updateLiveConfidence(this.value)"></textarea>
+          
+          <!-- Live analysis indicators -->
+          <div id="live-analysis-bar" style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;align-items:center;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+              <span>💬 Words:</span>
+              <span id="live-word-count" style="font-weight:700;color:var(--text);">0</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+              <span>🎯 Confidence:</span>
+              <div style="width:70px;height:7px;background:var(--border);border-radius:99px;overflow:hidden;"><div id="live-conf-fill" style="height:100%;width:0%;border-radius:99px;background:var(--green);transition:width .3s;"></div></div>
+              <span id="live-conf-label" style="font-weight:700;font-size:11px;color:var(--green);">—</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
+              <span>🤖 AI Risk:</span>
+              <span id="live-ai-indicator" style="font-weight:700;font-size:11px;color:var(--green);">Low</span>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:2px;">💡 Voice recordings are appended to your typed answer. You can edit the combined text before submitting.</div>
 
           <div class="ai-action-row">
             <span id="ai-q-counter" style="font-size:13px;color:var(--muted);align-self:center;"></span>
@@ -828,21 +728,37 @@ let timerSec = 45 * 60, timerInterval = null;
 let deviceCheckInterval = null, faceCheckInterval = null;
 let aiQuestions = [], aiCurrentQ = 0, aiTranscript = [];
 let deviceKicked = false, kickClearSec = 0, kickInterval = null;
+let _deviceWarnCount = 0, _deviceFailed = false;
 let socket = null;
 // FIX: flag to pause proctoring checks during rules page and room scan
 let proctoringActive = false;
 
 async function init() {
-  if (!ROOM_CODE) { alert('No room code found. Please join via your email link.'); return; }
+  if (!ROOM_CODE) {
+    showLoadingError('No room code found. Please use the link from your interview email.');
+    return;
+  }
   try {
-    const data = await fetch(`/api/join-session/${ROOM_CODE}`, {credentials:'include'}).then(r=>r.json());
+    // First check if user is authenticated
+    const auth = await fetch('/api/check-auth', {credentials:'include'}).then(r=>r.json()).catch(()=>({authenticated:false}));
+
+    if (!auth.authenticated) {
+      // Not logged in — show a friendly login prompt instead of just crashing
+      showLoginPrompt();
+      return;
+    }
+
+    const data = await fetch(`/api/join-session/${ROOM_CODE}`, {credentials:'include'}).then(r=>r.json()).catch(()=>({success:false, message:'Network error connecting to server.'}));
     if (!data.success) {
       if (data.message === 'already_submitted') {
         window.location.href = 'test.html';
         return;
       }
+      if (data.code === 'not_authenticated' || data.message === 'Login required') {
+        showLoginPrompt();
+        return;
+      }
       if (data.message === 'round_already_completed') {
-        // Show a friendly round-blocked screen instead of just redirecting
         document.getElementById('loading-screen').innerHTML = `
           <div style="text-align:center;max-width:500px;padding:40px;">
             <div style="font-size:64px;margin-bottom:16px;">🔒</div>
@@ -855,12 +771,18 @@ async function init() {
               Interview Score: <strong>${data.score ?? '—'}</strong> &nbsp;|&nbsp; 
               Status: <strong style="color:${data.passed?'#34d399':'#fca5a5'}">${data.passed?'✅ Passed':'❌ Not Passed'}</strong>
             </div>
-            <div style="color:#64748b;font-size:13px;margin-bottom:24px;">Please wait for your recruiter to schedule your next round, or contact them if you believe this is an error.</div>
+            <div style="color:#64748b;font-size:13px;margin-bottom:24px;">Please wait for your recruiter to schedule your next round.</div>
             <a href="test.html" style="display:inline-block;padding:12px 28px;background:#4361ee;color:#fff;border-radius:10px;font-weight:700;text-decoration:none;">← Back to Portal</a>
           </div>`;
         return;
       }
-      alert(data.message || 'Could not join session'); window.location.href = 'test.html'; return;
+      // Session not found or access denied — show helpful error
+      if (data.message === 'This session was not assigned to your account.') {
+        showLoadingError(`This interview session is not assigned to your account (${auth.username}). Please log in with the correct candidate account.`);
+        return;
+      }
+      showLoadingError(data.message || 'Could not join session. Please check your link or contact your recruiter.');
+      return;
     }
     sessionData = data.session;
     sessionData.ice_servers = data.ice_servers || [];
@@ -870,15 +792,12 @@ async function init() {
     document.getElementById('si-room').textContent = ROOM_CODE;
     await startCamera();
     document.getElementById('loading-screen').style.display = 'none';
-    // Show RULES PAGE first → then 360° scan (both awaited in sequence)
     await showRulesAndScan();
     document.getElementById('interview-ui').style.display = 'block';
     initSocket();
     loadInterviewMode();
-    // For live_recruiter mode, wait for recruiter before starting session
     if (sessionData.mode === 'live_recruiter') {
       // Don't start session/timer/proctoring until recruiter joins
-      // initSocket already handles the recruiter_joined event
     } else {
       await startSession();
       startTimer();
@@ -886,8 +805,92 @@ async function init() {
     }
   } catch(e) {
     console.error(e);
-    alert('Error loading session. Please try again.');
-    window.location.href = 'test.html';
+    showLoadingError('Error loading session. Please check your internet connection and try again.');
+  }
+}
+
+function showLoadingError(msg) {
+  document.getElementById('loading-screen').innerHTML = `
+    <div style="text-align:center;max-width:480px;padding:40px;">
+      <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;margin-bottom:12px;color:#f5f7ff;">Session Error</div>
+      <div style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:24px;">${msg}</div>
+      <a href="test.html" style="display:inline-block;padding:12px 28px;background:#4361ee;color:#fff;border-radius:10px;font-weight:700;text-decoration:none;margin-right:10px;">← My Portal</a>
+      <a href="/" style="display:inline-block;padding:12px 24px;background:transparent;border:1px solid #4361ee;color:#a5b4fc;border-radius:10px;font-weight:700;text-decoration:none;">Login Page</a>
+    </div>`;
+}
+
+function showLoginPrompt() {
+  // Save the current URL so we can redirect back after login
+  const returnUrl = encodeURIComponent(window.location.href);
+  document.getElementById('loading-screen').innerHTML = `
+    <div style="text-align:center;max-width:480px;padding:40px;">
+      <div style="font-size:56px;margin-bottom:16px;">🔐</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:800;margin-bottom:12px;color:#f5f7ff;">Login Required</div>
+      <div style="color:#94a3b8;font-size:14px;line-height:1.7;margin-bottom:8px;">
+        You need to be logged in to join this interview.<br>
+        Please log in with your <strong style="color:#a5b4fc;">candidate account</strong> to continue.
+      </div>
+      <div style="background:rgba(67,97,238,0.08);border:1px solid rgba(67,97,238,0.25);border-radius:12px;padding:14px 18px;margin:20px 0;font-size:13px;color:#a5b4fc;">
+        📩 Room Code: <strong style="font-family:monospace;letter-spacing:0.1em;">${ROOM_CODE}</strong>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div id="quick-login-form" style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;text-align:left;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:18px;">Quick Login</div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-weight:700;display:block;margin-bottom:6px;">Username</label>
+            <input id="ql-username" type="text" placeholder="your username" 
+              style="width:100%;padding:11px 14px;background:#0f172a;border:1px solid #334155;border-radius:9px;color:#f1f5f9;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"
+              onkeydown="if(event.key==='Enter') quickLogin()">
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-weight:700;display:block;margin-bottom:6px;">Password</label>
+            <input id="ql-password" type="password" placeholder="your password"
+              style="width:100%;padding:11px 14px;background:#0f172a;border:1px solid #334155;border-radius:9px;color:#f1f5f9;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;"
+              onkeydown="if(event.key==='Enter') quickLogin()">
+          </div>
+          <div id="ql-msg" style="display:none;padding:9px 13px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+          <button onclick="quickLogin()" id="ql-btn"
+            style="width:100%;padding:12px;background:#4361ee;border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+            🔐 Login &amp; Join Interview
+          </button>
+        </div>
+      </div>
+      <a href="/" style="font-size:12px;color:#64748b;text-decoration:none;">Need to create an account? Visit the main page →</a>
+    </div>`;
+}
+
+async function quickLogin() {
+  const btn = document.getElementById('ql-btn');
+  const msg = document.getElementById('ql-msg');
+  const username = document.getElementById('ql-username').value.trim();
+  const password = document.getElementById('ql-password').value;
+  if (!username || !password) {
+    msg.style.cssText = 'display:block;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:9px 13px;border-radius:8px;font-size:13px;margin-bottom:12px;';
+    msg.textContent = 'Please enter your username and password.';
+    return;
+  }
+  btn.disabled = true; btn.textContent = '⏳ Logging in…';
+  try {
+    const res = await fetch('/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({username, password})
+    }).then(r=>r.json());
+    if (res.success) {
+      msg.style.cssText = 'display:block;background:rgba(5,150,105,.1);color:#6ee7b7;border:1px solid rgba(5,150,105,.25);padding:9px 13px;border-radius:8px;font-size:13px;margin-bottom:12px;';
+      msg.textContent = '✅ Logged in! Joining your interview…';
+      setTimeout(() => { window.location.reload(); }, 800);
+    } else {
+      msg.style.cssText = 'display:block;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:9px 13px;border-radius:8px;font-size:13px;margin-bottom:12px;';
+      msg.textContent = res.message || 'Invalid credentials. Please try again.';
+      btn.disabled = false; btn.textContent = '🔐 Login & Join Interview';
+    }
+  } catch(e) {
+    msg.style.cssText = 'display:block;background:rgba(220,38,38,.1);color:#fca5a5;border:1px solid rgba(220,38,38,.25);padding:9px 13px;border-radius:8px;font-size:13px;margin-bottom:12px;';
+    msg.textContent = 'Network error. Please try again.';
+    btn.disabled = false; btn.textContent = '🔐 Login & Join Interview';
   }
 }
 
@@ -924,30 +927,75 @@ function startTimer() {
 // 360° ROOM SCAN
 // ══════════════════════════════════════════════════════════════════════════════
 const SCAN_STEPS = [
-  { label: '📷 Face the camera directly — we can see you clearly', duration: 4000 },
-  { label: '⬅️ Slowly rotate LEFT — show the left side of your room', duration: 5000 },
-  { label: '↩️ Return to center — face the camera again', duration: 3000 },
-  { label: '➡️ Slowly rotate RIGHT — show the right side of your room', duration: 5000 },
-  { label: '↩️ Return to center again', duration: 2000 },
-  { label: '⬇️ Tilt down — show your desk and keyboard area', duration: 3000 },
-  { label: '⬆️ Return to normal position', duration: 2000 },
-  { label: '✅ Hold still — completing scan…', duration: 2000 },
+  { label: '📷 Face the camera directly — we can see you clearly', duration: 4000, stepIdx: 0 },
+  { label: '⬅️ Slowly rotate LEFT — show the left side of your room', duration: 5000, stepIdx: 1 },
+  { label: '↩️ Return to center — face the camera again', duration: 3000, stepIdx: 2 },
+  { label: '➡️ Slowly rotate RIGHT — show the right side of your room', duration: 5000, stepIdx: 3 },
+  { label: '⬇️ Tilt down — show your desk and keyboard area', duration: 3000, stepIdx: 4 },
+  { label: '✅ Hold still — completing scan…', duration: 2000, stepIdx: 5 },
 ];
 const TOTAL_SCAN_MS = SCAN_STEPS.reduce((a, s) => a + s.duration, 0);
+const SCAN_STEP_IDS = ['sstep-0','sstep-1','sstep-2','sstep-3','sstep-4','sstep-5'];
 let scanFrames = [], scanRunning = false;
+let scanFaceCheckInterval = null;
+let scanMultiFaceCount = 0; // how many consecutive multi-face detections during scan
+
+// ── Live face check during scan ───────────────────────────────────────────────
+function startScanFaceMonitor() {
+  scanFaceCheckInterval = setInterval(async () => {
+    const frame = await captureScanFrame();
+    if (!frame) return;
+    try {
+      const data = await fetch('/detect-face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: frame, session_id: sessionData ? sessionData.id : null })
+      }).then(r => r.json());
+
+      const badge = document.getElementById('scan-face-badge');
+      const badgeText = document.getElementById('scan-face-badge-text');
+      const banner = document.getElementById('scan-multiface-banner');
+
+      if (!data.face_detected) {
+        badge.className = 'scan-face-badge warn';
+        badgeText.textContent = 'No face detected';
+        banner.style.display = 'none';
+        scanMultiFaceCount = 0;
+      } else if (data.num_faces > 1) {
+        // Multiple faces — show prominent warning
+        badge.className = 'scan-face-badge warn';
+        badgeText.textContent = `⚠ ${data.num_faces} faces detected!`;
+        banner.style.display = 'flex';
+        scanMultiFaceCount++;
+        // Log a violation if it persists
+        if (scanMultiFaceCount >= 2 && sessionData) {
+          logViolation('multiple_faces_scan');
+        }
+      } else {
+        badge.className = 'scan-face-badge ok';
+        badgeText.textContent = '✅ Face detected';
+        banner.style.display = 'none';
+        scanMultiFaceCount = 0;
+      }
+    } catch(e) {}
+  }, 2000);
+}
+
+function stopScanFaceMonitor() {
+  if (scanFaceCheckInterval) {
+    clearInterval(scanFaceCheckInterval);
+    scanFaceCheckInterval = null;
+  }
+}
 
 // ── Rules Page ────────────────────────────────────────────────────────────────
 function showRulesAndScan() {
   return new Promise(resolve => {
-    // Step 1: show rules page
     const overlay = document.getElementById('rules-overlay');
     overlay.classList.add('show');
-    // proceedToScan will be called when user clicks the button
     window._rulesResolve = async () => {
       overlay.classList.remove('show');
-      // Step 2: immediately chain into the 360° room scan
       await showRoomScan();
-      // Step 3: resolve the combined promise so init() can continue
       resolve();
     };
   });
@@ -965,11 +1013,12 @@ function showRoomScan() {
   return new Promise(resolve => {
     const overlay = document.getElementById('room-scan-overlay');
     overlay.style.display = 'flex';
-    // Mirror the already-started camera into scan video
+    // Mirror camera
     const scanVid = document.getElementById('scan-video');
     const camVid  = document.getElementById('cam-video');
     if (camVid.srcObject) scanVid.srcObject = camVid.srcObject;
-    // Store resolve so scan completion can call it
+    // Start live face monitor immediately
+    startScanFaceMonitor();
     window._scanResolve = resolve;
   });
 }
@@ -978,12 +1027,9 @@ async function startRoomScan() {
   if (scanRunning) return;
   scanRunning = true;
   scanFrames = [];
-  const btn  = document.getElementById('scan-btn');
+  const btn = document.getElementById('scan-btn');
   btn.disabled = true;
   btn.textContent = '🔴 Scanning…';
-
-  let elapsed = 0;
-  const stepDivs = ['sstep-0','sstep-1','sstep-2','sstep-3'];
 
   for (let i = 0; i < SCAN_STEPS.length; i++) {
     const step = SCAN_STEPS[i];
@@ -991,16 +1037,16 @@ async function startRoomScan() {
     // Update instruction
     document.getElementById('scan-instruction').textContent = step.label;
 
-    // Update step indicators (map scan steps to 4 visible steps)
-    const visIdx = Math.floor(i / 2);
-    stepDivs.forEach((id, idx) => {
+    // Update step indicators
+    SCAN_STEP_IDS.forEach((id, idx) => {
       const el = document.getElementById(id);
-      if (idx < visIdx) { el.className = 'scan-step done'; }
-      else if (idx === visIdx) { el.className = 'scan-step active'; }
-      else { el.className = 'scan-step'; }
+      if (!el) return;
+      if (idx < step.stepIdx) el.className = 'scan-step done';
+      else if (idx === step.stepIdx) el.className = 'scan-step active';
+      else el.className = 'scan-step';
     });
 
-    // Capture a frame at start of each step
+    // Capture frame at start of each step
     const frame = await captureScanFrame();
     if (frame) {
       const fIdx = scanFrames.length;
@@ -1012,23 +1058,18 @@ async function startRoomScan() {
       }
     }
 
-    // Animate progress arc and bar during this step
+    // Animate progress arc and bar for this step's duration
     const stepStart = Date.now();
     await new Promise(res => {
       const tick = setInterval(() => {
         const stepElapsed = Date.now() - stepStart;
         const stepPct = Math.min(stepElapsed / step.duration, 1);
-        elapsed += (stepPct * step.duration / SCAN_STEPS.length);
-        const totalPct = Math.min((elapsed / TOTAL_SCAN_MS) * SCAN_STEPS.length / SCAN_STEPS.length +
-          (i / SCAN_STEPS.length), 1);
         const pct = (i + stepPct) / SCAN_STEPS.length;
 
-        // Arc
         const circ = 276.46;
         document.getElementById('scan-arc-circle').setAttribute(
           'stroke-dashoffset', (circ * (1 - pct)).toFixed(2)
         );
-        // Bar
         document.getElementById('scan-progress-fill').style.width = (pct * 100).toFixed(1) + '%';
 
         if (stepElapsed >= step.duration) {
@@ -1040,7 +1081,10 @@ async function startRoomScan() {
   }
 
   // Mark all steps done
-  stepDivs.forEach(id => document.getElementById(id).className = 'scan-step done');
+  SCAN_STEP_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = 'scan-step done';
+  });
 
   // Final frame
   const finalFrame = await captureScanFrame();
@@ -1049,10 +1093,13 @@ async function startRoomScan() {
   document.getElementById('scan-progress-fill').style.width = '100%';
   document.getElementById('scan-arc-circle').setAttribute('stroke-dashoffset', '0');
   document.getElementById('scan-instruction').textContent = '⏳ Analysing your environment…';
-  document.getElementById('scan-status').textContent = 'Sending scan to server…';
-  document.getElementById('scan-status').className = 'scan-status';
+  const statusEl = document.getElementById('scan-status');
+  statusEl.textContent = 'Sending scan to server…';
+  statusEl.className = 'scan-status-msg';
 
-  // Send frames to backend
+  // Stop live face monitor — scan is done
+  stopScanFaceMonitor();
+
   await submitScanFrames();
 }
 
@@ -1066,6 +1113,8 @@ async function captureScanFrame() {
 }
 
 async function submitScanFrames() {
+  const statusEl = document.getElementById('scan-status');
+  const instrEl  = document.getElementById('scan-instruction');
   try {
     const resp = await fetch('/api/room-scan', {
       method: 'POST',
@@ -1076,13 +1125,13 @@ async function submitScanFrames() {
     const data = await resp.json();
 
     if (data.issues && data.issues.length > 0) {
-      document.getElementById('scan-status').textContent = '⚠ Issues found: ' + data.issues.join(', ');
-      document.getElementById('scan-status').className = 'scan-status warn';
-      document.getElementById('scan-instruction').textContent = '⚠️ Concerns noted. Interview will proceed but violations logged.';
+      statusEl.textContent = '⚠ Issues noted: ' + data.issues.join(', ');
+      statusEl.className = 'scan-status-msg warn';
+      instrEl.textContent = '⚠️ Concerns noted. Interview will proceed but violations have been logged.';
     } else {
-      document.getElementById('scan-status').textContent = '✅ Environment looks clean!';
-      document.getElementById('scan-status').className = 'scan-status ok';
-      document.getElementById('scan-instruction').textContent = '✅ Scan complete. Starting your interview…';
+      statusEl.textContent = '✅ Environment looks clean!';
+      statusEl.className = 'scan-status-msg ok';
+      instrEl.textContent = '✅ Scan complete. Starting your interview…';
     }
 
     const btn = document.getElementById('scan-btn');
@@ -1090,19 +1139,19 @@ async function submitScanFrames() {
     btn.disabled = false;
     btn.onclick = completeScan;
 
-    // Auto-proceed after 2 seconds if clean
     if (!data.issues || data.issues.length === 0) {
       setTimeout(completeScan, 2000);
     }
   } catch(e) {
     console.error('Scan submit error:', e);
-    document.getElementById('scan-status').textContent = 'Scan could not be verified — proceeding anyway.';
-    document.getElementById('scan-status').className = 'scan-status warn';
+    statusEl.textContent = 'Scan could not be verified — proceeding anyway.';
+    statusEl.className = 'scan-status-msg warn';
     setTimeout(completeScan, 1500);
   }
 }
 
 function completeScan() {
+  stopScanFaceMonitor();
   document.getElementById('room-scan-overlay').style.display = 'none';
   if (window._scanResolve) { window._scanResolve(); window._scanResolve = null; }
 }
@@ -1158,15 +1207,59 @@ async function checkDevice() {
     const data = await fetch('/detect-device', {method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({image:img, session_id:sessionData.id})}).then(r=>r.json());
     if (data.phone_detected) {
-      kickCandidateOut();
+      // Show the specific device type detected
+      const dtype = data.device_type || 'phone';
+      kickCandidateOut(dtype, data.confidence);
     }
   } catch(e){}
 }
 
-function kickCandidateOut() {
+let _deviceFailedLocal = false; // local sentinel — use global _deviceFailed instead
+const MAX_DEVICE_WARNS = 2;
+
+function _deviceTypeLabel(dtype) {
+  const map = {
+    'phone': '📱 Smartphone', 'mobile': '📱 Mobile Phone',
+    'tablet': '📟 Tablet', 'laptop': '💻 Laptop/Screen',
+    'bluetooth_earpiece': '🎧 Bluetooth Earpiece',
+    'earpiece': '🎧 Earpiece', 'smartwatch': '⌚ Smartwatch',
+  };
+  return map[dtype] || ('📱 ' + (dtype.charAt(0).toUpperCase() + dtype.slice(1).replace('_',' ')));
+}
+
+function kickCandidateOut(dtype, confidence) {
+  if (deviceKicked) return;
+  _deviceWarnCount++;
   deviceKicked = true;
   clearInterval(deviceCheckInterval);
+
   const overlay = document.getElementById('device-kicked-overlay');
+  const badge   = document.getElementById('device-type-badge');
+  const warnEl  = document.getElementById('kick-warn-count');
+  const titleEl = document.getElementById('kick-title');
+  const descEl  = document.getElementById('kick-desc');
+  const ctaEl   = document.getElementById('kick-cta');
+  const rejoinBtn= document.getElementById('kick-rejoin-btn');
+  const iconEl  = document.getElementById('kick-icon');
+
+  if (badge) badge.textContent = `Detected: ${_deviceTypeLabel(dtype)}` + (confidence ? ` (${Math.round(confidence*100)}% confidence)` : '');
+  if (warnEl) warnEl.textContent = _deviceWarnCount;
+
+  if (_deviceWarnCount >= MAX_DEVICE_WARNS) {
+    // 2nd strike — warn them they'll continue but score is FAILED
+    if (iconEl) iconEl.textContent = '⛔📱';
+    if (titleEl) titleEl.textContent = 'Final Warning — Device Detected Again';
+    if (descEl) descEl.innerHTML = `A prohibited device was detected for the <strong>2nd time</strong>. You may continue the interview, but your session will be <strong style="color:#fca5a5;">automatically marked as FAILED</strong> due to repeated device violations.<br><br>Remove the device and click Continue to proceed.`;
+    if (ctaEl) ctaEl.textContent = 'Your score will reflect this violation. Continuing after this warning is at your own risk.';
+    if (rejoinBtn) rejoinBtn.textContent = '⚠️ Continue Anyway (Score = FAIL)';
+    // Mark session as device-failed so backend knows
+    _deviceFailed = true;
+  } else {
+    if (titleEl) titleEl.textContent = 'Device Detected — Interview Paused';
+    if (descEl) descEl.innerHTML = `A prohibited device was detected. Remove all devices from the camera view before continuing.<br><br><strong style="color:#fca5a5;">Warning ${_deviceWarnCount} of ${MAX_DEVICE_WARNS} — You have ${MAX_DEVICE_WARNS - _deviceWarnCount} warning(s) remaining before your score is marked as FAILED.</strong>`;
+    if (rejoinBtn) rejoinBtn.textContent = "✓ I've removed the device — Check Again";
+  }
+
   overlay.style.display = 'flex';
   kickClearSec = 10;
   document.getElementById('kick-countdown').textContent = kickClearSec;
@@ -1182,7 +1275,19 @@ async function requestRejoin() {
     alert(`Please wait ${kickClearSec} more seconds before trying to rejoin.`);
     return;
   }
-  // Do one final device check
+
+  // If 2nd+ warning, allow them in regardless (just flag as failed)
+  if (_deviceWarnCount >= MAX_DEVICE_WARNS) {
+    deviceKicked = false;
+    document.getElementById('device-kicked-overlay').style.display = 'none';
+    // Re-start device check (still monitor but won't kick again)
+    deviceCheckInterval = setInterval(checkDevice, 7000);
+    // Show persistent failure banner
+    showDeviceFailBanner();
+    return;
+  }
+
+  // Do one final device check before allowing back
   const img = await captureFrame();
   if (!img) { alert('Camera not ready'); return; }
   const data = await fetch('/detect-device', {method:'POST', headers:{'Content-Type':'application/json'},
@@ -1191,13 +1296,25 @@ async function requestRejoin() {
     kickClearSec = 10;
     document.getElementById('kick-countdown').textContent = kickClearSec;
     kickInterval = setInterval(()=>{ kickClearSec--; document.getElementById('kick-countdown').textContent=kickClearSec; if(kickClearSec<=0) clearInterval(kickInterval); },1000);
-    alert('Device still detected! Please ensure the area is clear of all prohibited devices.');
+    alert(`${_deviceTypeLabel(data.device_type||'device')} still detected! Please ensure the area is clear of all prohibited devices.`);
     return;
   }
   // Clear — allow back in
   deviceKicked = false;
   document.getElementById('device-kicked-overlay').style.display = 'none';
   deviceCheckInterval = setInterval(checkDevice, 7000);
+}
+
+function showDeviceFailBanner() {
+  let banner = document.getElementById('device-fail-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'device-fail-banner';
+    banner.style.cssText = 'position:fixed;top:68px;left:50%;transform:translateX(-50%);background:rgba(220,38,38,0.92);color:#fff;padding:9px 22px;border-radius:9px;font-size:13px;font-weight:700;z-index:8000;box-shadow:0 4px 14px rgba(220,38,38,0.4);text-align:center;';
+    banner.innerHTML = '⛔ Device violation limit reached — this session is scored as FAILED';
+    document.body.appendChild(banner);
+  }
+  banner.style.display = 'block';
 }
 
 async function logViolation(type) {
@@ -1261,12 +1378,15 @@ function showSubmitConfirm() {
 // ── AI Interview ───────────────────────────────────────────────────────────────
 async function loadAI() {
   document.getElementById('ai-q-text').textContent = 'Generating your interview questions…';
+  // Attach typing tracker once AI mode loads
+  attachTypingTracker();
   try {
     const data = await fetch('/api/ai-generate-questions', {method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({job_role:sessionData.job_role})}).then(r=>r.json());
     aiQuestions = data.questions || [];
     aiCurrentQ = 0;
+    resetAnswerTracking();
     displayAIQuestion();
   } catch(e) {
     document.getElementById('ai-q-text').textContent = 'Error loading questions. Please leave and rejoin.';
@@ -1284,8 +1404,9 @@ function displayAIQuestion() {
   const isLast = aiCurrentQ >= aiQuestions.length - 1;
   const btn = document.getElementById('ai-next-btn');
   btn.textContent = isLast ? '✓ Finish Interview' : 'Next Question →';
+  // Reset per-question tracking
+  resetAnswerTracking();
   // Speak the question
-  // Slight delay so voices have time to load
   setTimeout(() => {
     speakText(q.question || q.question_text);
     document.getElementById('ai-speak-bars').style.display='flex';
@@ -1295,19 +1416,42 @@ function displayAIQuestion() {
 // ── AI Voice Settings ──────────────────────────────────────────────────────────
 let aiVoiceSettings = { lang: 'en-US', rate: 0.9, pitch: 1.0, volume: 1.0 };
 
+// Populate accent select with real available voices once they load
+function populateVoiceList() {
+  const voices = speechSynthesis.getVoices();
+  const accentSel = document.getElementById('ai-voice-accent');
+  if (!accentSel || voices.length === 0) return;
+  // Build a map of lang → voice name for display
+  const enVoices = voices.filter(v => v.lang.startsWith('en'));
+  if (enVoices.length === 0) return;
+  // Keep the standard options but add "(available)" hint
+  Array.from(accentSel.options).forEach(opt => {
+    const match = voices.find(v => v.lang === opt.value) || voices.find(v => v.lang.toLowerCase().startsWith(opt.value.toLowerCase()));
+    if (match) opt.text = opt.text + ' ✓';
+  });
+}
+if (typeof speechSynthesis !== 'undefined') {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+  // Chrome populates voices async
+  setTimeout(populateVoiceList, 500);
+}
+
 function applyVoiceSettings() {
   const tone   = document.getElementById('ai-voice-tone')?.value   || 'normal';
   const accent = document.getElementById('ai-voice-accent')?.value || 'en-US';
   const volume = parseFloat(document.getElementById('ai-voice-volume')?.value ?? 1);
   aiVoiceSettings.lang   = accent;
   aiVoiceSettings.volume = volume;
+  // Each tone has meaningfully different rate AND pitch for clear differentiation
   switch(tone) {
-    case 'slow':     aiVoiceSettings.rate=0.7;  aiVoiceSettings.pitch=1.0;  break;
-    case 'fast':     aiVoiceSettings.rate=1.3;  aiVoiceSettings.pitch=1.0;  break;
-    case 'deep':     aiVoiceSettings.rate=0.85; aiVoiceSettings.pitch=0.7;  break;
-    case 'friendly': aiVoiceSettings.rate=1.0;  aiVoiceSettings.pitch=1.2;  break;
-    default:         aiVoiceSettings.rate=0.9;  aiVoiceSettings.pitch=1.0;
+    case 'slow':     aiVoiceSettings.rate=0.65; aiVoiceSettings.pitch=0.95; break; // Slow, deliberate
+    case 'fast':     aiVoiceSettings.rate=1.45; aiVoiceSettings.pitch=1.05; break; // Energetic, fast
+    case 'deep':     aiVoiceSettings.rate=0.80; aiVoiceSettings.pitch=0.55; break; // Deep, authoritative
+    case 'friendly': aiVoiceSettings.rate=1.05; aiVoiceSettings.pitch=1.35; break; // Upbeat, high
+    default:         aiVoiceSettings.rate=0.90; aiVoiceSettings.pitch=1.0;         // Neutral
   }
+  // If voiceRecognition is running, update its lang too
+  if (voiceRecognition) voiceRecognition.lang = accent;
 }
 
 function speakText(text) {
@@ -1318,13 +1462,44 @@ function speakText(text) {
   utt.rate   = aiVoiceSettings.rate;
   utt.pitch  = aiVoiceSettings.pitch;
   utt.volume = aiVoiceSettings.volume;
-  // Try to match accent to an available voice
+
+  // Robust voice selection — try multiple strategies
   const voices = speechSynthesis.getVoices();
-  const match = voices.find(v => v.lang.startsWith(aiVoiceSettings.lang.split('-')[0]) && v.lang === aiVoiceSettings.lang)
-             || voices.find(v => v.lang.startsWith(aiVoiceSettings.lang.split('-')[0]));
-  if (match) utt.voice = match;
-  utt.onend = () => document.getElementById('ai-speak-bars').style.display='none';
+  if (voices.length > 0) {
+    const targetLang = aiVoiceSettings.lang; // e.g. "en-IN"
+    const targetBase = targetLang.split('-')[0]; // "en"
+    const targetRegion = targetLang.split('-')[1] || ''; // "IN"
+
+    // Priority 1: Exact language match (e.g. en-IN)
+    let match = voices.find(v => v.lang === targetLang);
+    // Priority 2: Same region case-insensitive
+    if (!match) match = voices.find(v => v.lang.toLowerCase() === targetLang.toLowerCase());
+    // Priority 3: Language + region in name (e.g. "Google हिन्दी" for en-IN)
+    if (!match && targetRegion) {
+      const regionHints = { 'IN': ['india','hindi','bangalore'], 'GB': ['british','english uk','daniel'], 'AU': ['australia','karen'], 'CA': ['canada'] };
+      const hints = regionHints[targetRegion] || [];
+      match = voices.find(v => hints.some(h => v.name.toLowerCase().includes(h)));
+    }
+    // Priority 4: Same base language, any voice
+    if (!match) match = voices.find(v => v.lang.startsWith(targetBase + '-'));
+    // Priority 5: Any en voice if nothing found
+    if (!match) match = voices.find(v => v.lang.startsWith('en'));
+    if (match) utt.voice = match;
+  }
+
+  utt.onend = () => { const bars = document.getElementById('ai-speak-bars'); if(bars) bars.style.display='none'; };
+  utt.onerror = () => { const bars = document.getElementById('ai-speak-bars'); if(bars) bars.style.display='none'; };
   speechSynthesis.speak(utt);
+
+  // Chrome bug: sometimes speech stops mid-sentence — keep it alive
+  if (window._speechKeepAlive) clearInterval(window._speechKeepAlive);
+  window._speechKeepAlive = setInterval(() => {
+    if (speechSynthesis.speaking && !speechSynthesis.paused) {
+      speechSynthesis.pause(); speechSynthesis.resume();
+    } else {
+      clearInterval(window._speechKeepAlive);
+    }
+  }, 10000);
 }
 
 function reAnnounceQuestion() {
@@ -1395,6 +1570,7 @@ function startVoiceRecording() {
   voiceRecognition = initVoiceRecognition();
   if (!voiceRecognition) return;
   isRecording = true;
+  _voiceWasUsed = true; // track that voice was used this question
   try { voiceRecognition.start(); } catch(e) {}
   const btn = document.getElementById('ai-record-btn');
   btn.innerHTML = '⏹ Stop Recording';
@@ -1423,24 +1599,214 @@ function clearVoiceTranscript() {
   document.getElementById('ai-rec-transcript-preview').textContent = '';
 }
 
+// ── Communication & Confidence Analysis ────────────────────────────────────────
+let _answerStartTime = 0;
+let _typingEvents = [];  // {time, chars, pauses}
+let _speechFeatures = { pauseCount:0, wordCount:0, fillerCount:0, restartCount:0, avgWordInterval:0 };
+let _answerFeatures = [];  // per-question analysis
+
+function resetAnswerTracking() {
+  _answerStartTime = Date.now();
+  _typingEvents = [];
+  _speechFeatures = { pauseCount:0, wordCount:0, fillerCount:0, restartCount:0, avgWordInterval:0 };
+}
+
+// Attach typing tracker to the answer textarea
+function attachTypingTracker() {
+  const ta = document.getElementById('ai-answer-input');
+  if (!ta) return;
+  let lastKeyTime = 0, pauseThresh = 2000, lastLen = 0;
+  ta.addEventListener('keydown', (e) => {
+    const now = Date.now();
+    const gap = lastKeyTime ? now - lastKeyTime : 0;
+    _typingEvents.push({ time: now, gap, key: e.key === ' ' ? 'SPACE' : (e.key.length === 1 ? 'CHAR' : e.key) });
+    if (gap > pauseThresh && lastKeyTime > 0) _speechFeatures.pauseCount++;
+    lastKeyTime = now;
+  });
+}
+
+function analyzeAnswerConfidence(answerText, questionText, voiceUsed, durationMs) {
+  const words = answerText.trim().split(/\s+/).filter(Boolean);
+  const wc = words.length;
+  const sentences = answerText.split(/[.!?]+/).filter(s => s.trim().length > 2).length;
+
+  // Filler word detection
+  const fillers = ['um','uh','like','you know','basically','literally','actually','i mean','kind of','sort of','so yeah','right?'];
+  const lowerText = answerText.toLowerCase();
+  const fillerHits = fillers.filter(f => lowerText.includes(f)).length;
+
+  // Vocabulary richness (unique words / total)
+  const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g,''))).size;
+  const vocabRich = wc > 0 ? Math.round((uniqueWords / wc) * 100) : 0;
+
+  // Typing speed (chars per minute) — from events
+  const typedChars = _typingEvents.filter(e => e.key === 'CHAR' || e.key === 'SPACE').length;
+  const durMin = durationMs / 60000;
+  const typingSpeed = durMin > 0 ? Math.round(typedChars / durMin) : 0;
+
+  // Detect possible AI-prompted response patterns
+  // Signs: very long answer fast, perfect structure, no pauses, formal openers
+  const aiIndicators = [];
+  const aiPatterns = [
+    /^(certainly|absolutely|of course|great question|that's a great|i'd be happy to|sure,? here)/i,
+    /\b(firstly|secondly|thirdly|in conclusion|to summarize|furthermore|moreover|in addition)\b/i,
+    /\b(as an ai|as a language model|i don't have personal experience)\b/i,
+  ];
+  aiPatterns.forEach(p => { if (p.test(answerText)) aiIndicators.push(p.source.slice(0,30)); });
+
+  // Timing analysis: if response came very fast (< 5 sec) for long answer → suspicious
+  const timeToStartSec = durationMs / 1000;
+  const isVeryFast = timeToStartSec < 4 && wc > 60;
+  const hasLowPauses = _typingEvents.length > 10 && _speechFeatures.pauseCount === 0;
+  const isPerfectStructure = aiPatterns[1].test(answerText);
+
+  let aiScore = 0; // 0-100: higher = more likely AI prompted
+  if (isVeryFast) aiScore += 35;
+  if (hasLowPauses && wc > 40) aiScore += 20;
+  if (isPerfectStructure) aiScore += 25;
+  if (aiIndicators.length > 0) aiScore += 20;
+  if (vocabRich > 85 && wc > 50) aiScore += 15; // unrealistically rich vocab
+  aiScore = Math.min(aiScore, 100);
+
+  // Confidence score (0-100)
+  let conf = 50;
+  // Word count contribution
+  if (wc >= 30 && wc <= 200) conf += 15;
+  else if (wc < 10) conf -= 20;
+  // Filler words reduce confidence
+  conf -= fillerHits * 5;
+  // Vocabulary richness adds confidence
+  if (vocabRich > 60) conf += 10;
+  // Voice used (speaks confidently)
+  if (voiceUsed) conf += 10;
+  // Pauses reduce slightly (hesitation)
+  conf -= _speechFeatures.pauseCount * 3;
+  // Sentence structure
+  if (sentences >= 2) conf += 10;
+  conf = Math.max(0, Math.min(100, conf));
+
+  // Communication score (0-100)
+  let commScore = 50;
+  commScore += Math.min(wc / 2, 20); // up to +20 for length
+  commScore -= fillerHits * 5;
+  commScore += vocabRich > 50 ? 10 : 0;
+  commScore += sentences >= 3 ? 10 : 0;
+  commScore = Math.max(0, Math.min(100, commScore));
+
+  return {
+    word_count: wc,
+    sentences,
+    filler_count: fillerHits,
+    vocab_richness: vocabRich,
+    typing_speed_cpm: typingSpeed,
+    pause_count: _speechFeatures.pauseCount,
+    voice_used: voiceUsed,
+    confidence_score: conf,
+    communication_score: commScore,
+    ai_prompt_score: aiScore,
+    ai_indicators: aiIndicators,
+    duration_sec: Math.round(durationMs / 1000),
+  };
+}
+
 async function aiNextQuestion() {
   // Stop recording if active
   if (isRecording) stopVoiceRecording();
   const answer = document.getElementById('ai-answer-input').value.trim();
   if (!answer) { alert('Please type your answer before continuing.'); return; }
   const q = aiQuestions[aiCurrentQ];
+  const durationMs = Date.now() - (_answerStartTime || Date.now());
+
+  // Run local communication/confidence analysis
+  const commAnalysis = analyzeAnswerConfidence(answer, q.question||q.question_text, _voiceWasUsed, durationMs);
+  _answerFeatures.push({ qIndex: aiCurrentQ, question: q.question||q.question_text, ...commAnalysis });
+
+  // Show mini-feedback badge if AI-prompted likelihood is high
+  if (commAnalysis.ai_prompt_score >= 60) {
+    showToast(`⚠️ Response pattern may indicate AI assistance (${commAnalysis.ai_prompt_score}%)`, 'warn');
+  }
+
   // Evaluate in background
   try {
     const evalData = await fetch('/api/ai-evaluate-answer', {method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({question:q.question||q.question_text, answer, job_role:sessionData.job_role, expected_keywords:q.expected_keywords||[]})}).then(r=>r.json());
-    aiTranscript.push({question:q.question||q.question_text, answer, score:evalData.score||5, feedback:evalData.feedback||''});
+      body:JSON.stringify({question:q.question||q.question_text, answer, job_role:sessionData.job_role,
+        expected_keywords:q.expected_keywords||[],
+        comm_analysis: commAnalysis})}).then(r=>r.json());
+    aiTranscript.push({
+      question: q.question||q.question_text,
+      answer,
+      score: evalData.score||5,
+      feedback: evalData.feedback||'',
+      comm_analysis: commAnalysis,
+    });
   } catch(e) {
-    aiTranscript.push({question:q.question||q.question_text, answer, score:5, feedback:''});
+    aiTranscript.push({question:q.question||q.question_text, answer, score:5, feedback:'', comm_analysis: commAnalysis});
   }
   aiCurrentQ++;
+  _voiceWasUsed = false;
   if (aiCurrentQ >= aiQuestions.length) { submitInterview('ai_complete'); }
-  else { displayAIQuestion(); }
+  else { resetAnswerTracking(); displayAIQuestion(); }
+}
+
+// Track if voice was used this question
+let _voiceWasUsed = false;
+const _origStartVoice = window.startVoiceRecording;
+
+function updateLiveConfidence(text) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const wc = words.length;
+  document.getElementById('live-word-count').textContent = wc;
+
+  // Quick confidence estimate
+  let conf = 40;
+  if (wc >= 20) conf += 15;
+  if (wc >= 50) conf += 15;
+  if (wc >= 80) conf += 10;
+  if (wc < 5) conf -= 20;
+  const fillers = ['um','uh','like','you know','basically'];
+  const lowerText = text.toLowerCase();
+  fillers.forEach(f => { if (lowerText.includes(f)) conf -= 8; });
+  conf = Math.max(0, Math.min(100, conf));
+
+  const fill = document.getElementById('live-conf-fill');
+  const lbl  = document.getElementById('live-conf-label');
+  if (fill) { fill.style.width = conf + '%'; fill.style.background = conf >= 70 ? 'var(--green)' : conf >= 40 ? 'var(--yellow)' : 'var(--red)'; }
+  if (lbl)  { lbl.textContent = conf + '%'; lbl.style.color = conf >= 70 ? 'var(--green)' : conf >= 40 ? 'var(--yellow)' : 'var(--red)'; }
+
+  // Quick AI risk check
+  const aiInd = document.getElementById('live-ai-indicator');
+  if (aiInd) {
+    const aiPatterns = [
+      /^(certainly|absolutely|of course|great question)/i,
+      /\b(firstly|secondly|thirdly|in conclusion|furthermore|moreover)\b/i,
+    ];
+    const hits = aiPatterns.filter(p => p.test(text)).length;
+    if (hits >= 2 || (hits >= 1 && wc > 50)) {
+      aiInd.textContent = 'High ⚠️'; aiInd.style.color = 'var(--red)';
+    } else if (hits === 1) {
+      aiInd.textContent = 'Medium'; aiInd.style.color = 'var(--yellow)';
+    } else {
+      aiInd.textContent = 'Low'; aiInd.style.color = 'var(--green)';
+    }
+  }
+}
+
+
+function showToast(msg, type='info') {
+  let t = document.getElementById('analysis-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'analysis-toast';
+    t.style.cssText = 'position:fixed;bottom:80px;right:20px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9000;max-width:320px;transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.style.background = type==='warn' ? 'rgba(217,119,6,0.95)' : 'rgba(67,97,238,0.95)';
+  t.style.color = '#fff';
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._hide);
+  t._hide = setTimeout(()=>{ t.style.opacity='0'; }, 4000);
 }
 
 // ── Submit ─────────────────────────────────────────────────────────────────────
@@ -1452,16 +1818,37 @@ async function submitInterview(reason='manual') {
   speechSynthesis?.cancel();
   document.getElementById('submitting-overlay').style.display='flex';
 
-  let payload = {session_id: sessionData.id, answers, mode: sessionData.mode, job_role: sessionData.job_role};
+  let payload = {session_id: sessionData.id, answers, mode: sessionData.mode, job_role: sessionData.job_role,
+                 device_failed: _deviceFailed, device_warn_count: _deviceWarnCount};
 
   if (sessionData.mode === 'ai_interview') {
+    // Aggregate communication & confidence scores across all questions
+    if (_answerFeatures.length > 0) {
+      const avgConf = Math.round(_answerFeatures.reduce((s,f)=>s+f.confidence_score,0) / _answerFeatures.length);
+      const avgComm = Math.round(_answerFeatures.reduce((s,f)=>s+f.communication_score,0) / _answerFeatures.length);
+      const avgAI   = Math.round(_answerFeatures.reduce((s,f)=>s+f.ai_prompt_score,0) / _answerFeatures.length);
+      const voiceUsedCount = _answerFeatures.filter(f=>f.voice_used).length;
+      payload.confidence_score = avgConf;
+      payload.communication_score = avgComm;
+      payload.ai_prompt_likelihood = avgAI;
+      payload.voice_used_count = voiceUsedCount;
+      payload.answer_features = _answerFeatures;
+    }
     // Get final AI evaluation
     try {
       const finalEval = await fetch('/api/ai-final-evaluation', {method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({transcript:aiTranscript, job_role:sessionData.job_role})}).then(r=>r.json());
+        body:JSON.stringify({transcript:aiTranscript, job_role:sessionData.job_role,
+          confidence_score: payload.confidence_score,
+          communication_score: payload.communication_score,
+          ai_prompt_likelihood: payload.ai_prompt_likelihood})}).then(r=>r.json());
       payload.ai_overall_score = finalEval.overall_score || 0;
-      payload.ai_feedback = finalEval;
+      payload.ai_feedback = { ...finalEval,
+        confidence_score: payload.confidence_score,
+        communication_score: payload.communication_score,
+        ai_prompt_likelihood: payload.ai_prompt_likelihood,
+        voice_used_count: payload.voice_used_count || 0,
+        answer_features: _answerFeatures };
     } catch(e) { payload.ai_overall_score=0; payload.ai_feedback={}; }
   }
 

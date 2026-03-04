@@ -336,17 +336,89 @@ let rating = 0, sessionStartTime = Date.now();
 let micOn = true, camOn = true;
 
 async function init() {
-  // Add credentials:include so cookies are sent even when opened in new tab
+  const params = new URLSearchParams(window.location.search);
+  const roomCode       = params.get('room');
+  const interviewerId  = params.get('interviewer');
+  const interviewerEmail = params.get('email');
+
+  // ── INTERVIEWER MODE: no login required ──────────────────────────────────
+  if (interviewerId && interviewerEmail) {
+    const res = await fetch(
+      `/api/interviewer-room-access?assignment=${interviewerId}&email=${encodeURIComponent(interviewerEmail)}`,
+      { headers: { 'ngrok-skip-browser-warning': 'true' } }
+    ).then(r => r.json()).catch(() => ({ success: false, message: 'Network error' }));
+
+    if (!res.success) {
+      document.body.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'DM Sans',sans-serif;background:#f5f7ff;gap:16px;text-align:center;padding:32px;">
+          <div style="font-size:56px;">🔒</div>
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;color:#0f172a;">Access Denied</div>
+          <div style="color:#64748b;font-size:14px;max-width:360px;">${res.message || 'Invalid interviewer link. Please use the link from your assignment email.'}</div>
+        </div>`;
+      return;
+    }
+
+    sessionData = res.session;
+
+    // Show interviewer badge in topbar
+    document.getElementById('session-info-text').textContent =
+      `${sessionData.candidate_name} · ${sessionData.job_role}`;
+    document.getElementById('candidate-label').textContent = sessionData.candidate_name;
+
+    // Show interviewer name badge
+    const topbar = document.querySelector('.session-info');
+    if (topbar) {
+      const badge = document.createElement('span');
+      badge.style.cssText = 'padding:3px 10px;background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:20px;color:#7c3aed;font-size:11px;font-weight:700;';
+      badge.textContent = `👤 ${res.interviewer_name}`;
+      topbar.prepend(badge);
+    }
+
+    await startLocalVideo();
+    initSocket(sessionData.room_code, res.ice_servers || []);
+    startTimer();
+    pollProctoring();
+    return;
+  }
+
+  // ── RECRUITER / ADMIN MODE: login required ───────────────────────────────
   const auth = await fetch('/api/check-auth', {credentials:'include'}).then(r=>r.json()).catch(()=>({authenticated:false}));
   if (!auth.authenticated || (auth.role !== 'recruiter' && auth.role !== 'admin')) {
-    // Store intended URL so we can redirect back after login
     sessionStorage.setItem('redirect_after_login', window.location.href);
     return window.location.href='index.html';
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const roomCode = params.get('room');
-  if (!roomCode) return alert('No room code in URL');
+  if (!roomCode) {
+    // No room code - show a helpful page to join as interviewer by email
+    document.body.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;background:#f5f7ff;padding:20px;">
+        <div style="background:#fff;border:1px solid #dde3f4;border-radius:24px;padding:44px 40px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(67,97,238,0.14);text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px;">🎙</div>
+          <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:800;color:#0f172a;margin-bottom:8px;">Join Interview Room</div>
+          <div style="color:#64748b;font-size:13px;line-height:1.6;margin-bottom:28px;">Enter the room code from your interview email or enter your email to see your assigned interviews.</div>
+          <div style="text-align:left;margin-bottom:14px;">
+            <label style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;font-weight:700;display:block;margin-bottom:6px;">Room Code</label>
+            <input id="manual-room" type="text" placeholder="e.g. AB12CD34" maxlength="16"
+              style="width:100%;padding:12px 14px;background:#f0f3fd;border:1px solid #dde3f4;border-radius:10px;color:#0f172a;font-size:15px;font-family:monospace;letter-spacing:.1em;text-transform:uppercase;outline:none;"
+              oninput="this.value=this.value.toUpperCase()"
+              onkeydown="if(event.key==='Enter') joinByCode()">
+          </div>
+          <button onclick="joinByCode()" style="width:100%;padding:13px;background:#4361ee;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:16px;">🚀 Join Room</button>
+          <div style="display:flex;align-items:center;gap:12px;margin:16px 0;">
+            <div style="flex:1;height:1px;background:#dde3f4;"></div>
+            <span style="font-size:12px;color:#94a3b8;">OR</span>
+            <div style="flex:1;height:1px;background:#dde3f4;"></div>
+          </div>
+          <a href="interviewer_login.html" style="display:block;padding:12px;background:#f0f3fd;border:1px solid #dde3f4;border-radius:10px;color:#3a56d4;font-size:13px;font-weight:700;text-decoration:none;">🔐 View My Assigned Interviews</a>
+        </div>
+      </div>`;
+    window.joinByCode = function() {
+      const code = document.getElementById('manual-room').value.trim().toUpperCase();
+      if (!code) return;
+      window.location.href = `recruiter_room.html?room=${code}`;
+    };
+    return;
+  }
 
   const data = await fetch(`/api/join-session/${roomCode}`, {credentials:'include'}).then(r=>r.json());
   if (!data.success) return alert('Session not found: ' + roomCode);

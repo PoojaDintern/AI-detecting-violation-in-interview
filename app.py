@@ -137,19 +137,29 @@ class InterviewSession(db.Model):
     recruiter = db.relationship('User', foreign_keys=[recruiter_id], backref='sessions_as_recruiter')
 
     def to_dict(self):
+        try:
+            cname = (self.candidate.full_name or self.candidate.username) if self.candidate else 'Candidate'
+            cusername = self.candidate.username if self.candidate else ''
+        except Exception:
+            cname = 'Candidate'
+            cusername = ''
+        try:
+            created_at_str = self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else ''
+        except Exception:
+            created_at_str = ''
         return {
             'id': self.id,
-            'candidate_name': self.candidate.full_name or self.candidate.username,
-            'candidate_username': self.candidate.username,
-            'job_role': self.job_role,
-            'mode': self.mode,
-            'room_code': self.room_code,
-            'status': self.status,
-            'credibility_score': self.credibility_score,
-            'interview_score': self.interview_score,
+            'candidate_name': cname,
+            'candidate_username': cusername,
+            'job_role': self.job_role or '',
+            'mode': self.mode or 'mcq',
+            'room_code': self.room_code or '',
+            'status': self.status or 'pending',
+            'credibility_score': self.credibility_score or 100,
+            'interview_score': self.interview_score or 0,
             'started_at': self.started_at.strftime('%Y-%m-%d %H:%M:%S') if self.started_at else None,
             'ended_at':   self.ended_at.strftime('%Y-%m-%d %H:%M:%S') if self.ended_at else None,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'created_at': created_at_str,
             'round_number': self.round_number or 1,
             'round_name': self.round_name or 'Round 1',
             'posting_id': self.posting_id,
@@ -287,7 +297,7 @@ def load_user(uid): return db.session.get(User, int(uid))
 @login_manager.unauthorized_handler
 def unauthorized():
     if request.is_json or request.path.startswith('/api/'):
-        return jsonify({'success': False, 'message': 'Login required'}), 401
+        return jsonify({'success': False, 'message': 'Login required', 'code': 'not_authenticated'}), 401
     return send_from_directory('.', 'index.html')
 
 
@@ -393,6 +403,245 @@ def parse_json_response(raw):
         return json.loads(text.strip())
     except json.JSONDecodeError:
         return None
+
+
+# ── Interview Pipeline & Cooldown Models (v1.3) ────────────────────────────────
+
+class InterviewPipeline(db.Model):
+    """Tracks a candidate's full round-by-round progress for a specific job posting."""
+    __tablename__ = 'interview_pipeline'
+    id                   = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    candidate_id         = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    posting_id           = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='CASCADE'), nullable=False)
+    application_id       = db.Column(db.Integer, db.ForeignKey('job_applications.id', ondelete='CASCADE'), nullable=True)
+    config_id            = db.Column(db.Integer, db.ForeignKey('job_round_config.id', ondelete='SET NULL'), nullable=True)
+    total_rounds         = db.Column(db.Integer, default=3)
+    current_round        = db.Column(db.Integer, default=1)
+    overall_status       = db.Column(db.String(30), default='in_progress')
+    # in_progress | completed_passed | completed_failed | on_cooldown
+    failed_all_rounds_at = db.Column(db.DateTime, nullable=True)
+    eligible_again_at    = db.Column(db.DateTime, nullable=True)
+    created_at           = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at           = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Round 1-5 results stored as JSON for flexibility (supports 1-5 rounds)
+    rounds_data          = db.Column(db.Text, default='{}')
+    # rounds_data JSON structure per round key e.g. "1": {session_id, submission_id, score, status, round_name, mode}
+    # status per round: locked | pending | completed_passed | completed_failed
+
+    candidate    = db.relationship('User', foreign_keys=[candidate_id])
+    __table_args__ = (db.UniqueConstraint('candidate_id', 'posting_id', name='uq_pipeline_candidate_posting'),)
+
+    def get_rounds(self):
+        try: return json.loads(self.rounds_data) if self.rounds_data else {}
+        except: return {}
+
+    def set_rounds(self, d):
+        self.rounds_data = json.dumps(d)
+
+    def to_dict(self):
+        rounds = self.get_rounds()
+        return {
+            'id': self.id,
+            'candidate_id': self.candidate_id,
+            'posting_id': self.posting_id,
+            'application_id': self.application_id,
+            'total_rounds': self.total_rounds,
+            'current_round': self.current_round,
+            'overall_status': self.overall_status,
+            'rounds': rounds,
+            'failed_all_rounds_at': self.failed_all_rounds_at.strftime('%Y-%m-%d %H:%M:%S') if self.failed_all_rounds_at else None,
+            'eligible_again_at': self.eligible_again_at.strftime('%Y-%m-%d %H:%M:%S') if self.eligible_again_at else None,
+        }
+
+
+class CandidateCooldown(db.Model):
+    """Global 60-day ban after a candidate fails all rounds for any posting."""
+    __tablename__ = 'candidate_cooldowns'
+    id                       = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    candidate_id             = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    triggered_by_posting_id  = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='SET NULL'), nullable=True)
+    triggered_at             = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    eligible_at              = db.Column(db.DateTime, nullable=False)
+    is_active                = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            'candidate_id': self.candidate_id,
+            'triggered_at': self.triggered_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'eligible_at': self.eligible_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_active': self.is_active,
+            'days_remaining': max(0, (self.eligible_at - datetime.utcnow()).days),
+        }
+
+
+class JobPosting(db.Model):
+    __tablename__ = 'job_postings'
+    id                  = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    recruiter_id        = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    job_section         = db.Column(db.String(100), nullable=False)   # e.g. IT, HR, Marketing
+    job_role            = db.Column(db.String(100), nullable=False)
+    job_title           = db.Column(db.String(200))                   # Custom title (e.g. Senior Python Dev)
+    company_name        = db.Column(db.String(150), nullable=False)
+    description         = db.Column(db.Text)
+    skills_required     = db.Column(db.Text)                          # JSON array of skill strings
+    experience_required = db.Column(db.String(50))                    # Fresher, Junior, Mid-Level, Senior, Lead
+    job_type            = db.Column(db.String(50))                    # Full-Time, Part-Time, Contract, etc.
+    salary_package      = db.Column(db.String(100))                   # e.g. ₹8–12 LPA, $80k/yr
+    work_mode           = db.Column(db.String(30))                    # On-site, Remote, Hybrid
+    is_active           = db.Column(db.Boolean, default=True)
+    created_at          = db.Column(db.DateTime, default=datetime.utcnow)
+
+    recruiter     = db.relationship('User', foreign_keys=[recruiter_id])
+    applications  = db.relationship('JobApplication', backref='posting', lazy='dynamic', cascade='all,delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'recruiter_id': self.recruiter_id,
+            'recruiter_name': self.recruiter.full_name or self.recruiter.username,
+            'job_section': self.job_section,
+            'job_role': self.job_role,
+            'job_title': self.job_title or self.job_role,
+            'company_name': self.company_name,
+            'description': self.description or '',
+            'skills_required': json.loads(self.skills_required) if self.skills_required else [],
+            'experience_required': self.experience_required or '',
+            'job_type': self.job_type or '',
+            'salary_package': self.salary_package or '',
+            'work_mode': self.work_mode or '',
+            'is_active': self.is_active,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'application_count': self.applications.count(),
+        }
+
+
+class JobApplication(db.Model):
+    __tablename__ = 'job_applications'
+    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    posting_id    = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='CASCADE'), nullable=False)
+    candidate_id  = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    cover_note    = db.Column(db.Text)
+    status        = db.Column(db.String(30), default='applied')  # applied | shortlisted | rejected | interview_scheduled
+    applied_at    = db.Column(db.DateTime, default=datetime.utcnow)
+
+    candidate     = db.relationship('User', foreign_keys=[candidate_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'posting_id': self.posting_id,
+            'job_section': self.posting.job_section,
+            'job_role': self.posting.job_role,
+            'company_name': self.posting.company_name,
+            'recruiter_name': self.posting.recruiter.full_name or self.posting.recruiter.username,
+            'recruiter_email': self.posting.recruiter.email,
+            'candidate_id': self.candidate_id,
+            'candidate_name': self.candidate.full_name or self.candidate.username,
+            'candidate_username': self.candidate.username,
+            'candidate_email': self.candidate.email,
+            'cover_note': self.cover_note or '',
+            'status': self.status,
+            'applied_at': self.applied_at.strftime('%Y-%m-%d %H:%M:%S'),
+        }
+
+
+class ScheduledInterview(db.Model):
+    __tablename__ = 'scheduled_interviews'
+    id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    application_id  = db.Column(db.Integer, db.ForeignKey('job_applications.id', ondelete='CASCADE'), nullable=False)
+    session_id      = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='SET NULL'), nullable=True)
+    recruiter_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    candidate_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    scheduled_at    = db.Column(db.DateTime, nullable=False)
+    interview_mode  = db.Column(db.String(30), default='mcq')
+    calendar_link   = db.Column(db.Text)
+    email_sent      = db.Column(db.Boolean, default=False)
+    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    room_code       = db.Column(db.String(16))
+    # Round tracking (v1.3)
+    round_number    = db.Column(db.Integer, default=1)
+    round_name      = db.Column(db.String(100), default='Round 1')
+
+    application = db.relationship('JobApplication', foreign_keys=[application_id])
+    recruiter   = db.relationship('User', foreign_keys=[recruiter_id])
+    candidate   = db.relationship('User', foreign_keys=[candidate_id])
+    session     = db.relationship('InterviewSession', foreign_keys=[session_id])
+
+    def to_dict(self):
+        app = self.application
+        sess = self.session  # may be None
+        return {
+            'id': self.id,
+            'application_id': self.application_id,
+            'job_role': app.posting.job_role,
+            'job_section': app.posting.job_section,
+            'company_name': app.posting.company_name,
+            'recruiter_name': self.recruiter.full_name or self.recruiter.username,
+            'recruiter_email': self.recruiter.email,
+            'candidate_name': self.candidate.full_name or self.candidate.username,
+            'candidate_email': self.candidate.email,
+            'scheduled_at': self.scheduled_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'interview_mode': self.interview_mode,
+            'calendar_link': self.calendar_link or '',
+            'email_sent': self.email_sent,
+            'room_code': self.room_code or (sess.room_code if sess else ''),
+            'session_id': self.session_id,
+            'session_status': sess.status if sess else 'pending',
+            'session_score': sess.interview_score if sess else None,
+            'session_credibility': sess.credibility_score if sess else None,
+            'round_number': self.round_number or 1,
+            'round_name': self.round_name or 'Round 1',
+        }
+
+
+
+
+class InterviewerAssignment(db.Model):
+    """Tracks external interviewers assigned by a recruiter to a specific interview round."""
+    __tablename__ = 'interviewer_assignments'
+    id                  = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    session_id          = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='CASCADE'), nullable=False)
+    scheduled_id        = db.Column(db.Integer, db.ForeignKey('scheduled_interviews.id', ondelete='CASCADE'), nullable=True)
+    recruiter_id        = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    interviewer_name    = db.Column(db.String(150), nullable=False)
+    interviewer_email   = db.Column(db.String(120), nullable=False)
+    interviewer_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    round_number        = db.Column(db.Integer, default=1)
+    round_name          = db.Column(db.String(100), default='Round 1')
+    notes               = db.Column(db.Text)
+    interviewer_score   = db.Column(db.Integer)
+    interviewer_feedback= db.Column(db.Text)
+    status              = db.Column(db.String(20), default='assigned')  # assigned | seen | completed
+    email_sent          = db.Column(db.Boolean, default=False)
+    created_at          = db.Column(db.DateTime, default=datetime.utcnow)
+
+    session          = db.relationship('InterviewSession', foreign_keys=[session_id])
+    recruiter        = db.relationship('User', foreign_keys=[recruiter_id])
+    interviewer_user = db.relationship('User', foreign_keys=[interviewer_user_id])
+
+    def to_dict(self):
+        s = self.session
+        return {
+            'id': self.id,
+            'session_id': self.session_id,
+            'scheduled_id': self.scheduled_id,
+            'room_code': s.room_code if s else '',
+            'job_role': s.job_role if s else '',
+            'candidate_name': (s.candidate.full_name or s.candidate.username) if s else '',
+            'interviewer_name': self.interviewer_name,
+            'interviewer_email': self.interviewer_email,
+            'recruiter_name': self.recruiter.full_name or self.recruiter.username,
+            'round_number': self.round_number or 1,
+            'round_name': self.round_name or 'Round 1',
+            'notes': self.notes or '',
+            'interviewer_score': self.interviewer_score,
+            'interviewer_feedback': self.interviewer_feedback or '',
+            'status': self.status,
+            'email_sent': self.email_sent,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'session_status': s.status if s else '',
+            'scheduled_at': s.created_at.strftime('%Y-%m-%d %H:%M:%S') if s else '',
+        }
 
 
 # ── DB Seed ────────────────────────────────────────────────────────────────────
@@ -761,31 +1010,47 @@ def login():
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json() or {}
-    username  = data.get('username','').strip()
-    email     = data.get('email','').strip()
-    password  = data.get('password','')
-    full_name = data.get('full_name','').strip()
-    role      = data.get('role','candidate')
+    username     = data.get('username','').strip()
+    email        = data.get('email','').strip()
+    password     = data.get('password','')
+    full_name    = data.get('full_name','').strip()
+    role         = data.get('role','candidate')
+    company_name = data.get('company_name','').strip()
+    phone        = data.get('phone','').strip()
+
     if not all([username, email, password, full_name]):
         return jsonify({'success': False, 'message': 'All fields required'}), 400
+    # First name is mandatory — full_name must have at least 2 chars
+    if len(full_name) < 2:
+        return jsonify({'success': False, 'message': 'First name is required'}), 400
     if len(password) < 6:
         return jsonify({'success': False, 'message': 'Password must be at least 6 characters'}), 400
+    if len(username) < 3:
+        return jsonify({'success': False, 'message': 'Username must be at least 3 characters'}), 400
+    if not re.match(r'^[a-zA-Z0-9_]+$', username):
+        return jsonify({'success': False, 'message': 'Username may only contain letters, numbers, and underscores'}), 400
     # Validate email format
     email_regex = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
     if not email_regex.match(email):
         return jsonify({'success': False, 'message': 'Please enter a valid email address'}), 400
-    # Validate email domain has valid TLD (basic check)
     domain_part = email.split('@')[1]
     tld = domain_part.split('.')[-1].lower()
     invalid_tlds = {'invalid','test','localhost','fake','example','local'}
     if tld in invalid_tlds or len(tld) < 2:
         return jsonify({'success': False, 'message': 'Email domain appears invalid. Please use a real email.'}), 400
-    # Check for disposable/known-fake domains
     disposable_domains = {'mailinator.com','guerrillamail.com','temp-mail.org','throwaway.email',
         'fakeinbox.com','sharklasers.com','guerrillamailblock.com','grr.la','spam4.me',
         'trashmail.com','yopmail.com','mailnull.com','spamgourmet.com','tempinbox.com'}
     if domain_part.lower() in disposable_domains:
-        return jsonify({'success': False, 'message': 'Disposable email addresses are not allowed. Please use your real email.'}), 400
+        return jsonify({'success': False, 'message': 'Disposable email addresses are not allowed.'}), 400
+    # Company accounts require company name and phone
+    if role in ('recruiter', 'admin'):
+        if not company_name:
+            return jsonify({'success': False, 'message': 'Company name is required for company accounts'}), 400
+        if phone:
+            phone_clean = re.sub(r'[\s\-().]', '', phone)
+            if not re.match(r'^\+?[0-9]{7,15}$', phone_clean):
+                return jsonify({'success': False, 'message': 'Please enter a valid phone number'}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({'success': False, 'message': 'Email already registered. Please login.'}), 400
     if User.query.filter_by(username=username).first():
@@ -990,58 +1255,107 @@ def create_session():
 
 
 @app.route('/api/join-session/<room_code>')
-@login_required
 def join_session(room_code):
+    try:
+        # Return JSON 401 so the frontend can show a login prompt instead of crashing
+        if not current_user.is_authenticated:
+            return jsonify({'success': False, 'code': 'not_authenticated',
+                            'message': 'Please log in to join this session.'}), 401
+
+        sess = InterviewSession.query.filter_by(room_code=room_code).first()
+        if not sess:
+            return jsonify({'success': False, 'message': 'Session not found'}), 404
+
+        # Guard 1: recruiters/admins can join as observers (for recruiter room)
+        if current_user.is_recruiter or current_user.is_admin:
+            return jsonify({'success': True, 'session': sess.to_dict(),
+                            'questions': [], 'ice_servers': app.config.get('WEBRTC_ICE_SERVERS', [])})
+
+        # Guard 2: only the assigned candidate may join this session
+        if sess.candidate_id != current_user.id:
+            return jsonify({'success': False,
+                            'message': 'This session was not assigned to your account.'}), 403
+
+        # Guard 3: prevent rejoining a completed session
+        if sess.status in ('completed', 'abandoned'):
+            return jsonify({'success': False, 'message': 'already_submitted'}), 400
+
+        # Guard 4: Block candidate if they already completed this round in the pipeline
+        try:
+            if sess.posting_id and sess.round_number:
+                pipeline = InterviewPipeline.query.filter_by(
+                    candidate_id=current_user.id, posting_id=sess.posting_id
+                ).first()
+                if pipeline:
+                    rounds = pipeline.get_rounds()
+                    rkey = str(sess.round_number)
+                    if rkey in rounds:
+                        rdata = rounds[rkey]
+                        if rdata.get('status') in ('completed_passed', 'completed_failed'):
+                            return jsonify({
+                                'success': False,
+                                'message': 'round_already_completed',
+                                'round_number': sess.round_number,
+                                'round_name': sess.round_name or f'Round {sess.round_number}',
+                                'score': rdata.get('score', 0),
+                                'passed': rdata.get('status') == 'completed_passed',
+                            }), 400
+        except Exception:
+            pass  # Pipeline table may not exist yet; skip the guard
+
+        questions = []
+        try:
+            if sess.mode == 'mcq' and sess.question_ids:
+                ids = json.loads(sess.question_ids)
+                questions = [db.session.get(ExamQuestion, i).to_dict() for i in ids
+                             if db.session.get(ExamQuestion, i)]
+        except Exception:
+            questions = []
+
+        ice_servers = app.config.get('WEBRTC_ICE_SERVERS', [])
+        return jsonify({'success': True, 'session': sess.to_dict(),
+                        'questions': questions, 'ice_servers': ice_servers})
+
+    except Exception as e:
+        print(f'[join_session] ERROR: {e}')
+        import traceback; traceback.print_exc()
+        return jsonify({'success': False, 'message': 'Server error. Please try again.'}), 500
+
+
+@app.route('/api/candidate-session-access')
+def candidate_session_access():
+    """
+    Token-less join for candidates arriving from email links.
+    Validates by room_code + candidate email — no Flask login required.
+    Returns session info so the interview_room.html can proceed after login.
+    """
+    room_code = request.args.get('room', '').strip().upper()
+    email     = (request.args.get('email') or '').strip().lower()
+
+    if not room_code:
+        return jsonify({'success': False, 'message': 'room code required'}), 400
+
     sess = InterviewSession.query.filter_by(room_code=room_code).first()
     if not sess:
-        return jsonify({'success': False, 'message': 'Session not found'}), 404
+        return jsonify({'success': False, 'message': 'Session not found. Please check your email link.'}), 404
 
-    # Guard 1: recruiters/admins can join as observers (for recruiter room)
-    if current_user.is_admin:
-        # Recruiter joining their own created session is allowed
-        if sess.recruiter_id and sess.recruiter_id != current_user.id:
-            return jsonify({'success': False,
-                            'message': 'This session belongs to a different recruiter.'}), 403
-        # Return session info for recruiter without candidate guards
-        return jsonify({'success': True, 'session': sess.to_dict(),
-                        'questions': [], 'ice_servers': app.config['WEBRTC_ICE_SERVERS']})
+    # If email provided, verify it matches the candidate
+    if email:
+        candidate = db.session.get(User, sess.candidate_id)
+        if not candidate or candidate.email.lower() != email:
+            return jsonify({'success': False, 'message': 'Email does not match this session.'}), 403
 
-    # Guard 2: only the assigned candidate may join this session
-    if sess.candidate_id != current_user.id:
-        return jsonify({'success': False,
-                        'message': 'This session was not assigned to your account.'}), 403
-
-    # Guard 3: prevent rejoining a completed session
     if sess.status in ('completed', 'abandoned'):
         return jsonify({'success': False, 'message': 'already_submitted'}), 400
 
-    # Guard 4 (v1.3): Block candidate if they already completed this round in the pipeline
-    if sess.posting_id and sess.round_number:
-        pipeline = InterviewPipeline.query.filter_by(
-            candidate_id=current_user.id, posting_id=sess.posting_id
-        ).first()
-        if pipeline:
-            rounds = pipeline.get_rounds()
-            rkey = str(sess.round_number)
-            if rkey in rounds:
-                rdata = rounds[rkey]
-                if rdata.get('status') in ('completed_passed', 'completed_failed'):
-                    return jsonify({
-                        'success': False,
-                        'message': 'round_already_completed',
-                        'round_number': sess.round_number,
-                        'round_name': sess.round_name or f'Round {sess.round_number}',
-                        'score': rdata.get('score', 0),
-                        'passed': rdata.get('status') == 'completed_passed',
-                    }), 400
-
-    questions = []
-    if sess.mode == 'mcq' and sess.question_ids:
-        ids = json.loads(sess.question_ids)
-        questions = [db.session.get(ExamQuestion, i).to_dict() for i in ids
-                     if db.session.get(ExamQuestion, i)]
-    return jsonify({'success': True, 'session': sess.to_dict(),
-                    'questions': questions, 'ice_servers': app.config['WEBRTC_ICE_SERVERS']})
+    return jsonify({
+        'success': True,
+        'room_code': sess.room_code,
+        'job_role': sess.job_role,
+        'mode': sess.mode,
+        'session_id': sess.id,
+        'candidate_email': db.session.get(User, sess.candidate_id).email if sess.candidate_id else '',
+    })
 
 
 @app.route('/api/start-session/<int:session_id>', methods=['POST'])
@@ -1545,11 +1859,14 @@ def get_pipeline(candidate_id, posting_id):
 @login_required
 def get_my_pipeline(posting_id):
     """Candidate fetches their own pipeline for a posting."""
-    pipeline = InterviewPipeline.query.filter_by(
-        candidate_id=current_user.id, posting_id=posting_id).first()
-    if not pipeline:
+    try:
+        pipeline = InterviewPipeline.query.filter_by(
+            candidate_id=current_user.id, posting_id=posting_id).first()
+        if not pipeline:
+            return jsonify({'success': True, 'pipeline': None})
+        return jsonify({'success': True, 'pipeline': pipeline.to_dict()})
+    except Exception:
         return jsonify({'success': True, 'pipeline': None})
-    return jsonify({'success': True, 'pipeline': pipeline.to_dict()})
 
 
 @app.route('/api/pipeline/unlock-round', methods=['POST'])
@@ -1784,6 +2101,8 @@ Based on all answers, provide a final evaluation. Return ONLY this JSON (no mark
 def submit_test():
     data       = request.get_json() or {}
     session_id = data.get('session_id')
+    device_failed = data.get('device_failed', False)
+    device_warn_count = data.get('device_warn_count', 0)
     cred_score = calc_credibility(session_id) if session_id else 100
 
     # Always read mode, job_role, and round info from DB session
@@ -1824,6 +2143,9 @@ def submit_test():
                 pass_threshold = detail.pass_threshold
 
     passed      = cred_score >= 50 and interview_score >= pass_threshold
+    # If candidate hit max device warnings, force fail regardless of score
+    if device_failed:
+        passed = False
     attempt_num = TestSubmission.query.filter_by(user_id=current_user.id).count() + 1
 
     sub = TestSubmission(
@@ -2139,191 +2461,6 @@ def download_report(submission_id):
 # NEW MODELS — Job Postings, Applications, Scheduled Interviews
 # ════════════════════════════════════════════════════════════════════════════════
 
-# ── Interview Pipeline & Cooldown Models (v1.3) ────────────────────────────────
-
-class InterviewPipeline(db.Model):
-    """Tracks a candidate's full round-by-round progress for a specific job posting."""
-    __tablename__ = 'interview_pipeline'
-    id                   = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    candidate_id         = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    posting_id           = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='CASCADE'), nullable=False)
-    application_id       = db.Column(db.Integer, db.ForeignKey('job_applications.id', ondelete='CASCADE'), nullable=True)
-    config_id            = db.Column(db.Integer, db.ForeignKey('job_round_config.id', ondelete='SET NULL'), nullable=True)
-    total_rounds         = db.Column(db.Integer, default=3)
-    current_round        = db.Column(db.Integer, default=1)
-    overall_status       = db.Column(db.String(30), default='in_progress')
-    # in_progress | completed_passed | completed_failed | on_cooldown
-    failed_all_rounds_at = db.Column(db.DateTime, nullable=True)
-    eligible_again_at    = db.Column(db.DateTime, nullable=True)
-    created_at           = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at           = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    # Round 1-5 results stored as JSON for flexibility (supports 1-5 rounds)
-    rounds_data          = db.Column(db.Text, default='{}')
-    # rounds_data JSON structure per round key e.g. "1": {session_id, submission_id, score, status, round_name, mode}
-    # status per round: locked | pending | completed_passed | completed_failed
-
-    candidate    = db.relationship('User', foreign_keys=[candidate_id])
-    __table_args__ = (db.UniqueConstraint('candidate_id', 'posting_id', name='uq_pipeline_candidate_posting'),)
-
-    def get_rounds(self):
-        try: return json.loads(self.rounds_data) if self.rounds_data else {}
-        except: return {}
-
-    def set_rounds(self, d):
-        self.rounds_data = json.dumps(d)
-
-    def to_dict(self):
-        rounds = self.get_rounds()
-        return {
-            'id': self.id,
-            'candidate_id': self.candidate_id,
-            'posting_id': self.posting_id,
-            'application_id': self.application_id,
-            'total_rounds': self.total_rounds,
-            'current_round': self.current_round,
-            'overall_status': self.overall_status,
-            'rounds': rounds,
-            'failed_all_rounds_at': self.failed_all_rounds_at.strftime('%Y-%m-%d %H:%M:%S') if self.failed_all_rounds_at else None,
-            'eligible_again_at': self.eligible_again_at.strftime('%Y-%m-%d %H:%M:%S') if self.eligible_again_at else None,
-        }
-
-
-class CandidateCooldown(db.Model):
-    """Global 60-day ban after a candidate fails all rounds for any posting."""
-    __tablename__ = 'candidate_cooldowns'
-    id                       = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    candidate_id             = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
-    triggered_by_posting_id  = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='SET NULL'), nullable=True)
-    triggered_at             = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    eligible_at              = db.Column(db.DateTime, nullable=False)
-    is_active                = db.Column(db.Boolean, default=True)
-
-    def to_dict(self):
-        return {
-            'candidate_id': self.candidate_id,
-            'triggered_at': self.triggered_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'eligible_at': self.eligible_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'is_active': self.is_active,
-            'days_remaining': max(0, (self.eligible_at - datetime.utcnow()).days),
-        }
-
-
-class JobPosting(db.Model):
-    __tablename__ = 'job_postings'
-    id                  = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    recruiter_id        = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    job_section         = db.Column(db.String(100), nullable=False)   # e.g. IT, HR, Marketing
-    job_role            = db.Column(db.String(100), nullable=False)
-    job_title           = db.Column(db.String(200))                   # Custom title (e.g. Senior Python Dev)
-    company_name        = db.Column(db.String(150), nullable=False)
-    description         = db.Column(db.Text)
-    skills_required     = db.Column(db.Text)                          # JSON array of skill strings
-    experience_required = db.Column(db.String(50))                    # Fresher, Junior, Mid-Level, Senior, Lead
-    job_type            = db.Column(db.String(50))                    # Full-Time, Part-Time, Contract, etc.
-    is_active           = db.Column(db.Boolean, default=True)
-    created_at          = db.Column(db.DateTime, default=datetime.utcnow)
-
-    recruiter     = db.relationship('User', foreign_keys=[recruiter_id])
-    applications  = db.relationship('JobApplication', backref='posting', lazy='dynamic', cascade='all,delete-orphan')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'recruiter_id': self.recruiter_id,
-            'recruiter_name': self.recruiter.full_name or self.recruiter.username,
-            'job_section': self.job_section,
-            'job_role': self.job_role,
-            'job_title': self.job_title or self.job_role,
-            'company_name': self.company_name,
-            'description': self.description or '',
-            'skills_required': json.loads(self.skills_required) if self.skills_required else [],
-            'experience_required': self.experience_required or '',
-            'job_type': self.job_type or '',
-            'is_active': self.is_active,
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'application_count': self.applications.count(),
-        }
-
-
-class JobApplication(db.Model):
-    __tablename__ = 'job_applications'
-    id            = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    posting_id    = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='CASCADE'), nullable=False)
-    candidate_id  = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    cover_note    = db.Column(db.Text)
-    status        = db.Column(db.String(30), default='applied')  # applied | shortlisted | rejected | interview_scheduled
-    applied_at    = db.Column(db.DateTime, default=datetime.utcnow)
-
-    candidate     = db.relationship('User', foreign_keys=[candidate_id])
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'posting_id': self.posting_id,
-            'job_section': self.posting.job_section,
-            'job_role': self.posting.job_role,
-            'company_name': self.posting.company_name,
-            'recruiter_name': self.posting.recruiter.full_name or self.posting.recruiter.username,
-            'recruiter_email': self.posting.recruiter.email,
-            'candidate_id': self.candidate_id,
-            'candidate_name': self.candidate.full_name or self.candidate.username,
-            'candidate_username': self.candidate.username,
-            'candidate_email': self.candidate.email,
-            'cover_note': self.cover_note or '',
-            'status': self.status,
-            'applied_at': self.applied_at.strftime('%Y-%m-%d %H:%M:%S'),
-        }
-
-
-class ScheduledInterview(db.Model):
-    __tablename__ = 'scheduled_interviews'
-    id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    application_id  = db.Column(db.Integer, db.ForeignKey('job_applications.id', ondelete='CASCADE'), nullable=False)
-    session_id      = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='SET NULL'), nullable=True)
-    recruiter_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    candidate_id    = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    scheduled_at    = db.Column(db.DateTime, nullable=False)
-    interview_mode  = db.Column(db.String(30), default='mcq')
-    calendar_link   = db.Column(db.Text)
-    email_sent      = db.Column(db.Boolean, default=False)
-    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
-    room_code       = db.Column(db.String(16))
-    # Round tracking (v1.3)
-    round_number    = db.Column(db.Integer, default=1)
-    round_name      = db.Column(db.String(100), default='Round 1')
-
-    application = db.relationship('JobApplication', foreign_keys=[application_id])
-    recruiter   = db.relationship('User', foreign_keys=[recruiter_id])
-    candidate   = db.relationship('User', foreign_keys=[candidate_id])
-    session     = db.relationship('InterviewSession', foreign_keys=[session_id])
-
-    def to_dict(self):
-        app = self.application
-        return {
-            'id': self.id,
-            'application_id': self.application_id,
-            'job_role': app.posting.job_role,
-            'job_section': app.posting.job_section,
-            'company_name': app.posting.company_name,
-            'recruiter_name': self.recruiter.full_name or self.recruiter.username,
-            'recruiter_email': self.recruiter.email,
-            'candidate_name': self.candidate.full_name or self.candidate.username,
-            'candidate_email': self.candidate.email,
-            'scheduled_at': self.scheduled_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'interview_mode': self.interview_mode,
-            'calendar_link': self.calendar_link or '',
-            'email_sent': self.email_sent,
-            'room_code': self.room_code or '',
-            'session_id': self.session_id,
-            'round_number': self.round_number or 1,
-            'round_name': self.round_name or 'Round 1',
-        }
-
-
-# ── Rebuild DB to include new tables ──────────────────────────────────────────
-with app.app_context():
-    db.create_all()
-
 
 # ── Email Helper ───────────────────────────────────────────────────────────────
 def send_interview_email(to_email, to_name, recruiter_name, company_name,
@@ -2333,6 +2470,7 @@ def send_interview_email(to_email, to_name, recruiter_name, company_name,
     Sends an interview notification email via SMTP.
     Uses recruiter's own Gmail credentials if provided,
     otherwise falls back to EMAIL_USER/EMAIL_PASS env vars.
+    All 3 roles (candidate, recruiter, interviewer) get a clear JOIN button.
     """
     import smtplib
     from email.mime.text import MIMEText
@@ -2341,50 +2479,101 @@ def send_interview_email(to_email, to_name, recruiter_name, company_name,
     smtp_user = smtp_user or os.environ.get('EMAIL_USER', '')
     smtp_pass = smtp_pass or os.environ.get('EMAIL_PASS', '')
 
-    subject = f"RecruitAI — Interview Scheduled: {job_role} at {company_name}"
     base_url = os.environ.get("BASE_URL", "http://localhost:5000")
-    join_url = f"{base_url}/interview_room.html?room={room_code}"
 
+    # ── Candidate: joins interview_room ──────────────────────────────────────
+    candidate_join_url  = f"{base_url}/interview_room.html?room={room_code}"
+    # ── Recruiter: joins recruiter_room ──────────────────────────────────────
+    recruiter_join_url  = f"{base_url}/recruiter_room.html?room={room_code}"
+
+    calendar_btn = (f'<div style="text-align:center;margin:12px 0;">'
+                    f'<a href="{calendar_link}" style="color:#4f8ef7;font-size:13px;text-decoration:none;">'
+                    f'📅 Add to Google Calendar</a></div>') if calendar_link else ''
+
+    subject = f"RecruitAI — Interview Scheduled: {job_role} at {company_name}"
+
+    # ── Shared header & info table ────────────────────────────────────────────
+    def _header(subtitle):
+        return f"""
+<div style="background:#0f1117;padding:24px;border-radius:10px;text-align:center;margin-bottom:24px;">
+  <h1 style="color:#4f8ef7;margin:0;font-size:26px;">🤖 RecruitAI</h1>
+  <p style="color:#7a88a8;margin:8px 0 0;font-size:13px;">{subtitle}</p>
+</div>"""
+
+    def _info_table(rows):
+        trs = ''.join(
+            f'<tr><td style="padding:11px 14px;background:#e8edf5;font-weight:600;width:38%;font-size:13px;">{k}</td>'
+            f'<td style="padding:11px 14px;background:#fff;font-size:13px;">{v}</td></tr>'
+            for k, v in rows
+        )
+        return f'<table style="width:100%;margin:20px 0;border-collapse:collapse;border-radius:8px;overflow:hidden;">{trs}</table>'
+
+    def _join_btn(url, label, color="#4f8ef7"):
+        return f"""
+<div style="text-align:center;margin:28px 0 16px;">
+  <a href="{url}"
+     style="background:{color};color:#ffffff;padding:16px 40px;border-radius:10px;
+            text-decoration:none;font-weight:700;font-size:16px;
+            display:inline-block;letter-spacing:0.3px;
+            box-shadow:0 4px 14px rgba(79,142,247,0.4);">
+    {label}
+  </a>
+</div>"""
+
+    def _footer():
+        return '<p style="color:#aaa;font-size:11px;text-align:center;margin-top:32px;border-top:1px solid #e8edf5;padding-top:16px;">RecruitAI — AI-Powered Recruitment Platform</p>'
+
+    # ── CANDIDATE EMAIL ───────────────────────────────────────────────────────
     if role == 'candidate':
+        rows = [
+            ("📋 Position",      job_role),
+            ("🏢 Company",       company_name),
+            ("👤 Recruiter",     recruiter_name),
+            ("🗓️ Date &amp; Time", f"<strong>{scheduled_at_str}</strong>"),
+            ("🔑 Room Code",     f'<code style="background:#0f1117;color:#4f8ef7;padding:4px 10px;border-radius:5px;font-size:14px;letter-spacing:0.1em;">{room_code}</code>'),
+        ]
         body_html = f"""
-<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;background:#f9fafb;padding:32px;border-radius:12px;">
-  <div style="background:#0f1117;padding:24px;border-radius:10px;text-align:center;margin-bottom:24px;">
-    <h1 style="color:#6aa3ff;margin:0;font-size:24px;">🤖 RecruitAI</h1>
-    <p style="color:#7a88a8;margin:8px 0 0;">Interview Notification</p>
-  </div>
-  <h2 style="color:#1a2035;margin-bottom:8px;">Hello, {to_name}!</h2>
-  <p style="color:#444;line-height:1.6;">Your interview has been <strong>scheduled</strong>. Here are the details:</p>
-  <table style="width:100%;margin:20px 0;border-collapse:collapse;">
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;width:40%;border-radius:6px 6px 0 0;">Position</td><td style="padding:10px 14px;background:#fff;">{job_role}</td></tr>
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Company</td><td style="padding:10px 14px;background:#fff;">{company_name}</td></tr>
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Recruiter</td><td style="padding:10px 14px;background:#fff;">{recruiter_name}</td></tr>
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Date &amp; Time</td><td style="padding:10px 14px;background:#fff;"><strong>{scheduled_at_str}</strong></td></tr>
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Room Code</td><td style="padding:10px 14px;background:#fff;"><code style="background:#0f1117;color:#6aa3ff;padding:4px 8px;border-radius:4px;">{room_code}</code></td></tr>
-  </table>
-  <div style="text-align:center;margin:24px 0;">
-    <a href="{join_url}" style="background:#4f8ef7;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">Join Interview →</a>
-  </div>
-  {f'<div style="text-align:center;margin:16px 0;"><a href="{calendar_link}" style="color:#4f8ef7;">📅 Add to Google Calendar</a></div>' if calendar_link else ''}
-  <p style="color:#777;font-size:13px;margin-top:24px;">Please be on time and ensure you are in a quiet, well-lit environment. Any device violations will be monitored.</p>
-  <p style="color:#aaa;font-size:12px;text-align:center;margin-top:32px;">RecruitAI — AI-Powered Recruitment Platform</p>
-</div>
-"""
-    else:  # recruiter
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;padding:32px;border-radius:14px;">
+  {_header("Interview Invitation")}
+  <h2 style="color:#1a2035;margin-bottom:6px;font-size:20px;">Hello, {to_name}! 👋</h2>
+  <p style="color:#555;line-height:1.7;margin-bottom:4px;">
+    Your interview has been <strong>scheduled</strong>. Please be ready on time and join using the button below.
+  </p>
+  {_info_table(rows)}
+  {_join_btn(candidate_join_url, "🚀 Join My Interview →", "#4f8ef7")}
+  <p style="color:#888;font-size:12px;background:#f0f3fd;padding:12px 16px;border-radius:8px;line-height:1.6;margin-top:4px;">
+    <strong>How to join:</strong> Click the button above. You will be asked to log in with your candidate account, then your interview will start automatically.
+  </p>
+  {calendar_btn}
+  <p style="color:#777;font-size:12px;margin-top:20px;">Please ensure a quiet, well-lit environment. Camera & proctoring will be active throughout the session.</p>
+  {_footer()}
+</div>"""
+
+    # ── RECRUITER EMAIL ───────────────────────────────────────────────────────
+    else:
+        recruiter_room_url = f"{base_url}/recruiter_room.html?room={room_code}"
+        rows = [
+            ("👤 Candidate",     to_name),
+            ("📋 Position",      job_role),
+            ("🏢 Company",       company_name),
+            ("🗓️ Date &amp; Time", f"<strong>{scheduled_at_str}</strong>"),
+            ("🔑 Room Code",     f'<code style="background:#0f1117;color:#4f8ef7;padding:4px 10px;border-radius:5px;font-size:14px;letter-spacing:0.1em;">{room_code}</code>'),
+        ]
         body_html = f"""
-<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;background:#f9fafb;padding:32px;border-radius:12px;">
-  <div style="background:#0f1117;padding:24px;border-radius:10px;text-align:center;margin-bottom:24px;">
-    <h1 style="color:#6aa3ff;margin:0;font-size:24px;">🤖 RecruitAI</h1>
-  </div>
-  <h2 style="color:#1a2035;">Interview Scheduled — Recruiter Copy</h2>
-  <p style="color:#444;">You have scheduled an interview. Room code: <code style="background:#0f1117;color:#6aa3ff;padding:4px 8px;border-radius:4px;">{room_code}</code></p>
-  <table style="width:100%;margin:20px 0;border-collapse:collapse;">
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;width:40%;">Candidate</td><td style="padding:10px 14px;background:#fff;">{to_name}</td></tr>
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Position</td><td style="padding:10px 14px;background:#fff;">{job_role}</td></tr>
-    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Date &amp; Time</td><td style="padding:10px 14px;background:#fff;"><strong>{scheduled_at_str}</strong></td></tr>
-  </table>
-  {f'<div style="text-align:center;"><a href="{calendar_link}" style="color:#4f8ef7;">📅 Add to Google Calendar</a></div>' if calendar_link else ''}
-</div>
-"""
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9fafb;padding:32px;border-radius:14px;">
+  {_header("Interview Scheduled — Recruiter Copy")}
+  <h2 style="color:#1a2035;margin-bottom:6px;font-size:20px;">Interview Confirmed ✅</h2>
+  <p style="color:#555;line-height:1.7;">
+    You have successfully scheduled an interview. Join the monitoring room when ready to observe and interact with the candidate.
+  </p>
+  {_info_table(rows)}
+  {_join_btn(recruiter_room_url, "🎙 Join Recruiter Room →", "#059669")}
+  <p style="color:#888;font-size:12px;background:#f0f3fd;padding:12px 16px;border-radius:8px;line-height:1.6;">
+    <strong>How to join:</strong> Click the button above and log in with your recruiter account. You can monitor the candidate's screen, proctoring alerts, and conduct a live interview.
+  </p>
+  {calendar_btn}
+  {_footer()}
+</div>"""
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
@@ -2397,11 +2586,11 @@ def send_interview_email(to_email, to_name, recruiter_name, company_name,
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
                 server.login(smtp_user, smtp_pass)
                 server.sendmail(smtp_user, [to_email], msg.as_string())
-            print(f"✅ Email sent to {to_email}")
+            print(f"✅ Email sent to {to_email} ({role})")
         except Exception as e:
-            print(f"⚠️  Email failed: {e}")
+            print(f"⚠️  Email failed to {to_email}: {e}")
     else:
-        print(f"📧 [No SMTP] Would send to {to_email}: {subject}")
+        print(f"📧 [No SMTP configured] Would send to {to_email}: {subject}")
 
     return True
 
@@ -2479,6 +2668,9 @@ def create_job_posting():
     data = request.get_json() or {}
     if not all([data.get('job_section'), data.get('job_role'), data.get('company_name')]):
         return jsonify({'success': False, 'message': 'job_section, job_role, and company_name are required'}), 400
+    # Salary is mandatory
+    if not data.get('salary_package', '').strip():
+        return jsonify({'success': False, 'message': 'Salary package is required'}), 400
     # Validate at least one skill
     skills = data.get('skills_required', [])
     if not skills:
@@ -2493,6 +2685,8 @@ def create_job_posting():
         skills_required=json.dumps(skills),
         experience_required=data.get('experience_required', ''),
         job_type=data.get('job_type', ''),
+        salary_package=data.get('salary_package', ''),
+        work_mode=data.get('work_mode', ''),
     )
     db.session.add(p); db.session.commit()
     return jsonify({'success': True, 'posting': p.to_dict()}), 201
@@ -2626,11 +2820,13 @@ def schedule_interview():
     if not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data = request.get_json() or {}
-    application_id   = data.get('application_id')
-    scheduled_at_str = data.get('scheduled_at')  # ISO format: 2025-03-15T14:30
-    interview_mode   = data.get('interview_mode', 'mcq')
-    round_number     = data.get('round_number', 1)
-    round_name       = data.get('round_name', f'Round {round_number}')
+    application_id    = data.get('application_id')
+    scheduled_at_str  = data.get('scheduled_at')  # ISO format: 2025-03-15T14:30
+    interview_mode    = data.get('interview_mode', 'mcq')
+    round_number      = data.get('round_number', 1)
+    round_name        = data.get('round_name', f'Round {round_number}')
+    interviewer_name  = (data.get('interviewer_name') or '').strip()
+    interviewer_email = (data.get('interviewer_email') or '').strip().lower()
 
     if not application_id or not scheduled_at_str:
         return jsonify({'success': False, 'message': 'application_id and scheduled_at required'}), 400
@@ -2734,12 +2930,44 @@ def schedule_interview():
     sched.email_sent = True
     db.session.commit()
 
+    # Auto-create InterviewerAssignment if an interviewer was specified in round config
+    portal_url = None
+    if interviewer_name and interviewer_email:
+        interviewer_user = User.query.filter_by(email=interviewer_email).first()
+        assignment = InterviewerAssignment(
+            session_id=sess.id,
+            scheduled_id=sched.id,
+            recruiter_id=recruiter.id,
+            interviewer_name=interviewer_name,
+            interviewer_email=interviewer_email,
+            interviewer_user_id=interviewer_user.id if interviewer_user else None,
+            round_number=round_number,
+            round_name=round_name,
+            status='assigned',
+        )
+        db.session.add(assignment)
+        db.session.commit()
+        base_url   = os.environ.get('BASE_URL', 'http://localhost:5000')
+        portal_url = f"{base_url}/interviewer_portal.html?assignment={assignment.id}&email={interviewer_email}"
+        room_url   = f"{base_url}/recruiter_room.html?room={room_code}&interviewer={assignment.id}&email={interviewer_email}"
+        _send_interviewer_assignment_email(
+            to_email=interviewer_email, to_name=interviewer_name,
+            recruiter_name=recruiter.full_name or recruiter.username,
+            candidate_name=candidate.full_name or candidate.username,
+            job_role=posting.job_role, round_name=round_name,
+            room_code=room_code, portal_url=portal_url, room_url=room_url,
+            recruiter_smtp=r_smtp_user, recruiter_pass=r_smtp_pass,
+        )
+        assignment.email_sent = True
+        db.session.commit()
+
     return jsonify({
         'success': True,
         'scheduled': sched.to_dict(),
         'room_code': room_code,
         'calendar_link': cal_link,
-        'message': f'Interview scheduled for {scheduled_at_display}. Emails sent to both parties.'
+        'portal_url': portal_url,
+        'message': f'Interview scheduled for {scheduled_at_display}. Emails sent to all parties.'
     })
 
 
@@ -2843,5 +3071,287 @@ def interview_complete_info(session_id):
     })
 
 
+
+# ── Interviewer Portal Route ───────────────────────────────────────────────────
+@app.route('/interviewer_portal.html')
+def serve_interviewer_portal():
+    return send_from_directory('.', 'interviewer_portal.html')
+
+
+# ── Interviewer Assignment APIs ────────────────────────────────────────────────
+
+@app.route('/api/assign-interviewer', methods=['POST'])
+@login_required
+def assign_interviewer():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    session_id        = data.get('session_id')
+    scheduled_id      = data.get('scheduled_id')
+    interviewer_name  = (data.get('interviewer_name') or '').strip()
+    interviewer_email = (data.get('interviewer_email') or '').strip().lower()
+    round_number      = data.get('round_number', 1)
+    round_name        = data.get('round_name', f'Round {round_number}')
+    notes             = data.get('notes', '')
+    if not session_id or not interviewer_name or not interviewer_email:
+        return jsonify({'success': False, 'message': 'session_id, interviewer_name and interviewer_email are required'}), 400
+    sess = db.session.get(InterviewSession, session_id)
+    if not sess:
+        return jsonify({'success': False, 'message': 'Interview session not found'}), 404
+    interviewer_user = User.query.filter_by(email=interviewer_email).first()
+    assignment = InterviewerAssignment(
+        session_id=session_id, scheduled_id=scheduled_id,
+        recruiter_id=current_user.id,
+        interviewer_name=interviewer_name, interviewer_email=interviewer_email,
+        interviewer_user_id=interviewer_user.id if interviewer_user else None,
+        round_number=round_number, round_name=round_name, notes=notes, status='assigned',
+    )
+    db.session.add(assignment); db.session.commit()
+    base_url   = os.environ.get('BASE_URL', 'http://localhost:5000')
+    portal_url = f"{base_url}/interviewer_portal.html?assignment={assignment.id}&email={interviewer_email}"
+    room_url   = f"{base_url}/recruiter_room.html?room={sess.room_code}&interviewer={assignment.id}&email={interviewer_email}"
+    _send_interviewer_assignment_email(
+        to_email=interviewer_email, to_name=interviewer_name,
+        recruiter_name=current_user.full_name or current_user.username,
+        candidate_name=sess.candidate.full_name or sess.candidate.username,
+        job_role=sess.job_role, round_name=round_name,
+        room_code=sess.room_code, portal_url=portal_url, room_url=room_url, notes=notes,
+        recruiter_smtp=current_user.smtp_email, recruiter_pass=current_user.smtp_app_password,
+    )
+    assignment.email_sent = True; db.session.commit()
+    return jsonify({'success': True, 'assignment': assignment.to_dict(),
+                    'message': f'Interviewer {interviewer_name} assigned and notified via email.',
+                    'portal_url': portal_url})
+
+
+@app.route('/api/interviewer-assignments/<int:session_id>')
+@login_required
+def get_interviewer_assignments(session_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    assignments = InterviewerAssignment.query.filter_by(session_id=session_id).all()
+    return jsonify({'success': True, 'assignments': [a.to_dict() for a in assignments]})
+
+
+@app.route('/api/interviewer-room-access')
+def interviewer_room_access():
+    """Passwordless entry for interviewers — validates assignment+email, returns session data."""
+    assignment_id = request.args.get('assignment', type=int)
+    email         = (request.args.get('email') or '').strip().lower()
+    if not assignment_id or not email:
+        return jsonify({'success': False, 'message': 'assignment and email required'}), 400
+    assignment = db.session.get(InterviewerAssignment, assignment_id)
+    if not assignment:
+        return jsonify({'success': False, 'message': 'Assignment not found'}), 404
+    if assignment.interviewer_email.lower() != email:
+        return jsonify({'success': False, 'message': 'Email does not match'}), 403
+    sess = assignment.session
+    if not sess:
+        return jsonify({'success': False, 'message': 'Interview session not found'}), 404
+    candidate = db.session.get(User, sess.candidate_id)
+    if assignment.status == 'assigned':
+        assignment.status = 'seen'
+        db.session.commit()
+    return jsonify({
+        'success': True,
+        'is_interviewer': True,
+        'assignment_id': assignment_id,
+        'interviewer_name': assignment.interviewer_name,
+        'interviewer_email': assignment.interviewer_email,
+        'session': {
+            'id':             sess.id,
+            'job_role':       sess.job_role,
+            'mode':           sess.mode,
+            'room_code':      sess.room_code,
+            'status':         sess.status,
+            'candidate_name': (candidate.full_name or candidate.username) if candidate else 'Candidate',
+            'recruiter_notes': assignment.notes or '',
+            'round_number':   sess.round_number or 1,
+            'round_name':     sess.round_name or 'Round 1',
+        },
+        'ice_servers': app.config.get('WEBRTC_ICE_SERVERS', []),
+    })
+
+
+@app.route('/api/interviewer-assignments-by-email')
+def get_assignments_by_email():
+    """Return all assignments for an interviewer by email — no login required."""
+    email = (request.args.get('email') or '').strip().lower()
+    if not email:
+        return jsonify({'success': False, 'message': 'email required'}), 400
+    assignments = InterviewerAssignment.query.filter(
+        db.func.lower(InterviewerAssignment.interviewer_email) == email
+    ).order_by(InterviewerAssignment.created_at.desc()).all()
+    if not assignments:
+        return jsonify({'success': False, 'message': 'No assignments found for this email'}), 404
+    base_url = os.environ.get('BASE_URL', 'http://localhost:5000')
+    result = []
+    for a in assignments:
+        sess = a.session
+        if not sess:
+            continue
+        candidate = db.session.get(User, sess.candidate_id)
+        sched = db.session.get(ScheduledInterview, a.scheduled_id) if a.scheduled_id else None
+        portal_url = f"{base_url}/interviewer_portal.html?assignment={a.id}&email={email}"
+        room_url   = f"{base_url}/recruiter_room.html?room={sess.room_code}&interviewer={a.id}&email={email}"
+        result.append({
+            'id':                a.id,
+            'status':            a.status,
+            'interviewer_name':  a.interviewer_name,
+            'interviewer_email': a.interviewer_email,
+            'round_number':      a.round_number,
+            'round_name':        a.round_name or 'Round 1',
+            'notes':             a.notes or '',
+            'candidate_name':    (candidate.full_name or candidate.username) if candidate else 'Candidate',
+            'job_role':          sess.job_role,
+            'room_code':         sess.room_code,
+            'portal_url':        portal_url,
+            'room_url':          room_url,
+            'scheduled_at':      sched.scheduled_at.strftime('%b %d, %Y • %I:%M %p') if sched else None,
+        })
+    interviewer_name = assignments[0].interviewer_name if assignments else ''
+    return jsonify({'success': True, 'interviewer_name': interviewer_name, 'assignments': result})
+
+
+@app.route('/api/interviewer-mark-seen/<int:assignment_id>', methods=['PATCH'])
+def interviewer_mark_seen(assignment_id):
+    """Mark assignment as seen when interviewer opens it — no login required."""
+    data  = request.get_json() or {}
+    email = (data.get('email') or '').strip().lower()
+    a = db.session.get(InterviewerAssignment, assignment_id)
+    if not a:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    if a.interviewer_email.lower() != email:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    if a.status == 'assigned':
+        a.status = 'seen'
+        db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/interviewer_login.html')
+def serve_interviewer_login():
+    return send_from_directory('.', 'interviewer_login.html')
+
+
+@app.route('/api/interviewer-portal')
+def interviewer_portal_data():
+    assignment_id = request.args.get('assignment', type=int)
+    email         = (request.args.get('email') or '').strip().lower()
+    if not assignment_id or not email:
+        return jsonify({'success': False, 'message': 'assignment and email parameters required'}), 400
+    assignment = db.session.get(InterviewerAssignment, assignment_id)
+    if not assignment:
+        return jsonify({'success': False, 'message': 'Assignment not found'}), 404
+    if assignment.interviewer_email.lower() != email:
+        return jsonify({'success': False, 'message': 'Email does not match assignment'}), 403
+    base_url = os.environ.get('BASE_URL', 'http://localhost:5000')
+    room_url = f"{base_url}/recruiter_room.html?room={assignment.session.room_code}&interviewer={assignment.id}&email={assignment.interviewer_email}"
+    d = assignment.to_dict()
+    d['room_url'] = room_url
+    if assignment.scheduled_id:
+        sched = db.session.get(ScheduledInterview, assignment.scheduled_id)
+        if sched:
+            d['scheduled_at'] = sched.scheduled_at.strftime('%B %d, %Y at %I:%M %p')
+    if assignment.status == 'assigned':
+        assignment.status = 'seen'; db.session.commit()
+    return jsonify({'success': True, 'assignment': d})
+
+
+@app.route('/api/interviewer-submit-score', methods=['POST'])
+def interviewer_submit_score():
+    data          = request.get_json() or {}
+    assignment_id = data.get('assignment_id')
+    email         = (data.get('email') or '').strip().lower()
+    score         = data.get('score')
+    feedback      = data.get('feedback', '')
+    if not assignment_id or not email or score is None:
+        return jsonify({'success': False, 'message': 'assignment_id, email and score required'}), 400
+    assignment = db.session.get(InterviewerAssignment, assignment_id)
+    if not assignment:
+        return jsonify({'success': False, 'message': 'Assignment not found'}), 404
+    if assignment.interviewer_email.lower() != email:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    try:
+        score = int(score)
+        if not (0 <= score <= 100): raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': 'Score must be 0–100'}), 400
+    assignment.interviewer_score    = score
+    assignment.interviewer_feedback = feedback
+    assignment.status               = 'completed'
+    sess = assignment.session
+    if sess and not sess.interview_score:
+        sess.interview_score = score
+    if sess and feedback:
+        note = f"[Interviewer: {assignment.interviewer_name}] {feedback}"
+        sess.recruiter_notes = (sess.recruiter_notes + '\n' + note) if sess.recruiter_notes else note
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Score and feedback submitted successfully.'})
+
+
+@app.route('/api/delete-interviewer-assignment/<int:assignment_id>', methods=['DELETE'])
+@login_required
+def delete_interviewer_assignment(assignment_id):
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    assignment = db.session.get(InterviewerAssignment, assignment_id)
+    if not assignment or assignment.recruiter_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Not found'}), 404
+    db.session.delete(assignment); db.session.commit()
+    return jsonify({'success': True, 'message': 'Assignment removed.'})
+
+
+def _send_interviewer_assignment_email(to_email, to_name, recruiter_name, candidate_name,
+                                        job_role, round_name, room_code, portal_url, room_url,
+                                        notes='', recruiter_smtp=None, recruiter_pass=None):
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    smtp_user = recruiter_smtp or os.environ.get('EMAIL_USER', '')
+    smtp_pass = recruiter_pass or os.environ.get('EMAIL_PASS', '')
+    if not smtp_user or not smtp_pass:
+        return
+    subject = f"RecruitAI — You've been assigned as Interviewer: {job_role} ({round_name})"
+    body_html = f"""
+<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;background:#f9fafb;padding:32px;border-radius:12px;">
+  <div style="background:#0f1117;padding:24px;border-radius:10px;text-align:center;margin-bottom:24px;">
+    <h1 style="color:#4361ee;margin:0;font-size:24px;">🤖 RecruitAI</h1>
+    <p style="color:#7a88a8;margin:8px 0 0;">Interviewer Assignment</p>
+  </div>
+  <h2 style="color:#1a2035;margin-bottom:8px;">Hello, {to_name}!</h2>
+  <p style="color:#444;line-height:1.6;">You have been assigned as an <strong>interviewer</strong> by <strong>{recruiter_name}</strong>.</p>
+  <table style="width:100%;margin:20px 0;border-collapse:collapse;">
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;width:40%;">Candidate</td><td style="padding:10px 14px;background:#fff;">{candidate_name}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Position</td><td style="padding:10px 14px;background:#fff;">{job_role}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Round</td><td style="padding:10px 14px;background:#fff;">{round_name}</td></tr>
+    <tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Room Code</td><td style="padding:10px 14px;background:#fff;"><code style="background:#0f1117;color:#4361ee;padding:4px 8px;border-radius:4px;">{room_code}</code></td></tr>
+    {f'<tr><td style="padding:10px 14px;background:#e8edf5;font-weight:600;">Notes</td><td style="padding:10px 14px;background:#fff;">{notes}</td></tr>' if notes else ''}
+  </table>
+  <!-- Primary CTA: Join Room directly -->
+  <div style="text-align:center;margin:24px 0 12px;">
+    <a href="{room_url}" style="background:#4361ee;color:#fff;padding:14px 36px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;">🚀 Join Interview Room →</a>
+  </div>
+  <!-- Secondary: Assignment portal for evaluation form -->
+  <div style="text-align:center;margin-bottom:24px;">
+    <a href="{portal_url}" style="color:#4361ee;font-size:13px;text-decoration:underline;">📋 View Assignment &amp; Submit Evaluation</a>
+  </div>
+  <p style="color:#888;font-size:12px;background:#f0f3fd;padding:12px 16px;border-radius:8px;line-height:1.6;">
+    <strong>How to join:</strong> Click <em>Join Interview Room</em> above — no login required. 
+    Use <em>View Assignment</em> after the interview to submit your evaluation and score.
+  </p>
+  <p style="color:#aaa;font-size:12px;text-align:center;margin-top:32px;">RecruitAI — AI-Powered Recruitment Platform</p>
+</div>"""
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From']    = smtp_user
+    msg['To']      = to_email
+    msg.attach(MIMEText(body_html, 'html'))
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_user, [to_email], msg.as_string())
+    except Exception as e:
+        print(f'[EMAIL] Interviewer assignment email failed: {e}')
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
