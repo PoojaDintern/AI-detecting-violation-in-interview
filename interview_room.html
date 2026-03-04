@@ -638,10 +638,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 <div id="device-kicked-overlay">
   <div class="kick-icon">🚫📱</div>
   <div class="kick-title">Device Detected — Interview Paused</div>
-  <div class="kick-desc">A prohibited device (phone, tablet, or other electronic device) was detected by our proctoring system. You must remove all devices from the camera view before continuing.</div>
+  <div class="kick-desc">A prohibited device (phone, tablet, or other electronic device) was detected by our proctoring system. Remove all devices from the camera view before continuing.<br><br><strong style="color:#fca5a5;">Note: Your credibility score is NOT affected by device detection.</strong></div>
   <div class="countdown-badge" id="kick-countdown">10</div>
   <div class="kick-cta">Ensure no devices are visible. Interview resumes after a clean 10-second detection window.</div>
-  <button onclick="requestRejoin()" style="margin-top:16px;padding:14px 32px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">✓ I've removed the device — Check Again</button>
+  <div style="display:flex;gap:14px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
+    <button onclick="requestRejoin()" style="padding:14px 32px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;">✓ I've removed the device — Check Again</button>
+    <button onclick="leaveFromDeviceScreen()" style="padding:14px 28px;background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.5);border-radius:10px;color:#fca5a5;font-size:14px;font-weight:700;cursor:pointer;">🚪 Leave Interview</button>
+  </div>
 </div>
 
 <!-- Submitting Overlay -->
@@ -712,6 +715,35 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
       <!-- AI Interview Mode -->
       <div id="ai-area" style="display:none;">
+        <!-- Voice Configuration Bar -->
+        <div id="ai-voice-config" style="background:var(--s);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">🎙️ AI Voice Settings</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:12px;color:var(--muted);">Tone:</label>
+            <select id="ai-voice-tone" onchange="applyVoiceSettings()" style="padding:5px 10px;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;">
+              <option value="normal">Normal</option>
+              <option value="slow">Slow & Clear</option>
+              <option value="fast">Fast</option>
+              <option value="deep">Deep & Formal</option>
+              <option value="friendly">Friendly</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:12px;color:var(--muted);">Accent:</label>
+            <select id="ai-voice-accent" onchange="applyVoiceSettings()" style="padding:5px 10px;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;">
+              <option value="en-US">American English</option>
+              <option value="en-GB">British English</option>
+              <option value="en-AU">Australian English</option>
+              <option value="en-IN">Indian English</option>
+              <option value="en-CA">Canadian English</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <label style="font-size:12px;color:var(--muted);">Volume:</label>
+            <input type="range" id="ai-voice-volume" min="0" max="1" step="0.1" value="1" onchange="applyVoiceSettings()" style="width:70px;accent-color:var(--accent);">
+          </div>
+        </div>
+
         <div class="ai-video-box">
           <div class="ai-avatar-center">
             <img class="ai-avatar-img" src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Alex&backgroundColor=1e3a5f&radius=50" alt="AI Interviewer" onerror="this.style.display='none'">
@@ -721,13 +753,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             <div class="ai-bar"></div><div class="ai-bar"></div><div class="ai-bar"></div><div class="ai-bar"></div>
           </div>
         </div>
+
         <div class="ai-question-box">
-          <div class="ai-q-label">Current Question</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="ai-q-label" style="margin-bottom:0;">Current Question</div>
+            <button onclick="reAnnounceQuestion()" title="Re-read question aloud" style="display:flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.25);border-radius:8px;color:var(--accent2);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(67,97,238,.2)'" onmouseout="this.style.background='rgba(67,97,238,.1)'">
+              🔊 Re-announce
+            </button>
+          </div>
           <div class="ai-q-text" id="ai-q-text">Preparing your interview…</div>
         </div>
+
         <div class="ai-answer-box">
           <div class="ai-a-label">Your Answer</div>
-          <textarea class="ai-answer-textarea" id="ai-answer-input" placeholder="Type your answer here…"></textarea>
+
+          <!-- Voice Recording Controls -->
+          <div id="ai-voice-controls" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;">
+            <button id="ai-record-btn" onclick="toggleVoiceRecording()" style="display:flex;align-items:center;gap:7px;padding:8px 16px;background:rgba(5,150,105,.12);border:1.5px solid rgba(5,150,105,.3);border-radius:8px;color:#059669;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;">
+              🎤 Start Recording
+            </button>
+            <div id="ai-rec-indicator" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--red);">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--red);animation:blink 1s infinite;display:inline-block;"></span>
+              Recording…
+            </div>
+            <div id="ai-rec-transcript-preview" style="flex:1;font-size:12px;color:var(--muted);font-style:italic;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+            <button onclick="clearVoiceTranscript()" title="Clear voice transcript" style="padding:6px 10px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;cursor:pointer;white-space:nowrap;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Clear</button>
+          </div>
+
+          <textarea class="ai-answer-textarea" id="ai-answer-input" placeholder="Type your answer here, or use voice recording above — both are supported…"></textarea>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;margin-bottom:2px;">💡 Voice recordings are appended to your typed answer. You can edit the combined text before submitting.</div>
+
           <div class="ai-action-row">
             <span id="ai-q-counter" style="font-size:13px;color:var(--muted);align-self:center;"></span>
             <button id="ai-next-btn" onclick="aiNextQuestion()" style="padding:11px 24px;background:var(--accent);border:none;border-radius:9px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;">Next Question →</button>
@@ -780,10 +835,29 @@ let proctoringActive = false;
 async function init() {
   if (!ROOM_CODE) { alert('No room code found. Please join via your email link.'); return; }
   try {
-    const data = await fetch(`/api/join-session/${ROOM_CODE}`).then(r=>r.json());
+    const data = await fetch(`/api/join-session/${ROOM_CODE}`, {credentials:'include'}).then(r=>r.json());
     if (!data.success) {
       if (data.message === 'already_submitted') {
         window.location.href = 'test.html';
+        return;
+      }
+      if (data.message === 'round_already_completed') {
+        // Show a friendly round-blocked screen instead of just redirecting
+        document.getElementById('loading-screen').innerHTML = `
+          <div style="text-align:center;max-width:500px;padding:40px;">
+            <div style="font-size:64px;margin-bottom:16px;">🔒</div>
+            <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:800;margin-bottom:12px;color:#f5f7ff;">Round Already Completed</div>
+            <div style="color:#94a3b8;font-size:15px;line-height:1.7;margin-bottom:8px;">
+              You have already attended <strong style="color:#a5b4fc;">${data.round_name || 'this round'}</strong>.<br>
+              Your score for this round has been recorded.
+            </div>
+            <div style="background:rgba(67,97,238,0.1);border:1px solid rgba(67,97,238,0.3);border-radius:12px;padding:16px;margin:20px 0;font-size:14px;color:#a5b4fc;">
+              Interview Score: <strong>${data.score ?? '—'}</strong> &nbsp;|&nbsp; 
+              Status: <strong style="color:${data.passed?'#34d399':'#fca5a5'}">${data.passed?'✅ Passed':'❌ Not Passed'}</strong>
+            </div>
+            <div style="color:#64748b;font-size:13px;margin-bottom:24px;">Please wait for your recruiter to schedule your next round, or contact them if you believe this is an error.</div>
+            <a href="test.html" style="display:inline-block;padding:12px 28px;background:#4361ee;color:#fff;border-radius:10px;font-weight:700;text-decoration:none;">← Back to Portal</a>
+          </div>`;
         return;
       }
       alert(data.message || 'Could not join session'); window.location.href = 'test.html'; return;
@@ -828,7 +902,7 @@ async function startCamera() {
 }
 
 async function startSession() {
-  await fetch(`/api/start-session/${sessionData.id}`, {method:'POST'});
+  await fetch(`/api/start-session/${sessionData.id}`, {method:'POST', credentials:'include'});
 }
 
 // ── Timer ──────────────────────────────────────────────────────────────────────
@@ -1201,6 +1275,8 @@ async function loadAI() {
 
 function displayAIQuestion() {
   if (aiCurrentQ >= aiQuestions.length) { submitInterview('ai_complete'); return; }
+  // Stop any ongoing recording when moving to next question
+  if (isRecording) stopVoiceRecording();
   const q = aiQuestions[aiCurrentQ];
   document.getElementById('ai-q-text').textContent = q.question || q.question_text;
   document.getElementById('ai-answer-input').value = '';
@@ -1209,20 +1285,147 @@ function displayAIQuestion() {
   const btn = document.getElementById('ai-next-btn');
   btn.textContent = isLast ? '✓ Finish Interview' : 'Next Question →';
   // Speak the question
-  speakText(q.question || q.question_text);
-  document.getElementById('ai-speak-bars').style.display='flex';
+  // Slight delay so voices have time to load
+  setTimeout(() => {
+    speakText(q.question || q.question_text);
+    document.getElementById('ai-speak-bars').style.display='flex';
+  }, 300);
+}
+
+// ── AI Voice Settings ──────────────────────────────────────────────────────────
+let aiVoiceSettings = { lang: 'en-US', rate: 0.9, pitch: 1.0, volume: 1.0 };
+
+function applyVoiceSettings() {
+  const tone   = document.getElementById('ai-voice-tone')?.value   || 'normal';
+  const accent = document.getElementById('ai-voice-accent')?.value || 'en-US';
+  const volume = parseFloat(document.getElementById('ai-voice-volume')?.value ?? 1);
+  aiVoiceSettings.lang   = accent;
+  aiVoiceSettings.volume = volume;
+  switch(tone) {
+    case 'slow':     aiVoiceSettings.rate=0.7;  aiVoiceSettings.pitch=1.0;  break;
+    case 'fast':     aiVoiceSettings.rate=1.3;  aiVoiceSettings.pitch=1.0;  break;
+    case 'deep':     aiVoiceSettings.rate=0.85; aiVoiceSettings.pitch=0.7;  break;
+    case 'friendly': aiVoiceSettings.rate=1.0;  aiVoiceSettings.pitch=1.2;  break;
+    default:         aiVoiceSettings.rate=0.9;  aiVoiceSettings.pitch=1.0;
+  }
 }
 
 function speakText(text) {
   if (!window.speechSynthesis) return;
   speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(text);
-  utt.rate = 0.9; utt.lang = 'en-US';
+  utt.lang   = aiVoiceSettings.lang;
+  utt.rate   = aiVoiceSettings.rate;
+  utt.pitch  = aiVoiceSettings.pitch;
+  utt.volume = aiVoiceSettings.volume;
+  // Try to match accent to an available voice
+  const voices = speechSynthesis.getVoices();
+  const match = voices.find(v => v.lang.startsWith(aiVoiceSettings.lang.split('-')[0]) && v.lang === aiVoiceSettings.lang)
+             || voices.find(v => v.lang.startsWith(aiVoiceSettings.lang.split('-')[0]));
+  if (match) utt.voice = match;
   utt.onend = () => document.getElementById('ai-speak-bars').style.display='none';
   speechSynthesis.speak(utt);
 }
 
+function reAnnounceQuestion() {
+  const q = aiQuestions[aiCurrentQ];
+  if (!q) return;
+  speakText(q.question || q.question_text);
+  document.getElementById('ai-speak-bars').style.display = 'flex';
+}
+
+// ── Voice Recording ────────────────────────────────────────────────────────────
+let voiceRecognition = null;
+let isRecording = false;
+let voiceInterimText = '';
+
+function initVoiceRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const rec = new SR();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = aiVoiceSettings.lang;
+
+  rec.onresult = (e) => {
+    let interim = '';
+    let final   = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    // Append finalized text to textarea (don't replace existing content)
+    if (final) {
+      const ta = document.getElementById('ai-answer-input');
+      const existing = ta.value.trimEnd();
+      ta.value = existing ? existing + ' ' + final.trim() : final.trim();
+      voiceInterimText = '';
+    } else {
+      voiceInterimText = interim;
+    }
+    // Update preview
+    const preview = document.getElementById('ai-rec-transcript-preview');
+    if (preview) preview.textContent = voiceInterimText ? '…' + voiceInterimText : (isRecording ? 'Listening…' : '');
+  };
+
+  rec.onerror = (e) => {
+    console.warn('Speech recognition error:', e.error);
+    if (e.error !== 'no-speech') stopVoiceRecording();
+  };
+
+  rec.onend = () => {
+    // Auto-restart if still supposed to be recording
+    if (isRecording) {
+      try { rec.start(); } catch(err) {}
+    }
+  };
+
+  return rec;
+}
+
+function toggleVoiceRecording() {
+  if (isRecording) { stopVoiceRecording(); }
+  else { startVoiceRecording(); }
+}
+
+function startVoiceRecording() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('Voice recording is not supported in your browser. Please use Chrome.'); return; }
+  voiceRecognition = initVoiceRecognition();
+  if (!voiceRecognition) return;
+  isRecording = true;
+  try { voiceRecognition.start(); } catch(e) {}
+  const btn = document.getElementById('ai-record-btn');
+  btn.innerHTML = '⏹ Stop Recording';
+  btn.style.background = 'rgba(220,38,38,.12)';
+  btn.style.borderColor = 'rgba(220,38,38,.3)';
+  btn.style.color = 'var(--red)';
+  document.getElementById('ai-rec-indicator').style.display = 'flex';
+}
+
+function stopVoiceRecording() {
+  isRecording = false;
+  try { voiceRecognition?.stop(); } catch(e) {}
+  voiceRecognition = null;
+  const btn = document.getElementById('ai-record-btn');
+  btn.innerHTML = '🎤 Start Recording';
+  btn.style.background = 'rgba(5,150,105,.12)';
+  btn.style.borderColor = 'rgba(5,150,105,.3)';
+  btn.style.color = '#059669';
+  document.getElementById('ai-rec-indicator').style.display = 'none';
+  document.getElementById('ai-rec-transcript-preview').textContent = '';
+}
+
+function clearVoiceTranscript() {
+  stopVoiceRecording();
+  document.getElementById('ai-answer-input').value = '';
+  document.getElementById('ai-rec-transcript-preview').textContent = '';
+}
+
 async function aiNextQuestion() {
+  // Stop recording if active
+  if (isRecording) stopVoiceRecording();
   const answer = document.getElementById('ai-answer-input').value.trim();
   if (!answer) { alert('Please type your answer before continuing.'); return; }
   const q = aiQuestions[aiCurrentQ];
@@ -1242,6 +1445,7 @@ async function aiNextQuestion() {
 
 // ── Submit ─────────────────────────────────────────────────────────────────────
 async function submitInterview(reason='manual') {
+  _interviewSubmitted = true;   // prevent beforeunload from also calling session-end-on-close
   clearInterval(timerInterval);
   clearInterval(faceCheckInterval);
   clearInterval(deviceCheckInterval);
@@ -1279,97 +1483,144 @@ function showLeaveMod() { document.getElementById('leave-modal').style.display='
 function closeLeaveMod() { document.getElementById('leave-modal').style.display='none'; }
 function confirmLeave() { submitInterview('left_early'); }
 
+// Leave from the device detection overlay (skip rejoin flow, end session cleanly)
+function leaveFromDeviceScreen() {
+  if (!confirm('Are you sure you want to leave the interview? Your current answers will be submitted.')) return;
+  deviceKicked = false;
+  document.getElementById('device-kicked-overlay').style.display = 'none';
+  submitInterview('left_from_device_screen');
+}
+
+// ── Tab / Browser Close → End Session ─────────────────────────────────────────
+// Uses sendBeacon so the request fires even as the page unloads.
+// We use a flag so that normal navigation (submit redirect) doesn't trigger it.
+let _interviewSubmitted = false;
+
+function markSubmitted() { _interviewSubmitted = true; }
+
+window.addEventListener('beforeunload', function(e) {
+  if (_interviewSubmitted) return;
+  if (!sessionData || !sessionData.id) return;
+  // sendBeacon is fire-and-forget — perfect for tab close
+  const payload = JSON.stringify({ session_id: sessionData.id });
+  navigator.sendBeacon('/api/session-end-on-close', new Blob([payload], { type: 'application/json' }));
+  // Show browser's native "leave page?" dialog
+  e.preventDefault();
+  e.returnValue = 'Your interview session will be ended. Are you sure you want to leave?';
+});
+
 // ── Socket ─────────────────────────────────────────────────────────────────────
+// ICE candidates buffered before setRemoteDescription is called
+let pendingIceCandidates = [];
+let peerConn = null;
+
 function initSocket() {
   socket = io(window.location.origin, {
     transports: ['polling', 'websocket'],
     withCredentials: true,
-    extraHeaders: {
-      'ngrok-skip-browser-warning': 'true'
-    }
+    extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1500,
   });
-
-  // FIX: Queue to hold an offer that arrives before peerConn is ready
-  let pendingOffer = null;
 
   socket.on('connect', () => {
     socket.emit('join_room_event', {room: ROOM_CODE, role: 'candidate'});
-    // FIX: Tell the recruiter we're ready so they know to send the WebRTC offer
-    socket.emit('candidate_ready', {room: ROOM_CODE});
+    // Delay slightly so server processes join_room_event first
+    setTimeout(() => socket.emit('candidate_ready', {room: ROOM_CODE}), 300);
   });
 
-  socket.on('interview_ended', ()=>{ alert('The recruiter has ended the session.'); submitInterview('recruiter_ended'); });
+  socket.on('reconnect', () => {
+    socket.emit('join_room_event', {room: ROOM_CODE, role: 'candidate'});
+    setTimeout(() => socket.emit('candidate_ready', {room: ROOM_CODE}), 300);
+  });
 
-  // Recruiter joined → unlock the live session
+  socket.on('interview_ended', () => {
+    alert('The recruiter has ended the session.');
+    submitInterview('recruiter_ended');
+  });
+
+  // Recruiter joined → unlock live session and re-signal readiness
   socket.on('recruiter_joined', async () => {
     if (sessionData && sessionData.mode === 'live_recruiter') {
       const waiting = document.getElementById('recruiter-waiting');
       const active  = document.getElementById('recruiter-active');
       if (waiting) waiting.style.display = 'none';
       if (active)  active.style.display  = 'block';
-      // Now start the actual session
       await startSession();
       startTimer();
       startProctoring();
     }
-    // FIX: Re-announce readiness so recruiter can send offer even if they joined first
-    socket.emit('candidate_ready', {room: ROOM_CODE});
+    // Re-signal so recruiter knows to send a fresh WebRTC offer
+    setTimeout(() => socket.emit('candidate_ready', {room: ROOM_CODE}), 200);
   });
 
-  // FIX: Handle WebRTC offer — set up peer connection first, then apply offer
+  // Recruiter sends offer — candidate answers
   socket.on('webrtc_offer', async data => {
     try {
-      if (!peerConn) {
-        // Store offer and set up peer connection, then apply it
-        pendingOffer = data;
-        await setupCandidatePeerConn();
+      // Always close stale connection and start fresh
+      if (peerConn) { peerConn.close(); peerConn = null; pendingIceCandidates = []; }
+      await setupCandidatePeerConn();
+      await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      // Flush any ICE candidates that arrived before offer
+      for (const c of pendingIceCandidates) {
+        try { await peerConn.addIceCandidate(new RTCIceCandidate(c)); } catch(_) {}
       }
-      if (pendingOffer) {
-        await peerConn.setRemoteDescription(new RTCSessionDescription(pendingOffer.sdp));
-        const answer = await peerConn.createAnswer();
-        await peerConn.setLocalDescription(answer);
-        socket.emit('webrtc_answer', {sdp: answer, room: ROOM_CODE});
-        pendingOffer = null;
-      }
-    } catch(e) { console.error('WebRTC offer error:', e); }
-  });
-
-  socket.on('webrtc_answer', async data => {
-    try { await peerConn?.setRemoteDescription(new RTCSessionDescription(data.sdp)); }
-    catch(e) { console.error('WebRTC answer error:', e); }
+      pendingIceCandidates = [];
+      const answer = await peerConn.createAnswer();
+      await peerConn.setLocalDescription(answer);
+      socket.emit('webrtc_answer', {sdp: answer, room: ROOM_CODE});
+    } catch(e) { console.error('[WebRTC] offer handling error:', e); }
   });
 
   socket.on('webrtc_ice_candidate', async data => {
-    try { await peerConn?.addIceCandidate(new RTCIceCandidate(data.candidate)); }
-    catch(e) { console.error('ICE candidate error:', e); }
+    try {
+      if (peerConn && peerConn.remoteDescription) {
+        await peerConn.addIceCandidate(new RTCIceCandidate(data.candidate));
+      } else {
+        pendingIceCandidates.push(data.candidate);
+      }
+    } catch(e) { console.error('[WebRTC] ICE error:', e); }
   });
 
-  // Recruiter text message
   socket.on('recruiter_message', data => {
-    // Show a non-intrusive toast notification for recruiter messages
     if (data.message && !data.message.startsWith('[')) {
       showRecruiterMessage(data.message);
     }
   });
 }
 
-// FIX: Candidate-side peer connection setup (receives offer, sends answer)
-let peerConn = null;
+// Candidate-side peer connection — receives offer, answers, streams camera
 async function setupCandidatePeerConn() {
   if (peerConn) return;
   const iceServers = sessionData?.ice_servers || [];
-  peerConn = new RTCPeerConnection({iceServers});
-  // Add local camera stream to peer connection so recruiter sees candidate
+  peerConn = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all', bundlePolicy: 'max-bundle' });
+
+  // CRITICAL: add camera tracks NOW so they're in the answer SDP
   const camVideo = document.getElementById('cam-video');
-  if (camVideo.srcObject) {
-    camVideo.srcObject.getTracks().forEach(t => peerConn.addTrack(t, camVideo.srcObject));
+  if (camVideo && camVideo.srcObject) {
+    camVideo.srcObject.getTracks().forEach(track => {
+      peerConn.addTrack(track, camVideo.srcObject);
+    });
   }
+
   peerConn.onicecandidate = e => {
     if (e.candidate) socket.emit('webrtc_ice_candidate', {candidate: e.candidate, room: ROOM_CODE});
   };
+
+  peerConn.oniceconnectionstatechange = () => {
+    if (peerConn.iceConnectionState === 'failed') {
+      peerConn.restartIce();
+    }
+    if (peerConn.iceConnectionState === 'disconnected') {
+      // Tell recruiter to re-send offer
+      setTimeout(() => socket.emit('candidate_ready', {room: ROOM_CODE}), 1000);
+    }
+  };
+
   peerConn.ontrack = e => {
-    // If candidate receives recruiter's stream (optional), could show it
-    console.log('Received track from recruiter');
+    // Candidate receives recruiter audio/video (optional)
+    console.log('[WebRTC] received recruiter track:', e.track.kind);
   };
 }
 

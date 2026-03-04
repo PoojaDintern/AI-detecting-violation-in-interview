@@ -26,11 +26,7 @@ if _base_url and _base_url not in _allowed_origins:
     _allowed_origins.append(_base_url)
 CORS(app, supports_credentials=True, origins=_allowed_origins)
 db = SQLAlchemy(app)
-_socketio_origins = ['http://localhost:5000','http://127.0.0.1:5000']
-_sio_base = os.environ.get('BASE_URL','')
-if _sio_base and _sio_base not in _socketio_origins:
-    _socketio_origins.append(_sio_base)
-socketio = SocketIO(app, cors_allowed_origins=_socketio_origins, async_mode='eventlet', allow_upgrades=True, ping_timeout=60, ping_interval=25)
+socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet', allow_upgrades=True, ping_timeout=120, ping_interval=25)
 login_manager = LoginManager(app)
 login_manager.login_view = 'serve_index'
 login_manager.session_protection = 'strong'
@@ -131,6 +127,11 @@ class InterviewSession(db.Model):
     question_ids  = db.Column(db.Text)
     ai_transcript = db.Column(db.Text)
     recruiter_notes = db.Column(db.Text)
+    # Round tracking (v1.3)
+    round_number  = db.Column(db.Integer, default=1)
+    round_name    = db.Column(db.String(100))
+    posting_id    = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='SET NULL'), nullable=True)
+    parent_session_id = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='SET NULL'), nullable=True)
 
     candidate = db.relationship('User', foreign_keys=[candidate_id], backref='sessions_as_candidate')
     recruiter = db.relationship('User', foreign_keys=[recruiter_id], backref='sessions_as_recruiter')
@@ -149,6 +150,9 @@ class InterviewSession(db.Model):
             'started_at': self.started_at.strftime('%Y-%m-%d %H:%M:%S') if self.started_at else None,
             'ended_at':   self.ended_at.strftime('%Y-%m-%d %H:%M:%S') if self.ended_at else None,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'round_number': self.round_number or 1,
+            'round_name': self.round_name or 'Round 1',
+            'posting_id': self.posting_id,
         }
 
 
@@ -195,6 +199,44 @@ class DeviceAlert(db.Model):
     timestamp   = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# ── Round Configuration Models (v1.3) ──────────────────────────────────────────
+class JobRoundConfig(db.Model):
+    __tablename__ = 'job_round_config'
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    posting_id   = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='CASCADE'), nullable=False, unique=True)
+    recruiter_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    total_rounds = db.Column(db.Integer, default=3)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at   = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    details      = db.relationship('RoundConfigDetail', backref='config', cascade='all,delete-orphan', lazy='dynamic')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'posting_id': self.posting_id,
+            'total_rounds': self.total_rounds,
+            'rounds': [d.to_dict() for d in self.details.order_by(RoundConfigDetail.round_number)]
+        }
+
+
+class RoundConfigDetail(db.Model):
+    __tablename__ = 'round_config_details'
+    id             = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    config_id      = db.Column(db.Integer, db.ForeignKey('job_round_config.id', ondelete='CASCADE'), nullable=False)
+    round_number   = db.Column(db.Integer, nullable=False)
+    round_name     = db.Column(db.String(100), nullable=False)
+    interview_mode = db.Column(db.String(30),  nullable=False, default='mcq')
+    pass_threshold = db.Column(db.Integer, default=60)
+
+    def to_dict(self):
+        return {
+            'round_number': self.round_number,
+            'round_name': self.round_name,
+            'interview_mode': self.interview_mode,
+            'pass_threshold': self.pass_threshold
+        }
+
+
 class TestSubmission(db.Model):
     __tablename__ = 'test_submissions'
     id              = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -211,6 +253,10 @@ class TestSubmission(db.Model):
     passed          = db.Column(db.Boolean, default=False)
     attempt_number  = db.Column(db.Integer, default=1)
     ai_feedback     = db.Column(db.Text)
+    # Round tracking (v1.3)
+    round_number    = db.Column(db.Integer, default=1)
+    round_name      = db.Column(db.String(100), default='Round 1')
+    posting_id      = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='SET NULL'), nullable=True)
 
     def to_dict(self):
         return {
@@ -228,6 +274,9 @@ class TestSubmission(db.Model):
             'passed': self.passed,
             'attempt_number': self.attempt_number,
             'ai_feedback': self.ai_feedback,
+            'round_number': self.round_number or 1,
+            'round_name': self.round_name or 'Round 1',
+            'posting_id': self.posting_id,
         }
 
 
@@ -266,12 +315,15 @@ def get_violation_info(vtype):
     }.get(vtype, {'severity': 1, 'description': 'Unknown violation'})
 
 def calc_credibility(session_id):
+    # Device/phone violations are logged for recruiter review but do NOT reduce credibility
+    DEVICE_VIOLATION_TYPES = {'phone_detected', 'device_detected'}
     violations = Violation.query.filter_by(session_id=session_id).all()
+    scored_violations = [v for v in violations if v.violation_type not in DEVICE_VIOLATION_TYPES]
     score = 100
-    for v in violations:
+    for v in scored_violations:
         score -= app.config['SEVERITY_POINTS'].get(v.severity, 5)
-    if len(violations) > 10:
-        score -= (len(violations) - 10) * 2
+    if len(scored_violations) > 10:
+        score -= (len(scored_violations) - 10) * 2
     return max(0, min(100, score))
 
 def log_violation_db(user_id, session_id, vtype, gaze_data=None, device_data=None):
@@ -792,16 +844,105 @@ def get_mcq_questions(job_role):
 
 
 # ── Session Management ─────────────────────────────────────────────────────────
+def _ensure_pipeline(candidate_id, posting_id, round_number, round_name, mode, session_id):
+    """Create or update the InterviewPipeline record for this candidate+posting+round."""
+    try:
+        config = JobRoundConfig.query.filter_by(posting_id=posting_id).first()
+        total_rounds = config.total_rounds if config else 3
+        config_id    = config.id if config else None
+
+        app_obj = JobApplication.query.filter_by(
+            candidate_id=candidate_id, posting_id=posting_id
+        ).first()
+        application_id = app_obj.id if app_obj else None
+
+        pipeline = InterviewPipeline.query.filter_by(
+            candidate_id=candidate_id, posting_id=posting_id
+        ).first()
+
+        if not pipeline:
+            # Build initial rounds structure with all rounds locked except the first
+            rounds = {}
+            for rn in range(1, total_rounds + 1):
+                detail = None
+                if config:
+                    detail = RoundConfigDetail.query.filter_by(config_id=config.id, round_number=rn).first()
+                rounds[str(rn)] = {
+                    'status': 'pending' if rn == 1 else 'locked',
+                    'round_name': detail.round_name if detail else f'Round {rn}',
+                    'mode': detail.interview_mode if detail else 'mcq',
+                    'session_id': session_id if rn == round_number else None,
+                    'submission_id': None,
+                    'score': None,
+                }
+            pipeline = InterviewPipeline(
+                candidate_id=candidate_id, posting_id=posting_id,
+                application_id=application_id, config_id=config_id,
+                total_rounds=total_rounds, current_round=round_number,
+                overall_status='in_progress',
+            )
+            pipeline.set_rounds(rounds)
+            db.session.add(pipeline)
+        else:
+            rounds = pipeline.get_rounds()
+            rkey = str(round_number)
+            if rkey not in rounds:
+                rounds[rkey] = {}
+            rounds[rkey]['session_id'] = session_id
+            rounds[rkey]['status'] = 'pending'
+            rounds[rkey]['round_name'] = round_name
+            rounds[rkey]['mode'] = mode
+            pipeline.set_rounds(rounds)
+            pipeline.current_round = round_number
+            pipeline.updated_at = datetime.utcnow()
+        db.session.commit()
+        return pipeline
+    except Exception as e:
+        db.session.rollback()
+        print(f'Pipeline init error: {e}')
+        return None
+
+
+def _apply_cooldown(candidate_id, posting_id):
+    """Apply a 60-day global cooldown to a candidate after failing all rounds."""
+    from datetime import timedelta
+    try:
+        existing = CandidateCooldown.query.filter_by(candidate_id=candidate_id).first()
+        eligible = datetime.utcnow() + timedelta(days=60)
+        if existing:
+            existing.triggered_at = datetime.utcnow()
+            existing.eligible_at  = eligible
+            existing.is_active    = True
+            existing.triggered_by_posting_id = posting_id
+        else:
+            cooldown = CandidateCooldown(
+                candidate_id=candidate_id,
+                triggered_by_posting_id=posting_id,
+                triggered_at=datetime.utcnow(),
+                eligible_at=eligible,
+                is_active=True,
+            )
+            db.session.add(cooldown)
+        db.session.commit()
+        print(f'60-day cooldown applied to candidate {candidate_id}')
+    except Exception as e:
+        db.session.rollback()
+        print(f'Cooldown apply error: {e}')
+
+
 @app.route('/api/create-session', methods=['POST'])
 @login_required
 def create_session():
     data = request.get_json() or {}
-    job_role = data.get('job_role', 'Python Developer')
-    mode     = data.get('mode', 'mcq')
+    job_role   = data.get('job_role', 'Python Developer')
+    mode       = data.get('mode', 'mcq')
+    posting_id = data.get('posting_id')
+    round_number = data.get('round_number', 1)
+    round_name   = data.get('round_name', f'Round {round_number}')
     candidate_username = data.get('candidate_username')
 
     if current_user.role == 'candidate':
-        candidate = current_user
+        candidate    = current_user
         recruiter_id = None
     else:
         if candidate_username:
@@ -811,6 +952,17 @@ def create_session():
         else:
             return jsonify({'success': False, 'message': 'candidate_username required'}), 400
         recruiter_id = current_user.id
+
+    # If posting_id given, auto-resolve round details from config
+    if posting_id and current_user.is_recruiter:
+        config = JobRoundConfig.query.filter_by(posting_id=posting_id).first()
+        if config:
+            detail = RoundConfigDetail.query.filter_by(
+                config_id=config.id, round_number=round_number
+            ).first()
+            if detail:
+                mode       = detail.interview_mode
+                round_name = detail.round_name
 
     question_ids = []
     if mode == 'mcq':
@@ -825,8 +977,15 @@ def create_session():
         job_role=job_role, mode=mode,
         room_code=make_room_code(), status='pending',
         credibility_score=100, question_ids=json.dumps(question_ids),
+        round_number=round_number, round_name=round_name,
+        posting_id=posting_id,
     )
     db.session.add(sess); db.session.commit()
+
+    # Init or update the pipeline record for this candidate+posting
+    if posting_id:
+        _ensure_pipeline(candidate.id, posting_id, round_number, round_name, mode, sess.id)
+
     return jsonify({'success': True, 'session': sess.to_dict(), 'room_code': sess.room_code})
 
 
@@ -853,8 +1012,28 @@ def join_session(room_code):
                         'message': 'This session was not assigned to your account.'}), 403
 
     # Guard 3: prevent rejoining a completed session
-    if sess.status == 'completed':
+    if sess.status in ('completed', 'abandoned'):
         return jsonify({'success': False, 'message': 'already_submitted'}), 400
+
+    # Guard 4 (v1.3): Block candidate if they already completed this round in the pipeline
+    if sess.posting_id and sess.round_number:
+        pipeline = InterviewPipeline.query.filter_by(
+            candidate_id=current_user.id, posting_id=sess.posting_id
+        ).first()
+        if pipeline:
+            rounds = pipeline.get_rounds()
+            rkey = str(sess.round_number)
+            if rkey in rounds:
+                rdata = rounds[rkey]
+                if rdata.get('status') in ('completed_passed', 'completed_failed'):
+                    return jsonify({
+                        'success': False,
+                        'message': 'round_already_completed',
+                        'round_number': sess.round_number,
+                        'round_name': sess.round_name or f'Round {sess.round_number}',
+                        'score': rdata.get('score', 0),
+                        'passed': rdata.get('status') == 'completed_passed',
+                    }), 400
 
     questions = []
     if sess.mode == 'mcq' and sess.question_ids:
@@ -1235,6 +1414,221 @@ def get_credibility():
     return jsonify({'success': True, 'credibility_score': score, 'total_violations': v_count})
 
 
+@app.route('/api/session-end-on-close', methods=['POST'])
+@login_required
+def session_end_on_close():
+    """
+    Called via navigator.sendBeacon when candidate closes the tab or browser.
+    Marks the session as 'abandoned' so the recruiter knows the candidate left.
+    Does NOT auto-submit answers — that is handled by submit-test when the candidate
+    uses the Leave button normally. This endpoint only updates status + ended_at.
+    """
+    try:
+        data = request.get_json(silent=True) or {}
+        session_id = data.get('session_id')
+        if not session_id:
+            return jsonify({'success': False}), 400
+        sess = db.session.get(InterviewSession, session_id)
+        if not sess:
+            return jsonify({'success': False}), 404
+        # Only update if still active (not already submitted/ended)
+        if sess.status == 'active':
+            sess.status = 'abandoned'
+            sess.ended_at = datetime.utcnow()
+            db.session.commit()
+            # Notify recruiter dashboard in real time
+            socketio.emit('session_abandoned', {
+                'session_id': session_id,
+                'candidate': sess.candidate.username,
+                'room_code': sess.room_code,
+            }, room='dashboard')
+            # Also notify the interview room so recruiter knows candidate left
+            socketio.emit('candidate_left', {
+                'session_id': session_id,
+                'reason': 'tab_closed',
+            }, room=sess.room_code)
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ── Round Configuration API (v1.3) ─────────────────────────────────────────────
+
+@app.route('/api/round-config/<int:posting_id>', methods=['GET'])
+@login_required
+def get_round_config(posting_id):
+    """Fetch round configuration for a job posting."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    config = JobRoundConfig.query.filter_by(posting_id=posting_id).first()
+    if not config:
+        # Return a sensible default (3 rounds)
+        return jsonify({'success': True, 'config': None, 'default_rounds': 3})
+    return jsonify({'success': True, 'config': config.to_dict()})
+
+
+@app.route('/api/round-config/save', methods=['POST'])
+@login_required
+def save_round_config():
+    """Create or update round configuration for a job posting."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    posting_id   = data.get('posting_id')
+    total_rounds = data.get('total_rounds', 3)
+    rounds_data  = data.get('rounds', [])
+
+    if not posting_id:
+        return jsonify({'success': False, 'message': 'posting_id required'}), 400
+    if not (1 <= total_rounds <= 5):
+        return jsonify({'success': False, 'message': 'total_rounds must be 1–5'}), 400
+    if len(rounds_data) != total_rounds:
+        return jsonify({'success': False, 'message': f'Expected {total_rounds} round definitions'}), 400
+
+    try:
+        config = JobRoundConfig.query.filter_by(posting_id=posting_id).first()
+        if config:
+            # Delete existing details
+            RoundConfigDetail.query.filter_by(config_id=config.id).delete()
+            config.total_rounds = total_rounds
+            config.updated_at   = datetime.utcnow()
+        else:
+            config = JobRoundConfig(posting_id=posting_id, recruiter_id=current_user.id,
+                                    total_rounds=total_rounds)
+            db.session.add(config)
+            db.session.flush()  # get config.id
+
+        for r in rounds_data:
+            detail = RoundConfigDetail(
+                config_id      = config.id,
+                round_number   = r.get('round_number'),
+                round_name     = r.get('round_name', f"Round {r.get('round_number')}"),
+                interview_mode = r.get('interview_mode', 'mcq'),
+                pass_threshold = r.get('pass_threshold', 60),
+            )
+            db.session.add(detail)
+
+        db.session.commit()
+        return jsonify({'success': True, 'config': config.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/round-config/all', methods=['GET'])
+@login_required
+def get_all_round_configs():
+    """Get all round configs for recruiter's postings."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    configs = JobRoundConfig.query.filter_by(recruiter_id=current_user.id).all()
+    return jsonify({'success': True, 'configs': [c.to_dict() for c in configs]})
+
+
+# ── Pipeline API (v1.3) ────────────────────────────────────────────────────────
+
+@app.route('/api/pipeline/<int:candidate_id>/<int:posting_id>', methods=['GET'])
+@login_required
+def get_pipeline(candidate_id, posting_id):
+    """Get a candidate's pipeline for a specific posting."""
+    if not current_user.is_recruiter and current_user.id != candidate_id:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    pipeline = InterviewPipeline.query.filter_by(
+        candidate_id=candidate_id, posting_id=posting_id).first()
+    if not pipeline:
+        return jsonify({'success': True, 'pipeline': None})
+    return jsonify({'success': True, 'pipeline': pipeline.to_dict()})
+
+
+@app.route('/api/pipeline/my/<int:posting_id>', methods=['GET'])
+@login_required
+def get_my_pipeline(posting_id):
+    """Candidate fetches their own pipeline for a posting."""
+    pipeline = InterviewPipeline.query.filter_by(
+        candidate_id=current_user.id, posting_id=posting_id).first()
+    if not pipeline:
+        return jsonify({'success': True, 'pipeline': None})
+    return jsonify({'success': True, 'pipeline': pipeline.to_dict()})
+
+
+@app.route('/api/pipeline/unlock-round', methods=['POST'])
+@login_required
+def unlock_next_round():
+    """Recruiter manually unlocks the next round for a candidate."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data         = request.get_json() or {}
+    candidate_id = data.get('candidate_id')
+    posting_id   = data.get('posting_id')
+    round_number = data.get('round_number')
+    if not all([candidate_id, posting_id, round_number]):
+        return jsonify({'success': False, 'message': 'candidate_id, posting_id, round_number required'}), 400
+    pipeline = InterviewPipeline.query.filter_by(
+        candidate_id=candidate_id, posting_id=posting_id).first()
+    if not pipeline:
+        return jsonify({'success': False, 'message': 'Pipeline not found'}), 404
+    rounds = pipeline.get_rounds()
+    rkey = str(round_number)
+    if rkey not in rounds:
+        rounds[rkey] = {}
+    rounds[rkey]['status'] = 'pending'
+    pipeline.set_rounds(rounds)
+    pipeline.current_round = round_number
+    pipeline.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Round {round_number} unlocked'})
+
+
+@app.route('/api/pipeline/reset-round', methods=['POST'])
+@login_required
+def reset_round():
+    """Admin resets a specific round so candidate can retake it."""
+    if current_user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Admin only'}), 403
+    data         = request.get_json() or {}
+    candidate_id = data.get('candidate_id')
+    posting_id   = data.get('posting_id')
+    round_number = data.get('round_number')
+    pipeline = InterviewPipeline.query.filter_by(
+        candidate_id=candidate_id, posting_id=posting_id).first()
+    if not pipeline:
+        return jsonify({'success': False, 'message': 'Pipeline not found'}), 404
+    rounds = pipeline.get_rounds()
+    rkey = str(round_number)
+    rounds[rkey] = {'status': 'pending', 'session_id': None, 'submission_id': None, 'score': None}
+    pipeline.set_rounds(rounds)
+    pipeline.overall_status = 'in_progress'
+    pipeline.updated_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Round {round_number} reset'})
+
+
+@app.route('/api/candidate/cooldown-status', methods=['GET'])
+@login_required
+def candidate_cooldown_status():
+    """Check if current candidate is on a 60-day cooldown."""
+    cooldown = CandidateCooldown.query.filter_by(
+        candidate_id=current_user.id, is_active=True).first()
+    if not cooldown:
+        return jsonify({'success': True, 'on_cooldown': False})
+    if datetime.utcnow() >= cooldown.eligible_at:
+        cooldown.is_active = False
+        db.session.commit()
+        return jsonify({'success': True, 'on_cooldown': False})
+    return jsonify({'success': True, 'on_cooldown': True, 'cooldown': cooldown.to_dict()})
+
+
+@app.route('/api/pipeline/all-for-posting/<int:posting_id>', methods=['GET'])
+@login_required
+def get_all_pipelines_for_posting(posting_id):
+    """Recruiter: get all candidate pipelines for a job posting."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    pipelines = InterviewPipeline.query.filter_by(posting_id=posting_id).all()
+    return jsonify({'success': True, 'pipelines': [p.to_dict() for p in pipelines]})
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ── AI ROUTES — powered by Gemini (google-generativeai) ──────────────────────
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1392,11 +1786,13 @@ def submit_test():
     session_id = data.get('session_id')
     cred_score = calc_credibility(session_id) if session_id else 100
 
-    # Always read mode and job_role from the DB session — never trust the client
-    # This prevents a candidate from submitting under the wrong mode
-    db_sess = db.session.get(InterviewSession, session_id) if session_id else None
-    mode     = db_sess.mode     if db_sess else data.get('mode', 'mcq')
-    job_role = db_sess.job_role if db_sess else data.get('job_role', 'General')
+    # Always read mode, job_role, and round info from DB session
+    db_sess      = db.session.get(InterviewSession, session_id) if session_id else None
+    mode         = db_sess.mode         if db_sess else data.get('mode', 'mcq')
+    job_role     = db_sess.job_role     if db_sess else data.get('job_role', 'General')
+    posting_id   = db_sess.posting_id   if db_sess else None
+    round_number = db_sess.round_number if db_sess else 1
+    round_name   = db_sess.round_name   if db_sess else 'Round 1'
 
     interview_score = 0
     if mode == 'mcq':
@@ -1417,7 +1813,17 @@ def submit_test():
     elif mode == 'ai_interview':
         interview_score = data.get('ai_overall_score', 0)
 
-    passed      = cred_score >= 50 and interview_score >= 50
+    # Determine pass threshold from round config
+    pass_threshold = 50
+    if posting_id:
+        config = JobRoundConfig.query.filter_by(posting_id=posting_id).first()
+        if config:
+            detail = RoundConfigDetail.query.filter_by(
+                config_id=config.id, round_number=round_number).first()
+            if detail:
+                pass_threshold = detail.pass_threshold
+
+    passed      = cred_score >= 50 and interview_score >= pass_threshold
     attempt_num = TestSubmission.query.filter_by(user_id=current_user.id).count() + 1
 
     sub = TestSubmission(
@@ -1429,6 +1835,7 @@ def submit_test():
         exam_duration_seconds=data.get('duration_seconds', 0),
         passed=passed, attempt_number=attempt_num,
         ai_feedback=json.dumps(data.get('ai_feedback', {})),
+        round_number=round_number, round_name=round_name, posting_id=posting_id,
     )
     db.session.add(sub)
 
@@ -1441,9 +1848,50 @@ def submit_test():
             sess.interview_score   = interview_score
     db.session.commit()
 
+    # Update pipeline after round submission
+    next_round_unlocked = False
+    if posting_id:
+        pipeline = InterviewPipeline.query.filter_by(
+            candidate_id=current_user.id, posting_id=posting_id).first()
+        if pipeline:
+            rounds = pipeline.get_rounds()
+            rkey = str(round_number)
+            if rkey not in rounds:
+                rounds[rkey] = {}
+            rounds[rkey].update({
+                'status': 'completed_passed' if passed else 'completed_failed',
+                'submission_id': sub.id, 'score': interview_score,
+                'credibility': cred_score, 'passed': passed,
+            })
+            total = pipeline.total_rounds
+            if passed and round_number < total:
+                nkey = str(round_number + 1)
+                if rounds.get(nkey, {}).get('status') == 'locked':
+                    rounds[nkey]['status'] = 'pending'
+                    next_round_unlocked = True
+                pipeline.current_round = round_number + 1
+            all_done = all(
+                rounds.get(str(rn), {}).get('status', 'locked')
+                in ('completed_passed', 'completed_failed')
+                for rn in range(1, total + 1)
+            )
+            if all_done:
+                all_passed = all(
+                    rounds.get(str(rn), {}).get('status') == 'completed_passed'
+                    for rn in range(1, total + 1)
+                )
+                pipeline.overall_status = 'completed_passed' if all_passed else 'completed_failed'
+                if not all_passed:
+                    _apply_cooldown(current_user.id, posting_id)
+            pipeline.set_rounds(rounds)
+            pipeline.updated_at = datetime.utcnow()
+            db.session.commit()
+
     return jsonify({'success': True, 'submission_id': sub.id,
                     'credibility_score': cred_score, 'interview_score': interview_score,
                     'total_violations': sub.total_violations, 'passed': passed,
+                    'round_number': round_number, 'round_name': round_name,
+                    'next_round_unlocked': next_round_unlocked,
                     'redirect': f'results.html?id={sub.id}'})
 
 
@@ -1574,6 +2022,18 @@ def on_leave_room(data):
     if room in _room_members:
         _room_members[room] = [m for m in _room_members[room] if m['sid'] != request.sid]
 
+@socketio.on('candidate_ready')
+def on_candidate_ready(data):
+    room = data.get('room')
+    if room:
+        emit('candidate_ready', data, room=room, include_self=False)
+
+@socketio.on('recruiter_joined_room')
+def on_recruiter_joined_room(data):
+    room = data.get('room')
+    if room:
+        emit('recruiter_joined', {'room': room}, room=room, include_self=False)
+
 @socketio.on('webrtc_offer')
 def on_offer(data):
     emit('webrtc_offer', data, room=data['room'], include_self=False)
@@ -1601,9 +2061,13 @@ def on_join_dashboard():
 @socketio.on('disconnect')
 def on_disconnect():
     print(f'Disconnected: {request.sid}')
-    # Clean up room membership
+    # Clean up room membership and notify recruiter if candidate left
     for room in list(_room_members.keys()):
-        _room_members[room] = [m for m in _room_members[room] if m["sid"] != request.sid]
+        leaving = [m for m in _room_members[room] if m['sid'] == request.sid]
+        _room_members[room] = [m for m in _room_members[room] if m['sid'] != request.sid]
+        for member in leaving:
+            if member.get('role') == 'candidate':
+                emit('candidate_left', {'reason': 'disconnected', 'room': room}, room=room)
 
 
 # ── PDF Report ─────────────────────────────────────────────────────────────────
@@ -1674,6 +2138,75 @@ def download_report(submission_id):
 # ════════════════════════════════════════════════════════════════════════════════
 # NEW MODELS — Job Postings, Applications, Scheduled Interviews
 # ════════════════════════════════════════════════════════════════════════════════
+
+# ── Interview Pipeline & Cooldown Models (v1.3) ────────────────────────────────
+
+class InterviewPipeline(db.Model):
+    """Tracks a candidate's full round-by-round progress for a specific job posting."""
+    __tablename__ = 'interview_pipeline'
+    id                   = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    candidate_id         = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    posting_id           = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='CASCADE'), nullable=False)
+    application_id       = db.Column(db.Integer, db.ForeignKey('job_applications.id', ondelete='CASCADE'), nullable=True)
+    config_id            = db.Column(db.Integer, db.ForeignKey('job_round_config.id', ondelete='SET NULL'), nullable=True)
+    total_rounds         = db.Column(db.Integer, default=3)
+    current_round        = db.Column(db.Integer, default=1)
+    overall_status       = db.Column(db.String(30), default='in_progress')
+    # in_progress | completed_passed | completed_failed | on_cooldown
+    failed_all_rounds_at = db.Column(db.DateTime, nullable=True)
+    eligible_again_at    = db.Column(db.DateTime, nullable=True)
+    created_at           = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at           = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Round 1-5 results stored as JSON for flexibility (supports 1-5 rounds)
+    rounds_data          = db.Column(db.Text, default='{}')
+    # rounds_data JSON structure per round key e.g. "1": {session_id, submission_id, score, status, round_name, mode}
+    # status per round: locked | pending | completed_passed | completed_failed
+
+    candidate    = db.relationship('User', foreign_keys=[candidate_id])
+    __table_args__ = (db.UniqueConstraint('candidate_id', 'posting_id', name='uq_pipeline_candidate_posting'),)
+
+    def get_rounds(self):
+        try: return json.loads(self.rounds_data) if self.rounds_data else {}
+        except: return {}
+
+    def set_rounds(self, d):
+        self.rounds_data = json.dumps(d)
+
+    def to_dict(self):
+        rounds = self.get_rounds()
+        return {
+            'id': self.id,
+            'candidate_id': self.candidate_id,
+            'posting_id': self.posting_id,
+            'application_id': self.application_id,
+            'total_rounds': self.total_rounds,
+            'current_round': self.current_round,
+            'overall_status': self.overall_status,
+            'rounds': rounds,
+            'failed_all_rounds_at': self.failed_all_rounds_at.strftime('%Y-%m-%d %H:%M:%S') if self.failed_all_rounds_at else None,
+            'eligible_again_at': self.eligible_again_at.strftime('%Y-%m-%d %H:%M:%S') if self.eligible_again_at else None,
+        }
+
+
+class CandidateCooldown(db.Model):
+    """Global 60-day ban after a candidate fails all rounds for any posting."""
+    __tablename__ = 'candidate_cooldowns'
+    id                       = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    candidate_id             = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
+    triggered_by_posting_id  = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='SET NULL'), nullable=True)
+    triggered_at             = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    eligible_at              = db.Column(db.DateTime, nullable=False)
+    is_active                = db.Column(db.Boolean, default=True)
+
+    def to_dict(self):
+        return {
+            'candidate_id': self.candidate_id,
+            'triggered_at': self.triggered_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'eligible_at': self.eligible_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_active': self.is_active,
+            'days_remaining': max(0, (self.eligible_at - datetime.utcnow()).days),
+        }
+
 
 class JobPosting(db.Model):
     __tablename__ = 'job_postings'
@@ -1755,6 +2288,9 @@ class ScheduledInterview(db.Model):
     email_sent      = db.Column(db.Boolean, default=False)
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
     room_code       = db.Column(db.String(16))
+    # Round tracking (v1.3)
+    round_number    = db.Column(db.Integer, default=1)
+    round_name      = db.Column(db.String(100), default='Round 1')
 
     application = db.relationship('JobApplication', foreign_keys=[application_id])
     recruiter   = db.relationship('User', foreign_keys=[recruiter_id])
@@ -1779,6 +2315,8 @@ class ScheduledInterview(db.Model):
             'email_sent': self.email_sent,
             'room_code': self.room_code or '',
             'session_id': self.session_id,
+            'round_number': self.round_number or 1,
+            'round_name': self.round_name or 'Round 1',
         }
 
 
@@ -2088,9 +2626,11 @@ def schedule_interview():
     if not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data = request.get_json() or {}
-    application_id = data.get('application_id')
+    application_id   = data.get('application_id')
     scheduled_at_str = data.get('scheduled_at')  # ISO format: 2025-03-15T14:30
-    interview_mode = data.get('interview_mode', 'mcq')
+    interview_mode   = data.get('interview_mode', 'mcq')
+    round_number     = data.get('round_number', 1)
+    round_name       = data.get('round_name', f'Round {round_number}')
 
     if not application_id or not scheduled_at_str:
         return jsonify({'success': False, 'message': 'application_id and scheduled_at required'}), 400
@@ -2105,9 +2645,18 @@ def schedule_interview():
     except ValueError:
         return jsonify({'success': False, 'message': 'Invalid datetime format'}), 400
 
-    posting = app_obj.posting
+    posting   = app_obj.posting
     candidate = app_obj.candidate
     recruiter = current_user
+
+    # Auto-resolve mode and name from round config if available
+    config = JobRoundConfig.query.filter_by(posting_id=posting.id).first()
+    if config:
+        detail = RoundConfigDetail.query.filter_by(
+            config_id=config.id, round_number=round_number).first()
+        if detail:
+            interview_mode = detail.interview_mode
+            round_name     = detail.round_name
 
     # Create an interview session
     question_ids = []
@@ -2128,12 +2677,18 @@ def schedule_interview():
         status='pending',
         credibility_score=100,
         question_ids=json.dumps(question_ids),
+        round_number=round_number,
+        round_name=round_name,
+        posting_id=posting.id,
     )
     db.session.add(sess); db.session.commit()
 
+    # Ensure pipeline record exists for this candidate+posting
+    _ensure_pipeline(candidate.id, posting.id, round_number, round_name, interview_mode, sess.id)
+
     # Build Google Calendar links
     title = f"RecruitAI Interview — {candidate.full_name or candidate.username} with {recruiter.full_name or recruiter.username}"
-    desc = f"Job Role: {posting.job_role} at {posting.company_name}\nRoom Code: {room_code}\nJoin: {os.environ.get(chr(66)+chr(65)+chr(83)+chr(69)+chr(95)+chr(85)+chr(82)+chr(76), chr(104)+chr(116)+chr(116)+chr(112)+chr(58)+chr(47)+chr(47)+chr(108)+chr(111)+chr(99)+chr(97)+chr(108)+chr(104)+chr(111)+chr(115)+chr(116)+chr(58)+chr(53)+chr(48)+chr(48)+chr(48))}/interview_room.html?room={room_code}"
+    desc = f"Job Role: {posting.job_role} at {posting.company_name}\nRound: {round_name}\nRoom Code: {room_code}\nJoin: {os.environ.get(chr(66)+chr(65)+chr(83)+chr(69)+chr(95)+chr(85)+chr(82)+chr(76), chr(104)+chr(116)+chr(116)+chr(112)+chr(58)+chr(47)+chr(47)+chr(108)+chr(111)+chr(99)+chr(97)+chr(108)+chr(104)+chr(111)+chr(115)+chr(116)+chr(58)+chr(53)+chr(48)+chr(48)+chr(48))}/interview_room.html?room={room_code}"
     cal_link = make_google_calendar_link(title, desc, scheduled_dt)
 
     # Create ScheduledInterview record
@@ -2146,6 +2701,8 @@ def schedule_interview():
         interview_mode=interview_mode,
         calendar_link=cal_link,
         room_code=room_code,
+        round_number=round_number,
+        round_name=round_name,
     )
     db.session.add(sched)
 

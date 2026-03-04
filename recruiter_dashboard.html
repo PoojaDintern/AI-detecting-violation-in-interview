@@ -38,15 +38,16 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .topbar-right{display:flex;align-items:center;gap:16px;font-size:14px;color:var(--muted);}
 .logout-btn{padding:8px 18px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s;text-decoration:none;}
 .logout-btn:hover{border-color:var(--red);color:var(--red);}
-.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 64px);position:relative;z-index:1;}
-.sidebar{background:var(--s);border-right:1px solid var(--border);padding:24px 0;}
+.layout{display:grid;grid-template-columns:260px 1fr;position:relative;z-index:1;align-items:start;}
+.sidebar{background:var(--s);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
 .nav-item{display:flex;align-items:center;gap:12px;padding:12px 24px;cursor:pointer;color:var(--muted);font-size:14px;transition:all .2s;border-left:3px solid transparent;}
 .nav-item:hover{color:var(--text);background:rgba(79,142,247,0.05);}
 .nav-item.active{color:var(--accent2);background:rgba(79,142,247,0.08);border-left-color:var(--accent);}
 .nav-icon{font-size:18px;width:24px;text-align:center;}
-.main{padding:32px;overflow-y:auto;}
+.main{padding:32px;overflow-y:auto;align-self:start;}
 .page{display:none;animation:fadeIn .3s ease;}
 .page.active{display:block;}
+#page-roundconfig.active{display:block;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .page-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:6px;}
 .page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
@@ -141,6 +142,7 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <div class="nav-item" data-page="candidates" onclick="showPage('candidates',this)"><span class="nav-icon">🧑‍💼</span>Candidates</div>
     <div class="nav-item" data-page="scheduled" onclick="showPage('scheduled',this)"><span class="nav-icon">📅</span>Scheduled</div>
     <div class="nav-item" data-page="emailsettings" onclick="showPage('emailsettings',this)"><span class="nav-icon">📧</span>Email Settings</div>
+    <div class="nav-item" data-page="roundconfig" onclick="showPage('roundconfig',this)"><span class="nav-icon">🎯</span>Round Config</div>
   </div>
 
   <div class="main">
@@ -393,23 +395,27 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <!-- SCHEDULED INTERVIEWS PAGE -->
     <div class="page" id="page-scheduled">
       <div class="page-title">📅 Scheduled Interviews</div>
-      <div class="page-sub">All upcoming interviews — view room codes and join directly</div>
-      <div class="card">
-        <div class="card-title">🗓️ Upcoming & Recent Interviews</div>
-        <div id="scheduled-table"><div class="empty">Loading…</div></div>
+      <div class="page-sub">All upcoming and past interviews — join, monitor or view results</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-weight:700;font-size:14px;">🗓️ All Scheduled Sessions</div>
+          <button onclick="loadScheduled()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🔄 Refresh</button>
+        </div>
+        <div id="scheduled-table" style="max-height:520px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div class="empty">Loading…</div>
+        </div>
       </div>
     </div>
 
     <!-- EMAIL SETTINGS PAGE -->
     <div class="page" id="page-emailsettings">
-      <div class="page-title">Email Settings</div>
+      <div class="page-title">📧 Email Settings</div>
       <div class="page-sub">Connect your Gmail once — emails send automatically every time you schedule an interview</div>
 
       <div id="email-status-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;max-width:560px;"></div>
 
       <div class="card" style="max-width:560px;">
         <div class="card-title">📧 Your Gmail Connection</div>
-
         <div style="background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.18);border-radius:12px;padding:18px;margin-bottom:22px;">
           <div style="font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:12px;">⚡ One-time setup — 3 simple steps:</div>
           <div style="display:flex;flex-direction:column;gap:10px;">
@@ -423,58 +429,180 @@ tr:hover td{background:rgba(79,142,247,0.03);}
             </div>
             <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
               <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">3</span>
-              <span>Paste your Gmail and App Password below → Click <strong>Save & Test</strong></span>
+              <span>Paste your Gmail and App Password below → Click <strong>Save &amp; Test</strong></span>
             </div>
           </div>
         </div>
-
         <div class="fg" style="margin-bottom:16px;">
           <label>Your Gmail Address</label>
           <input type="email" id="es-email" placeholder="yourname@gmail.com" style="width:100%;padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="updateEmailPreview()">
         </div>
-
         <div class="fg" style="margin-bottom:8px;">
-          <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(16-char password from Step 2 — NOT your Gmail login password)</span></label>
+          <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(16-char password — NOT your Gmail login password)</span></label>
           <div style="position:relative;">
             <input type="password" id="es-pass" placeholder="abcd efgh ijkl mnop" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
             <button onclick="togglePassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;" title="Show/hide">👁</button>
           </div>
           <div id="pass-hint" style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep your existing saved password</div>
         </div>
-
         <div id="email-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:4px;font-size:12px;color:var(--muted);">
           📬 Candidates will receive emails <strong>from</strong>: <span id="preview-addr" style="color:var(--accent2);font-weight:600;"></span>
         </div>
-
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
-          <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:12px 28px;">💾 Save & Test Connection</button>
+          <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:12px 28px;">💾 Save &amp; Test Connection</button>
           <button onclick="clearEmailSettings()" style="padding:12px 20px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Disconnect</button>
         </div>
-
         <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">
-            🔒 <strong>Secure:</strong> App Password is stored in DB, never shown again
-          </div>
-          <div style="background:rgba(67,97,238,.06);border:1px solid rgba(67,97,238,.15);border-radius:9px;padding:12px;font-size:12px;color:var(--accent2);line-height:1.6;">
-            ✉️ <strong>Personal:</strong> Candidates see your Gmail as sender
-          </div>
+          <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">🔒 <strong>Secure:</strong> App Password is stored in DB, never shown again</div>
+          <div style="background:rgba(67,97,238,.06);border:1px solid rgba(67,97,238,.15);border-radius:9px;padding:12px;font-size:12px;color:var(--accent2);line-height:1.6;">✉️ <strong>Personal:</strong> Candidates see your Gmail as sender</div>
         </div>
       </div>
     </div>
 
-  </div>
-</div>
+    <!-- ROUND CONFIGURATION PAGE -->
+    <div class="page" id="page-roundconfig">
+      <div style="width:100%;max-width:700px;margin:0 auto;">
+
+      <div class="page-title">🎯 Round Configuration</div>
+      <div class="page-sub" style="margin-bottom:28px;">Set up 1–5 interview rounds per job posting. Name each round and assign an interview mode.</div>
+
+      <!-- Step 1: Select Job Posting -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">📌 Select Job Posting</div>
+        <div class="fg" style="margin-bottom:0;">
+          <label>Job Posting</label>
+          <select id="rc-posting-select" onchange="loadRoundConfigForPosting()" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+            <option value="">— Select a job posting —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 2: AI Voice Settings (always visible, applies globally to AI rounds) -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">🎙️ AI Interviewer Voice Settings</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6;">
+          Configure how the AI interviewer sounds during <strong>AI Interview</strong> rounds. These settings apply to all AI rounds across all job postings.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="fg" style="margin-bottom:0;">
+            <label>Voice Gender</label>
+            <select id="rc-voice-gender" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateVoicePreview()">
+              <option value="male">👨 Male</option>
+              <option value="female">👩 Female</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <label>Voice Tone</label>
+            <select id="rc-voice-tone" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateVoicePreview()">
+              <option value="normal">Normal</option>
+              <option value="slow">Slow &amp; Clear</option>
+              <option value="fast">Fast</option>
+              <option value="deep">Deep &amp; Formal</option>
+              <option value="friendly">Friendly</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <label>Accent</label>
+            <select id="rc-voice-accent" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateVoicePreview()">
+              <option value="en-US">🇺🇸 American English</option>
+              <option value="en-GB">🇬🇧 British English</option>
+              <option value="en-AU">🇦🇺 Australian English</option>
+              <option value="en-IN">🇮🇳 Indian English</option>
+              <option value="en-CA">🇨🇦 Canadian English</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:4px;">
+          <button onclick="previewAIVoice()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(67,97,238,.08));border:1.5px solid rgba(124,58,237,.3);border-radius:9px;color:#7c3aed;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+            🔊 Preview Voice
+          </button>
+          <div id="rc-voice-preview-label" style="font-size:13px;color:var(--muted);font-style:italic;padding:8px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;"></div>
+        </div>
+      </div>
+
+      <div id="rc-main" style="display:none;width:100%;">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">⚙️ Round Setup</div>
+
+          <div style="background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.18);border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.7;">
+            <strong style="color:var(--accent2);">How rounds work:</strong>
+            Candidates complete rounds in order. Each round can use a different interview mode.
+            After completing a round, candidates are automatically blocked from re-entering it.
+            They must meet the pass threshold to unlock the next round (or you can manually unlock it).
+          </div>
+
+          <div class="fg" style="margin-bottom:20px;">
+            <label>Number of Rounds <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;">(1 to 5)</span></label>
+            <select id="rc-total-rounds" onchange="renderRoundRows()" style="width:180px;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+              <option value="1">1 Round</option>
+              <option value="2">2 Rounds</option>
+              <option value="3" selected>3 Rounds</option>
+              <option value="4">4 Rounds</option>
+              <option value="5">5 Rounds</option>
+            </select>
+          </div>
+
+          <div id="rc-rows-container" style="display:flex;flex-direction:column;gap:14px;margin-bottom:22px;"></div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-primary" onclick="saveRoundConfig()" id="rc-save-btn" style="padding:12px 28px;">💾 Save Round Configuration</button>
+            <span id="rc-save-status" style="font-size:13px;color:var(--muted);"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Candidate Round Blocking Rules</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+            <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;color:#065f46;line-height:1.6;">
+              🔒 <strong>Auto-blocked:</strong> After completing any round, candidates cannot re-enter that round
+            </div>
+            <div style="background:rgba(67,97,238,.06);border:1px solid rgba(67,97,238,.15);border-radius:9px;padding:12px;color:var(--accent2);line-height:1.6;">
+              🔓 <strong>Auto-unlock:</strong> Next round unlocks only when pass threshold is met
+            </div>
+            <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:9px;padding:12px;color:#92400e;line-height:1.6;">
+              ⚡ <strong>Manual override:</strong> You can unlock any round for a candidate from the Applicants page
+            </div>
+            <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:9px;padding:12px;color:#991b1b;line-height:1.6;">
+              ⏳ <strong>Cooldown:</strong> Failing all rounds triggers a 60-day global application ban
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div><!-- /inner width wrapper -->
+    </div><!-- /page-roundconfig -->
+
+  </div><!-- /.main -->
+</div><!-- /.layout -->
 
 <!-- Schedule Interview Modal -->
 <div class="modal-overlay hidden" id="schedule-modal">
-  <div class="modal-card">
+  <div class="modal-card" style="max-width:540px;">
     <div class="modal-title">
       📅 Schedule Interview
       <button onclick="closeScheduleModal()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>
     </div>
-    <div id="schedule-candidate-info" style="background:var(--s2);border-radius:10px;padding:14px;margin-bottom:18px;font-size:13px;border:1px solid var(--border);"></div>
+    <div id="schedule-candidate-info" style="background:var(--s2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;border:1px solid var(--border);"></div>
+
+    <!-- Interviewer info (auto-filled from round config) -->
+    <div id="sched-interviewer-info" style="display:none;background:rgba(67,97,238,.05);border:1px solid rgba(67,97,238,.18);border-radius:9px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
+
+    <div class="fg" style="margin-bottom:14px;" id="sched-round-section">
+      <label>Round <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(auto-fills from Round Config)</span></label>
+      <select id="sched-round-number" onchange="onSchedRoundChange()" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+        <option value="1">Round 1</option>
+        <option value="2">Round 2</option>
+        <option value="3">Round 3</option>
+        <option value="4">Round 4</option>
+        <option value="5">Round 5</option>
+      </select>
+      <input type="text" id="sched-round-name" placeholder="Round name (e.g. Aptitude Test, HR Final…)" value="Round 1"
+        style="width:100%;margin-top:8px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+
     <div class="fg" style="margin-bottom:14px;">
-      <label>Interview Mode</label>
+      <label>Interview Mode <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(overridden by Round Config)</span></label>
       <div class="mode-grid">
         <div class="mode-card selected" id="sched-mode-mcq" onclick="selectSchedMode('mcq')"><div class="mode-icon">📝</div><div class="mode-name">MCQ</div></div>
         <div class="mode-card" id="sched-mode-ai_interview" onclick="selectSchedMode('ai_interview')"><div class="mode-icon">🤖</div><div class="mode-name">AI Interviewer</div></div>
@@ -483,71 +611,207 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     </div>
     <div class="fg" style="margin-bottom:20px;">
       <label>Interview Date &amp; Time</label>
-      <input type="datetime-local" id="sched-datetime">
+      <input type="datetime-local" id="sched-datetime" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
     </div>
-    <div style="display:flex;gap:10px;">
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
       <button class="btn-primary" id="sched-confirm-btn" onclick="confirmSchedule()" style="flex:1;">📨 Schedule &amp; Send Email</button>
       <button class="btn-sm btn-red" onclick="closeScheduleModal()" style="padding:11px 18px;">Cancel</button>
     </div>
-    <div id="sched-result" style="display:none;margin-top:16px;padding:14px;background:rgba(16,185,129,.08);border:1px solid rgba(5,150,105,.25);border-radius:10px;font-size:13px;line-height:1.6;"></div>
+    <div id="sched-result" style="display:none;padding:16px;background:rgba(16,185,129,.06);border:1px solid rgba(5,150,105,.2);border-radius:12px;font-size:13px;line-height:1.7;"></div>
   </div>
 </div>
-
-    <!-- EMAIL SETTINGS PAGE -->
-    <div class="page" id="page-emailsettings">
-      <div class="page-title">Email Settings</div>
-      <div class="page-sub">Connect your Gmail so interview notifications send directly from your address</div>
-
-      <div class="card" style="max-width:560px;">
-        <div class="card-title">📧 Your Gmail Connection</div>
-
-        <!-- Status banner -->
-        <div id="email-status-banner" style="display:none;padding:12px 16px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:20px;align-items:center;gap:10px;"></div>
-
-        <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:22px;font-size:13px;color:var(--muted);line-height:1.7;">
-          <strong style="color:var(--text);">How it works:</strong><br>
-          When you schedule an interview, the notification email will be sent <strong>from your Gmail</strong> directly to the candidate.
-          You need a <strong>Gmail App Password</strong> — not your regular password.<br><br>
-          <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--accent);font-weight:600;">→ Generate App Password here</a>
-          <span style="color:var(--muted2);"> (requires 2-Step Verification to be ON)</span>
-        </div>
-
-        <div class="fg" style="margin-bottom:16px;">
-          <label>Your Gmail Address</label>
-          <input type="email" id="es-email" placeholder="yourname@gmail.com" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-        </div>
-
-        <div class="fg" style="margin-bottom:16px;">
-          <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;">(16 characters, e.g. abcd efgh ijkl mnop)</span></label>
-          <div style="position:relative;">
-            <input type="password" id="es-pass" placeholder="xxxx xxxx xxxx xxxx" style="width:100%;padding:10px 40px 10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-            <button onclick="togglePassVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;" title="Show/hide">👁</button>
-          </div>
-          <div style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep existing password unchanged</div>
-        </div>
-
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-          <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:11px 28px;">
-            💾 Save & Test Connection
-          </button>
-          <button onclick="clearEmailSettings()" style="padding:11px 20px;background:transparent;border:1.5px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-            🗑 Disconnect Gmail
-          </button>
-        </div>
-
-        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-          <div style="font-size:12px;color:var(--muted2);line-height:1.7;">
-            🔒 Your App Password is stored securely in the database and is never shown again after saving.<br>
-            ✉️ Candidates will see your Gmail as the sender — making emails feel personal and professional.<br>
-            ⚠️ If not set, interview scheduling still works but <strong>no email</strong> will be sent.
-          </div>
-        </div>
-      </div>
-    </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+
+// ── Round Config JS ────────────────────────────────────────────────────────────
+async function loadRoundConfigPage() {
+  // Load all recruiter's postings into the dropdown
+  const data = await fetch('/api/job-postings/all').then(r=>r.json()).catch(()=>({postings:[]}));
+  const sel = document.getElementById('rc-posting-select');
+  const postings = (data.postings || []).filter(p=>p.is_active);
+  sel.innerHTML = '<option value="">— Select a job posting —</option>' +
+    postings.map(p=>`<option value="${p.id}">${p.company_name} — ${p.job_role} (ID:${p.id})</option>`).join('');
+}
+
+async function loadRoundConfigForPosting() {
+  const postingId = document.getElementById('rc-posting-select').value;
+  if (!postingId) { document.getElementById('rc-main').style.display='none'; return; }
+  document.getElementById('rc-main').style.display='block';
+  const data = await fetch(`/api/round-config/${postingId}`).then(r=>r.json()).catch(()=>({success:false}));
+  if (data.success && data.config) {
+    document.getElementById('rc-total-rounds').value = data.config.total_rounds;
+    renderRoundRows(data.config.rounds);
+    // Restore saved voice settings if any
+    if (data.config.voice_settings) {
+      const vs = data.config.voice_settings;
+      if (document.getElementById('rc-voice-gender')) document.getElementById('rc-voice-gender').value = vs.gender || 'male';
+      if (document.getElementById('rc-voice-tone'))   document.getElementById('rc-voice-tone').value   = vs.tone   || 'normal';
+      if (document.getElementById('rc-voice-accent')) document.getElementById('rc-voice-accent').value = vs.accent || 'en-US';
+      updateVoicePreview();
+    }
+  } else {
+    document.getElementById('rc-total-rounds').value = 3;
+    renderRoundRows();
+  }
+}
+
+function renderRoundRows(existingRounds=[]) {
+  const n = parseInt(document.getElementById('rc-total-rounds').value);
+  const container = document.getElementById('rc-rows-container');
+  const BADGE_COLORS = ['#4361ee','#7c3aed','#059669','#d97706','#dc2626'];
+  container.innerHTML = '';
+  for (let i=1; i<=n; i++) {
+    const ex = existingRounds.find(r=>r.round_number===i) || {};
+    const bg = BADGE_COLORS[i-1] || '#64748b';
+    container.innerHTML += `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="background:${bg};color:#fff;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;letter-spacing:.04em;">ROUND ${i}</span>
+          <span style="font-size:13px;color:var(--muted);">Configure this round's name, type and interviewer</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:12px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Round Name</div>
+            <input type="text" id="rc-name-${i}" placeholder="e.g. Aptitude Test, Coding Round, HR Final…"
+              value="${ex.round_name||''}"
+              style="width:100%;padding:9px 12px;background:var(--s);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Interview Mode</div>
+            <select id="rc-mode-${i}" onchange="checkVoiceSettingsVisibility()" style="width:100%;padding:9px 12px;background:var(--s);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+              <option value="mcq" ${(ex.interview_mode||'mcq')==='mcq'?'selected':''}>📝 MCQ Exam</option>
+              <option value="ai_interview" ${ex.interview_mode==='ai_interview'?'selected':''}>🤖 AI Interviewer</option>
+              <option value="live_recruiter" ${ex.interview_mode==='live_recruiter'?'selected':''}>🎥 Live Recruiter</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Pass %</div>
+            <input type="number" id="rc-pass-${i}" min="0" max="100" value="${ex.pass_threshold||60}"
+              style="width:72px;padding:9px 10px;background:var(--s);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+          </div>
+        </div>
+        <!-- Interviewer assignment for this round -->
+        <div style="background:rgba(67,97,238,.04);border:1px dashed rgba(67,97,238,.2);border-radius:9px;padding:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">👤 Round Interviewer <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — candidate sees this person's name in the email)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;">Interviewer Name</div>
+              <input type="text" id="rc-iv-name-${i}" placeholder="e.g. Priya Sharma (HR Manager)"
+                value="${ex.interviewer_name||''}"
+                style="width:100%;padding:8px 11px;background:var(--s);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;">Interviewer Email <span style="color:var(--muted2);">(CC'd on scheduling email)</span></div>
+              <input type="email" id="rc-iv-email-${i}" placeholder="e.g. priya@company.com"
+                value="${ex.interviewer_email||''}"
+                style="width:100%;padding:8px 11px;background:var(--s);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+  checkVoiceSettingsVisibility();
+}
+
+function checkVoiceSettingsVisibility() {
+  const n = parseInt(document.getElementById('rc-total-rounds').value);
+  let hasAI = false;
+  for (let i = 1; i <= n; i++) {
+    const sel = document.getElementById(`rc-mode-${i}`);
+    if (sel && sel.value === 'ai_interview') { hasAI = true; break; }
+  }
+  const panel = document.getElementById('rc-voice-settings');
+  if (panel) panel.style.display = hasAI ? 'block' : 'none';
+}
+
+function updateVoicePreview() {
+  const gender = document.getElementById('rc-voice-gender')?.value || 'male';
+  const tone   = document.getElementById('rc-voice-tone')?.value   || 'normal';
+  const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
+  const accentLabels = {'en-US':'American','en-GB':'British','en-AU':'Australian','en-IN':'Indian','en-CA':'Canadian'};
+  const label = document.getElementById('rc-voice-preview-label');
+  if (label) label.textContent = `${gender === 'male' ? '👨' : '👩'} ${gender.charAt(0).toUpperCase()+gender.slice(1)} · ${tone.charAt(0).toUpperCase()+tone.slice(1)} · ${accentLabels[accent]||accent}`;
+}
+
+function previewAIVoice() {
+  if (!window.speechSynthesis) { showToast('Speech not supported in this browser', 'warn'); return; }
+  speechSynthesis.cancel();
+  const gender = document.getElementById('rc-voice-gender')?.value || 'male';
+  const tone   = document.getElementById('rc-voice-tone')?.value   || 'normal';
+  const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
+  const utt = new SpeechSynthesisUtterance('Hello! I am your AI interviewer. Welcome to your interview session. Are you ready to begin?');
+  utt.lang = accent;
+  // Apply tone
+  switch(tone) {
+    case 'slow':     utt.rate=0.7;  utt.pitch=1.0;  break;
+    case 'fast':     utt.rate=1.3;  utt.pitch=1.0;  break;
+    case 'deep':     utt.rate=0.85; utt.pitch=0.7;  break;
+    case 'friendly': utt.rate=1.0;  utt.pitch=1.2;  break;
+    default:         utt.rate=0.9;  utt.pitch=1.0;
+  }
+  // Try to pick a matching voice by gender preference
+  const voices = speechSynthesis.getVoices();
+  const langVoices = voices.filter(v => v.lang.startsWith(accent.split('-')[0]) || v.lang === accent);
+  if (langVoices.length) {
+    // Heuristic: "male" voices often don't have "female"/"woman" in the name
+    const genderMatch = gender === 'female'
+      ? langVoices.find(v => /female|woman|girl|zira|susan|samantha|victoria|karen|moira/i.test(v.name))
+      : langVoices.find(v => /male|man|david|daniel|alex|fred|lee|thomas/i.test(v.name));
+    utt.voice = genderMatch || langVoices[0];
+  }
+  speechSynthesis.speak(utt);
+  showToast('🔊 Playing voice preview…');
+}
+
+async function saveRoundConfig() {
+  const postingId = document.getElementById('rc-posting-select').value;
+  if (!postingId) { showToast('Please select a job posting first', 'error'); return; }
+  const n = parseInt(document.getElementById('rc-total-rounds').value);
+  const rounds = [];
+  for (let i=1; i<=n; i++) {
+    const name = document.getElementById(`rc-name-${i}`)?.value?.trim();
+    if (!name) { showToast(`Please enter a name for Round ${i}`, 'error'); return; }
+    rounds.push({
+      round_number: i,
+      round_name: name,
+      interview_mode: document.getElementById(`rc-mode-${i}`).value,
+      pass_threshold: parseInt(document.getElementById(`rc-pass-${i}`).value) || 60,
+      interviewer_name: document.getElementById(`rc-iv-name-${i}`)?.value?.trim() || '',
+      interviewer_email: document.getElementById(`rc-iv-email-${i}`)?.value?.trim() || '',
+    });
+  }
+  // Collect voice settings (only relevant if any round is ai_interview)
+  const voiceSettings = {
+    gender: document.getElementById('rc-voice-gender')?.value || 'male',
+    tone:   document.getElementById('rc-voice-tone')?.value   || 'normal',
+    accent: document.getElementById('rc-voice-accent')?.value || 'en-US',
+  };
+  const btn = document.getElementById('rc-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ Saving…';
+  try {
+    const data = await fetch('/api/round-config/save', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({posting_id: parseInt(postingId), total_rounds: n, rounds, voice_settings: voiceSettings})
+    }).then(r=>r.json());
+    if (data.success) {
+      showToast('✅ Round configuration saved!', 'success');
+      document.getElementById('rc-save-status').textContent = `Saved ${n} rounds at ${new Date().toLocaleTimeString()}`;
+      updateVoicePreview();
+    } else {
+      showToast('Error: ' + (data.message || 'Save failed'), 'error');
+    }
+  } catch(e) {
+    showToast('Network error saving config', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Save Round Configuration';
+  }
+}
 
 // Auto-inject ngrok header for all fetch calls through tunnel
 const _origFetch = window.fetch;
@@ -798,7 +1062,7 @@ async function viewApplicants(postingId, title) {
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
         ${statusBadge[a.status]||a.status}
-        ${a.status!=='interview_scheduled'?`<button class="btn-sm btn-green" onclick="openScheduleModal(${a.id},'${a.candidate_name.replace(/'/g,"\\'")}','${a.job_role}','${a.company_name.replace(/'/g,"\\'")}')">📅 Schedule</button>`:'<span style="font-size:11px;color:var(--green);">✓ Scheduled</span>'}
+        ${a.status!=='interview_scheduled'?`<button class="btn-sm btn-green" onclick="openScheduleModal(${a.id},'${a.candidate_name.replace(/'/g,"\\'")}','${a.job_role}','${a.company_name.replace(/'/g,"\\'")}',(${a.posting_id||0}))">📅 Schedule</button>`:'<span style="font-size:11px;color:var(--green);">✓ Scheduled</span>'}
       </div>
     </div>`).join('');
 }
@@ -809,38 +1073,146 @@ function clearApplicantView() {
 }
 
 // ── Schedule Modal ─────────────────────────────────────────────────────────────
-function openScheduleModal(applicationId, candidateName, jobRole, company) {
+let _currentSchedPostingId = null;
+let _schedRoundConfig = null;
+
+function openScheduleModal(applicationId, candidateName, jobRole, company, postingId) {
   currentApplicationId=applicationId; schedMode='mcq';
+  _currentSchedPostingId = postingId || null;
+  _schedRoundConfig = null;
   document.querySelectorAll('[id^="sched-mode-"]').forEach(e=>e.classList.remove('selected'));
   document.getElementById('sched-mode-mcq').classList.add('selected');
   document.getElementById('schedule-candidate-info').innerHTML=`<strong>👤 ${candidateName}</strong><br><span style="color:var(--muted);">${jobRole} at ${company}</span>`;
   document.getElementById('sched-result').style.display='none';
+  document.getElementById('sched-round-number').value='1';
+  document.getElementById('sched-round-name').value='Round 1';
   const dt=new Date(); dt.setDate(dt.getDate()+1); dt.setMinutes(0,0,0);
   document.getElementById('sched-datetime').value=dt.toISOString().slice(0,16);
   document.getElementById('schedule-modal').classList.remove('hidden');
+  // Load round config if postingId available
+  if (postingId) {
+    fetch(`/api/round-config/${postingId}`).then(r=>r.json()).then(data => {
+      if (data.success && data.config) {
+        _schedRoundConfig = data.config;
+        // Update round number dropdown to show only configured rounds
+        const sel = document.getElementById('sched-round-number');
+        sel.innerHTML = data.config.rounds.map(r =>
+          `<option value="${r.round_number}">${r.round_name} (Round ${r.round_number})</option>`
+        ).join('');
+        // Auto-fill first round
+        onSchedRoundChange();
+      }
+    }).catch(()=>{});
+  }
 }
+
+function onSchedRoundChange() {
+  const sel = document.getElementById('sched-round-number');
+  const rn = parseInt(sel.value);
+  const ivBox = document.getElementById('sched-interviewer-info');
+  if (_schedRoundConfig) {
+    const r = _schedRoundConfig.rounds.find(r => r.round_number === rn);
+    if (r) {
+      document.getElementById('sched-round-name').value = r.round_name;
+      selectSchedMode(r.interview_mode);
+      if (ivBox) {
+        if (r.interviewer_name || r.interviewer_email) {
+          ivBox.style.display = 'block';
+          ivBox.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Interviewer for this round</div>
+            <div style="font-size:13px;color:var(--text);font-weight:600;">${r.interviewer_name || ''}</div>
+            ${r.interviewer_email ? `<div style="font-size:12px;color:var(--muted);">${r.interviewer_email} <span style="color:var(--green);">(will be CC&apos;d on email)</span></div>` : ''}`;
+        } else { ivBox.style.display = 'none'; }
+      }
+      return;
+    }
+  }
+  document.getElementById('sched-round-name').value = `Round ${rn}`;
+  if (ivBox) ivBox.style.display = 'none';
+}
+
 function closeScheduleModal() { document.getElementById('schedule-modal').classList.add('hidden'); currentApplicationId=null; }
 function selectSchedMode(mode) {
   schedMode=mode;
   document.querySelectorAll('[id^="sched-mode-"]').forEach(e=>e.classList.remove('selected'));
   document.getElementById('sched-mode-'+mode).classList.add('selected');
 }
+
+function buildICSContent(title, description, location, startISO, durationMinutes) {
+  durationMinutes = durationMinutes || 60;
+  const pad = n => String(n).padStart(2,'0');
+  const toICS = iso => { const d=new Date(iso); return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`; };
+  const end = new Date(new Date(startISO).getTime() + durationMinutes*60000).toISOString();
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//RecruitAI//EN','CALSCALE:GREGORIAN','METHOD:REQUEST',
+    'BEGIN:VEVENT',`UID:recruitai-${Date.now()}@recruitai.app`,
+    `DTSTART:${toICS(startISO)}`,`DTEND:${toICS(end)}`,`SUMMARY:${title}`,
+    `DESCRIPTION:${description.replace(/\n/g,'\\n')}`,`LOCATION:${location}`,
+    'STATUS:CONFIRMED','BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:Interview in 30 minutes',
+    'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+
+function downloadICS(ics, filename) {
+  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+}
+
+function buildGoogleCalLink(title, desc, startISO, mins) {
+  mins=mins||60;
+  const pad=n=>String(n).padStart(2,'0');
+  const fmt=iso=>{const d=new Date(iso);return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;};
+  const end=new Date(new Date(startISO).getTime()+mins*60000).toISOString();
+  return 'https://calendar.google.com/calendar/render?'+new URLSearchParams({action:'TEMPLATE',text:title,dates:`${fmt(startISO)}/${fmt(end)}`,details:desc});
+}
+
+function buildOutlookLink(title, desc, startISO, mins) {
+  mins=mins||60;
+  const end=new Date(new Date(startISO).getTime()+mins*60000).toISOString();
+  return 'https://outlook.live.com/calendar/0/action/compose?'+new URLSearchParams({path:'/calendar/action/compose',rru:'addevent',subject:title,body:desc,startdt:startISO,enddt:end});
+}
+
 async function confirmSchedule() {
   const dt=document.getElementById('sched-datetime').value;
-  if (!dt) { showToast('⚠️ Pick a date and time'); return; }
+  if (!dt) { showToast('Pick a date and time'); return; }
+  const roundNumber = parseInt(document.getElementById('sched-round-number').value) || 1;
+  const roundName   = document.getElementById('sched-round-name').value.trim() || `Round ${roundNumber}`;
+  let interviewerName='', interviewerEmail='';
+  if (_schedRoundConfig) {
+    const r = _schedRoundConfig.rounds.find(r=>r.round_number===roundNumber);
+    if (r) { interviewerName=r.interviewer_name||''; interviewerEmail=r.interviewer_email||''; }
+  }
   const btn=document.getElementById('sched-confirm-btn');
-  btn.textContent='⏳ Scheduling…'; btn.disabled=true;
+  btn.textContent='Scheduling...'; btn.disabled=true;
   const data=await fetch('/api/schedule-interview',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({application_id:currentApplicationId,scheduled_at:dt,interview_mode:schedMode})}).then(r=>r.json());
-  btn.textContent='📨 Schedule & Send Email'; btn.disabled=false;
-  if (!data.success) { showToast('❌ '+data.message); return; }
+    body:JSON.stringify({application_id:currentApplicationId,scheduled_at:dt,interview_mode:schedMode,
+      round_number:roundNumber,round_name:roundName,interviewer_name:interviewerName,interviewer_email:interviewerEmail,
+    })}).then(r=>r.json());
+  btn.textContent='Schedule & Send Email'; btn.disabled=false;
+  if (!data.success) { showToast('Error: '+data.message); return; }
+  const calTitle = `${roundName} Interview - RecruitAI`;
+  const calDesc  = `Interview via RecruitAI\nRoom Code: ${data.room_code}\nMode: ${schedMode.replace(/_/g,' ')}${interviewerName ? '\nInterviewer: '+interviewerName : ''}`;
+  const gcalLink    = buildGoogleCalLink(calTitle, calDesc, dt);
+  const outlookLink = buildOutlookLink(calTitle, calDesc, dt);
+  const icsContent  = buildICSContent(calTitle, calDesc, 'RecruitAI Platform (Online)', dt);
   const res=document.getElementById('sched-result');
   res.style.display='block';
-  res.innerHTML=`✅ <strong>Interview Scheduled!</strong><br>Room Code: <code style="color:var(--accent2);background:var(--bg2);padding:3px 8px;border-radius:4px;">${data.room_code}</code><br>
-    📧 Emails sent to candidate & recruiter<br>
-    ${data.calendar_link?`<a href="${data.calendar_link}" target="_blank" style="color:var(--accent2);">📅 Add to Google Calendar</a>`:''}`;
-  showToast('✅ Scheduled! Emails sent to both parties.');
-  setTimeout(()=>{ closeScheduleModal(); loadMyPostings(); }, 4000);
+  res.innerHTML=`
+    <div style="margin-bottom:12px;">
+      <strong>Interview Scheduled!</strong><br>
+      Round: <strong>${roundName}</strong><br>
+      Room Code: <code style="color:var(--accent2);background:var(--s2);padding:3px 8px;border-radius:4px;">${data.room_code}</code>
+      ${interviewerName?`<br>Interviewer: <strong>${interviewerName}</strong>${interviewerEmail?' ('+interviewerEmail+')':''}`:''}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Emails sent to candidate${interviewerEmail?' & interviewer':''}</div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Add to Calendar</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <a href="${gcalLink}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#1a73e8;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">Google Calendar</a>
+      <a href="${outlookLink}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#0078d4;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">Outlook</a>
+      <button onclick="downloadICS(this.getAttribute('data-ics'),'interview-${data.room_code}.ics')" data-ics="${icsContent.replace(/"/g,'&quot;')}" style="padding:8px 14px;background:rgba(67,97,238,.1);border:1.5px solid rgba(67,97,238,.3);color:var(--accent2);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Download .ics</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);">.ics works with Apple Calendar, Outlook desktop, Google Calendar & any calendar app</div>`;
+  showToast('Scheduled! Emails sent.');
+  setTimeout(()=>{ closeScheduleModal(); loadMyPostings(); }, 9000);
 }
 
 // ── Manual Session ─────────────────────────────────────────────────────────────
@@ -1040,7 +1412,18 @@ function renderLive(sessions) {
       <div style="background:var(--s2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:${scoreColor(s.credibility_score)}">${s.credibility_score}</div><div style="font-size:10px;color:var(--muted);">CREDIBILITY</div></div>
       <div style="background:var(--s2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;">${s.interview_score}</div><div style="font-size:10px;color:var(--muted);">SCORE</div></div>
     </div>
-    ${s.mode==='live_recruiter'?`<button class="btn-sm btn-green" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')">Join Session</button>`:''}
+    ${s.room_code ? (() => {
+      const st = s.status || 'pending';
+      const isLive = s.mode === 'live_recruiter';
+      if (st === 'completed' || st === 'abandoned') {
+        return `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic;">Session already ended</div>
+          <button class="btn-sm" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);width:100%;">📋 View Results</button>`;
+      } else if (st === 'active') {
+        return `<button class="btn-sm btn-green" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="width:100%;">${isLive ? '🎥 Rejoin' : '👁 Monitor'}</button>`;
+      } else {
+        return `<button class="btn-sm btn-green" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="width:100%;">${isLive ? '🎥 Join Session' : '👁 Monitor'}</button>`;
+      }
+    })() : ''}
   </div>`).join('');
 }
 function scoreColor(s) { return s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e'; }
@@ -1053,6 +1436,7 @@ function showPage(name, el) {
   if (name==='candidates') loadCandidates();
   if (name==='jobs'||name==='applicants') loadMyPostings();
   if (name==='emailsettings') loadEmailSettings();
+  if (name==='roundconfig') { loadRoundConfigPage(); updateVoicePreview(); }
   if (name==='scheduled') loadScheduled();
 }
 function initSocket() {
@@ -1073,30 +1457,55 @@ async function loadScheduled() {
       el.innerHTML = '<div class="empty">No scheduled interviews yet</div>';
       return;
     }
-    el.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr style="border-bottom:2px solid var(--border);">
-        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Candidate</th>
-        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Job Role</th>
-        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Mode</th>
-        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Scheduled At</th>
-        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Room Code</th>
-        <th style="padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;">Action</th>
-      </tr></thead>
-      <tbody>${data.scheduled.map(s=>`
-        <tr style="border-bottom:1px solid var(--border);transition:background .15s;" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
-          <td style="padding:12px;font-weight:600;">${s.candidate_name||'—'}</td>
-          <td style="padding:12px;color:var(--muted);">${s.job_role||'—'}</td>
-          <td style="padding:12px;"><span style="background:var(--accent-light);color:var(--accent2);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${(s.interview_mode||s.mode||'mcq').replace('_',' ').toUpperCase()}</span></td>
-          <td style="padding:12px;color:var(--muted);">${s.scheduled_at||'—'}</td>
-          <td style="padding:12px;"><code style="background:var(--bg2);color:var(--accent2);padding:4px 10px;border-radius:6px;font-size:13px;font-weight:700;letter-spacing:1px;">${s.room_code||'—'}</code>
-            <button onclick="navigator.clipboard.writeText('${s.room_code}');showToast('Room code copied!')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;margin-left:4px;" title="Copy code">📋</button>
-          </td>
-          <td style="padding:12px;">
-            ${s.room_code ? `<button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:7px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;">🎥 Join</button>` : '—'}
-            ${s.calendar_link ? `<a href="${s.calendar_link}" target="_blank" style="margin-left:6px;padding:7px 10px;background:transparent;color:var(--accent2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;text-decoration:none;">📅</a>` : ''}
-          </td>
-        </tr>`).join('')}
-      </tbody></table></div>`;
+    el.innerHTML = data.scheduled.map(s => {
+      const st = s.session_status || 'pending';
+      const isLive = (s.interview_mode || '') === 'live_recruiter';
+      const isDone = st === 'completed' || st === 'abandoned';
+      const isActive = st === 'active';
+      const modeLabel = (s.interview_mode || 'mcq').replace(/_/g,' ').toUpperCase();
+      const modeColors = {
+        'mcq': 'rgba(67,97,238,.1);color:var(--accent2)',
+        'ai interview': 'rgba(124,58,237,.1);color:#7c3aed',
+        'live recruiter': 'rgba(5,150,105,.1);color:#059669'
+      };
+      const modeColor = modeColors[(s.interview_mode||'mcq').replace(/_/g,' ')] || 'rgba(67,97,238,.1);color:var(--accent2)';
+
+      // Build action button based on session state
+      let actionBtn = '';
+      if (!s.room_code) {
+        actionBtn = '<span style="color:var(--muted);font-size:12px;">No room</span>';
+      } else if (isDone) {
+        actionBtn = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">⚠️ Session already ended</div>
+          <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;width:100%;">📋 View Results</button>`;
+      } else if (isActive) {
+        const lbl = isLive ? '🎥 Rejoin Session' : '👁 Monitor Live';
+        actionBtn = `<div style="font-size:11px;color:#059669;margin-bottom:4px;font-weight:600;">● Session in progress</div>
+          <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(5,150,105,.12);color:#059669;border:1px solid rgba(5,150,105,.3);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
+      } else {
+        const lbl = isLive ? '🎥 Join Session' : '👁 Monitor';
+        actionBtn = `<button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
+      }
+
+      return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+            <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.candidate_name || '—'}</div>
+            <span style="background:${modeColor};padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;">${modeLabel}</span>
+            ${isDone ? `<span style="background:rgba(100,116,139,.1);color:var(--muted);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">ENDED</span>` : isActive ? `<span style="background:rgba(5,150,105,.1);color:#059669;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">ACTIVE</span>` : ''}
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">💼 ${s.job_role || '—'} &nbsp;·&nbsp; 🗓️ ${s.scheduled_at || '—'}</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <code style="background:var(--bg2);color:var(--accent2);padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;letter-spacing:1px;">${s.room_code || '—'}</code>
+            ${s.room_code ? `<button onclick="navigator.clipboard.writeText('${s.room_code}');showToast('Room code copied!')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;" title="Copy">📋</button>` : ''}
+            ${s.round_name ? `<span style="font-size:11px;color:var(--muted);">Round: <strong>${s.round_name}</strong></span>` : ''}
+          </div>
+        </div>
+        <div style="min-width:130px;text-align:right;">
+          ${actionBtn}
+          ${s.calendar_link ? `<a href="${s.calendar_link}" target="_blank" style="display:inline-block;margin-top:6px;font-size:11px;color:var(--accent2);text-decoration:none;">📅 Calendar</a>` : ''}
+        </div>
+      </div>`;
+    }).join('');
   } catch(e) {
     el.innerHTML = '<div class="empty">Failed to load scheduled interviews</div>';
   }

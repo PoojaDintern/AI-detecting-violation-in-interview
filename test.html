@@ -886,9 +886,14 @@ async function loadUpcoming() {
     el.innerHTML = scheduled.map(a => {
       const s = a.scheduled_interview;
       const dt = new Date(s.scheduled_at);
-      const isPast = dt < new Date();
       const dtStr = dt.toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' })
                   + ' at ' + dt.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+      // Show "Rejoin" only if the session is already active (started but not ended)
+      // Never show "Rejoin" for pending/new sessions even if the time has passed
+      const sessionStatus = s.session_status || 'pending';
+      const isActive = sessionStatus === 'active' || sessionStatus === 'in_progress';
+      const btnLabel = isActive ? 'Rejoin' : 'Join Now';
+      const btnIcon  = isActive ? 'fa-redo' : 'fa-video';
       return `
       <div class="upcoming-card">
         <div class="upcoming-icon">📅</div>
@@ -902,7 +907,7 @@ async function loadUpcoming() {
         </div>
         <div class="upcoming-actions">
           <button class="btn-sm btn-primary-sm" onclick="window.location.href='interview_room.html?room=${s.room_code}'">
-            <i class="fas fa-video"></i> ${isPast ? 'Rejoin' : 'Join Now'}
+            <i class="fas ${btnIcon}"></i> ${btnLabel}
           </button>
           ${s.calendar_link ? `<a href="${s.calendar_link}" target="_blank" class="btn-sm btn-outline-sm" style="text-decoration:none;"><i class="fas fa-calendar-plus"></i> Calendar</a>` : ''}
         </div>
@@ -1020,8 +1025,70 @@ async function loadApplications() {
     rejected:             `<span class="badge badge-rejected"><i class="fas fa-times-circle"></i> Not Selected</span>`,
   };
 
-  el.innerHTML = apps.map(a => {
+  // Fetch pipelines for all postings in parallel
+  const pipelineMap = {};
+  await Promise.all(apps.map(async a => {
+    try {
+      const pd = await fetch(`/api/pipeline/my/${a.posting_id}`).then(r=>r.json());
+      if (pd.success && pd.pipeline) pipelineMap[a.posting_id] = pd.pipeline;
+    } catch(e) {}
+  }));
+
+  const ROUND_COLORS = ['#4361ee','#7c3aed','#059669','#d97706','#dc2626'];
+  function roundStatusBadge(status) {
+    if (status === 'completed_passed') return 'background:#dcfce7;color:#166534;border:1px solid #bbf7d0;';
+    if (status === 'completed_failed') return 'background:#fee2e2;color:#991b1b;border:1px solid #fecaca;';
+    if (status === 'pending') return 'background:#dbeafe;color:#1e3a8a;border:1px solid #bfdbfe;';
+    return 'background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;'; // locked
+  }
+  function roundStatusIcon(status) {
+    if (status === 'completed_passed') return '✅';
+    if (status === 'completed_failed') return '❌';
+    if (status === 'pending') return '🔓';
+    return '🔒';
+  }
+
+  el.innerHTML = await Promise.all(apps.map(async a => {
     const sched = a.scheduled_interview;
+    const pipeline = pipelineMap[a.posting_id];
+
+    // Build round pipeline tracker HTML
+    let pipelineHtml = '';
+    if (pipeline && pipeline.total_rounds > 0) {
+      const rounds = pipeline.rounds || {};
+      const roundItems = Array.from({length: pipeline.total_rounds}, (_, i) => {
+        const rn = i + 1;
+        const r = rounds[String(rn)] || {};
+        const rName = r.round_name || `Round ${rn}`;
+        const rStatus = r.status || 'locked';
+        const rScore = r.score !== null && r.score !== undefined ? `${r.score}%` : '—';
+        const col = ROUND_COLORS[i] || '#64748b';
+        return `
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;${roundStatusBadge(rStatus)}margin-bottom:6px;">
+            <span style="background:${col};color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap;">R${rn}</span>
+            <span style="font-size:13px;font-weight:600;flex:1;">${rName}</span>
+            <span style="font-size:12px;">${roundStatusIcon(rStatus)}</span>
+            ${rStatus.startsWith('completed') ? `<span style="font-size:12px;font-weight:700;">${rScore}</span>` : ''}
+            ${rStatus === 'pending' && sched && sched.round_number === rn ? `<button onclick="window.location.href='interview_room.html?room=${sched.room_code}'" style="padding:4px 12px;background:#4361ee;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Join →</button>` : ''}
+          </div>`;
+      }).join('');
+
+      const overallColor = pipeline.overall_status === 'completed_passed' ? '#16a34a'
+                         : pipeline.overall_status === 'completed_failed' ? '#991b1b' : '#4361ee';
+      pipelineHtml = `
+        <div style="margin-top:14px;padding:14px;background:#f8faff;border:1px solid #e0e7ff;border-radius:12px;">
+          <div style="font-size:11px;font-weight:700;color:#4361ee;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">
+            🎯 Interview Rounds — ${pipeline.total_rounds} Round${pipeline.total_rounds>1?'s':''} 
+            <span style="float:right;color:${overallColor};text-transform:none;font-size:12px;">${
+              pipeline.overall_status === 'completed_passed' ? '✅ All Passed'
+            : pipeline.overall_status === 'completed_failed' ? '❌ Did Not Pass'
+            : `Round ${pipeline.current_round} of ${pipeline.total_rounds}`}</span>
+          </div>
+          ${roundItems}
+          ${pipeline.eligible_again_at ? `<div style="margin-top:8px;font-size:12px;color:#991b1b;background:#fee2e2;padding:8px 10px;border-radius:6px;">⏳ Cooldown active — eligible to reapply after ${pipeline.eligible_again_at.split(' ')[0]}</div>` : ''}
+        </div>`;
+    }
+
     let schedHtml = '';
     if (sched) {
       const dt = new Date(sched.scheduled_at);
@@ -1029,7 +1096,7 @@ async function loadApplications() {
                   + ' at ' + dt.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
       schedHtml = `
         <div class="sched-box">
-          <div class="sched-box-title"><i class="fas fa-calendar-alt"></i> Interview Scheduled</div>
+          <div class="sched-box-title"><i class="fas fa-calendar-alt"></i> Upcoming: ${sched.round_name || 'Interview'} Scheduled</div>
           <div class="sched-grid">
             <div class="sched-row"><i class="fas fa-calendar"></i> ${dtStr}</div>
             <div class="sched-row"><i class="fas fa-user"></i> ${sched.recruiter_name}</div>
@@ -1059,9 +1126,10 @@ async function loadApplications() {
         <span><i class="fas fa-calendar" style="color:var(--primary);"></i> Applied ${a.applied_at ? a.applied_at.split(' ')[0] : ''}</span>
       </div>
       ${a.cover_note ? `<div class="cover-note">"${a.cover_note}"</div>` : ''}
+      ${pipelineHtml}
       ${schedHtml}
     </div>`;
-  }).join('');
+  })).then(cards => cards.join(''));
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@ PERMANENT_SESSION_LIFETIME = 7200  # 2 hours
 # Replace YOUR-PASSWORD with your actual Supabase database password
 SQLALCHEMY_DATABASE_URI = os.environ.get(
     'DATABASE_URL',
-    'postgresql://postgres:poojad01252006d@db.vlvpnxbctzxlljqapqyw.supabase.co:5432/postgres'
+    'postgresql://postgres.vlvpnxbctzxlljqapqyw:poojad01252006d@aws-1-ap-south-1.pooler.supabase.com:5432/postgres'
 )
 SQLALCHEMY_ECHO = False
 SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -60,27 +60,21 @@ JOB_ROLES = [
 
 # WebRTC ICE Servers
 WEBRTC_ICE_SERVERS = [
-    # STUN servers - helps discover public IP
+    # Google STUN — fastest for same-network / public IP discovery
     {'urls': 'stun:stun.l.google.com:19302'},
     {'urls': 'stun:stun1.l.google.com:19302'},
     {'urls': 'stun:stun2.l.google.com:19302'},
     {'urls': 'stun:stun3.l.google.com:19302'},
-    # Free TURN servers - relays traffic when direct connection fails (cross-network)
-    {
-        'urls': 'turn:openrelay.metered.ca:80',
-        'username': 'openrelayproject',
-        'credential': 'openrelayproject'
-    },
-    {
-        'urls': 'turn:openrelay.metered.ca:443',
-        'username': 'openrelayproject',
-        'credential': 'openrelayproject'
-    },
-    {
-        'urls': 'turn:openrelay.metered.ca:443?transport=tcp',
-        'username': 'openrelayproject',
-        'credential': 'openrelayproject'
-    },
+    {'urls': 'stun:stun4.l.google.com:19302'},
+    # Metered.ca free TURN — reliable relay for cross-network (different WiFi, mobile data, etc.)
+    {'urls': 'turn:a.relay.metered.ca:80',       'username': 'openrelayproject', 'credential': 'openrelayproject'},
+    {'urls': 'turn:a.relay.metered.ca:80?transport=tcp', 'username': 'openrelayproject', 'credential': 'openrelayproject'},
+    {'urls': 'turn:a.relay.metered.ca:443',      'username': 'openrelayproject', 'credential': 'openrelayproject'},
+    {'urls': 'turn:a.relay.metered.ca:443?transport=tcp','username': 'openrelayproject', 'credential': 'openrelayproject'},
+    # OpenRelay backup
+    {'urls': 'turn:openrelay.metered.ca:80',     'username': 'openrelayproject', 'credential': 'openrelayproject'},
+    {'urls': 'turn:openrelay.metered.ca:443',    'username': 'openrelayproject', 'credential': 'openrelayproject'},
+    {'urls': 'turn:openrelay.metered.ca:443?transport=tcp', 'username': 'openrelayproject', 'credential': 'openrelayproject'},
 ]
 
 
