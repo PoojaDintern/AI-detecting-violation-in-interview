@@ -276,12 +276,6 @@ body{
       <div class="form-group"><label>Password</label><input type="password" id="l-password" placeholder="Enter your password" autocomplete="current-password"></div>
       <button class="btn-main" id="login-btn">Sign In →</button>
       <div id="login-msg" class="msg"></div>
-      <div class="demo-box">
-        <div class="demo-title">Demo Accounts</div>
-        <div class="demo-row"><span class="demo-role">Company / Recruiter</span><span class="demo-creds">recruiter / recruiter123</span></div>
-        <div class="demo-row"><span class="demo-role">Candidate</span><span class="demo-creds">student / student123</span></div>
-        <div class="demo-row"><span class="demo-role">Admin</span><span class="demo-creds">admin / admin123</span></div>
-      </div>
     </div>
 
     <div id="signup-form" class="form">
@@ -321,7 +315,7 @@ body{
       <!-- Phone — shown only for recruiter -->
       <div class="form-group" id="phone-group" style="display:none;">
         <label>Phone Number <span style="color:var(--red)">*</span></label>
-        <input type="tel" id="s-phone" placeholder="+91 9876543210 or 9876543210" autocomplete="tel">
+        <input type="tel" id="s-phone" placeholder="10-digit mobile number (e.g. 9876543210)" autocomplete="tel" maxlength="15">
         <div class="field-err" id="err-phone"></div>
       </div>
 
@@ -396,9 +390,11 @@ function isValidEmail(e) {
   return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(e);
 }
 function isValidPhone(p) {
-  // Accept: +91XXXXXXXXXX, 91XXXXXXXXXX, XXXXXXXXXX (10 digits), +1XXXXXXXXXX, etc.
+  // Accept exactly 10 digits (Indian standard), optionally prefixed with +91 or 0
   const clean = p.replace(/[\s\-().]/g,'');
-  return /^(\+?[0-9]{7,15})$/.test(clean);
+  // Strip country code if present
+  const stripped = clean.replace(/^\+91|^91|^0/, '');
+  return /^[6-9][0-9]{9}$/.test(stripped);
 }
 
 function updatePassStrength(val) {
@@ -492,7 +488,7 @@ document.getElementById('signup-btn').addEventListener('click', async () => {
     if (!phone) {
       setErr('err-phone','Phone number is required for company accounts'); markInvalid('s-phone'); valid=false;
     } else if (!isValidPhone(phone)) {
-      setErr('err-phone','Enter a valid phone number (7–15 digits, e.g. +91 9876543210)'); markInvalid('s-phone'); valid=false;
+      setErr('err-phone','Enter a valid 10-digit phone number (e.g. 9876543210)'); markInvalid('s-phone'); valid=false;
     }
   }
 
@@ -559,7 +555,7 @@ document.getElementById('s-email')?.addEventListener('blur', () => {
 // Real-time phone validation
 document.getElementById('s-phone')?.addEventListener('blur', () => {
   const v = document.getElementById('s-phone').value.trim();
-  if (v && !isValidPhone(v)) { setErr('err-phone','Invalid phone number'); markInvalid('s-phone'); }
+  if (v && !isValidPhone(v)) { setErr('err-phone','Phone must be exactly 10 digits (Indian mobile number)'); markInvalid('s-phone'); }
   else { setErr('err-phone',''); document.getElementById('s-phone').classList.remove('invalid'); }
 });
 </script>

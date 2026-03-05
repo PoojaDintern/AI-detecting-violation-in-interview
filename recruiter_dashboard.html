@@ -147,7 +147,6 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <div class="nav-item" data-page="jobs" onclick="showPage('jobs',this)"><span class="nav-icon">💼</span>Job Postings</div>
     <div class="nav-item" data-page="applicants" onclick="showPage('applicants',this)"><span class="nav-icon">👥</span>Applicants</div>
     <div class="nav-item" data-page="create" onclick="showPage('create',this)"><span class="nav-icon">➕</span>Create Interview</div>
-    <div class="nav-item" data-page="sessions" onclick="showPage('sessions',this)"><span class="nav-icon">📋</span>Sessions</div>
     <div class="nav-item" data-page="scheduled" onclick="showPage('scheduled',this)"><span class="nav-icon">📅</span>Scheduled</div>
     <div class="nav-item" data-page="interviewers" onclick="showPage('interviewers',this)"><span class="nav-icon">🎙️</span>Interviewers</div>
     <div class="nav-item" data-page="emailsettings" onclick="showPage('emailsettings',this)"><span class="nav-icon">📧</span>Email Settings</div>
@@ -160,6 +159,32 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <div class="page active" id="page-overview">
       <div class="page-title">Dashboard Overview</div>
       <div class="page-sub">Real-time recruiting intelligence</div>
+
+      <!-- Date Filter Bar -->
+      <div style="background:var(--s);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">🗓 Filter By</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <select id="ov-filter-period" onchange="onPeriodFilterChange()"
+            style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="day">Specific Day</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+          <input id="ov-filter-date" type="date" onchange="applyOverviewFilters()" style="display:none;padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+          <select id="ov-filter-month" onchange="applyOverviewFilters()" style="display:none;padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+          </select>
+          <select id="ov-filter-year" onchange="applyOverviewFilters()" style="display:none;padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"></select>
+        </div>
+        <div id="ov-filter-badge" style="display:none;padding:4px 12px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.2);border-radius:20px;font-size:12px;color:var(--accent2);font-weight:600;"></div>
+        <button onclick="resetDateFilter()" id="ov-reset-btn" style="display:none;padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕ Reset</button>
+      </div>
+
       <div class="stats">
         <div class="stat blue"><div class="stat-val" id="s-candidates">—</div><div class="stat-lbl">Candidates</div></div>
         <div class="stat green"><div class="stat-val" id="s-submissions">—</div><div class="stat-lbl">Submissions</div></div>
@@ -170,13 +195,22 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       <div class="card">
         <div class="card-title" style="flex-wrap:wrap;gap:12px;">
           <span>📋 Recent Sessions</span>
-          <div style="display:flex;gap:10px;margin-left:auto;">
+          <div style="display:flex;gap:10px;margin-left:auto;align-items:center;flex-wrap:wrap;">
             <input id="ov-filter-name" type="text" placeholder="Search…" oninput="applyOverviewFilters()"
-              style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;width:120px;outline:none;">
-            <button onclick="downloadSessionsExcel()" style="padding:7px 14px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:8px;color:#059669;font-size:12px;font-weight:600;cursor:pointer;">⬇ Excel</button>
+              style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;width:130px;outline:none;">
+            <button onclick="downloadSessionsExcel()" style="padding:7px 14px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:8px;color:#059669;font-size:12px;font-weight:600;cursor:pointer;">⬇ Export All</button>
           </div>
         </div>
-        <div style="max-height:400px;overflow-y:auto;overflow-x:auto;" id="recent-table"><div class="empty">Loading…</div></div>
+        <div id="recent-table"><div class="empty">Loading…</div></div>
+        <!-- Pagination -->
+        <div id="ov-pagination" style="display:none;padding:14px 0 2px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <span id="ov-page-info" style="font-size:12px;color:var(--muted);"></span>
+          <div style="display:flex;gap:6px;">
+            <button id="ov-prev-btn" onclick="changeOvPage(-1)" style="padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);">← Prev</button>
+            <div id="ov-page-btns" style="display:flex;gap:4px;"></div>
+            <button id="ov-next-btn" onclick="changeOvPage(1)" style="padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);">Next →</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -338,6 +372,24 @@ tr:hover td{background:rgba(79,142,247,0.03);}
           <div class="mode-card selected" id="mode-mcq" onclick="selectMode('mcq')"><div class="mode-icon">📝</div><div class="mode-name">MCQ Exam</div></div>
           <div class="mode-card" id="mode-ai_interview" onclick="selectMode('ai_interview')"><div class="mode-icon">🤖</div><div class="mode-name">AI Interviewer</div></div>
           <div class="mode-card" id="mode-live_recruiter" onclick="selectMode('live_recruiter')"><div class="mode-icon">🎥</div><div class="mode-name">Live Recruiter</div></div>
+        </div>
+
+        <!-- MCQ Question Source (only shown when MCQ mode selected) -->
+        <div id="mcq-source-section" style="margin-bottom:16px;padding:16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">📝 MCQ Question Source</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div id="mcq-src-hardcoded" onclick="selectMcqSource('hardcoded')" style="border:2px solid var(--accent);border-radius:10px;padding:14px;cursor:pointer;background:rgba(67,97,238,.07);transition:all .2s;">
+              <div style="font-size:22px;margin-bottom:6px;">🗄️</div>
+              <div style="font-weight:700;font-size:13px;color:var(--accent2);">Hardcoded Questions</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;">Questions pulled from your database. Consistent, pre-verified set.</div>
+            </div>
+            <div id="mcq-src-ai" onclick="selectMcqSource('ai')" style="border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;background:var(--s);transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="if(currentMcqSource!=='ai')this.style.borderColor='var(--border)'">
+              <div style="font-size:22px;margin-bottom:6px;">🤖</div>
+              <div style="font-weight:700;font-size:13px;">AI Chat-Based Questions</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;">Gemini AI generates fresh questions dynamically per candidate.</div>
+            </div>
+          </div>
+          <input type="hidden" id="c-mcq-source" value="hardcoded">
         </div>
 
         <!-- Step 1: Role -->
@@ -606,13 +658,17 @@ tr:hover td{background:rgba(79,142,247,0.03);}
             </select>
           </div>
           <div class="fg" style="margin-bottom:0;">
-            <label>Accent</label>
+            <label>Accent <span style="color:var(--muted2);font-size:10px;font-weight:400;text-transform:none;">(browser TTS — free)</span></label>
             <select id="rc-voice-accent" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateVoicePreview()">
-              <option value="en-US">🇺🇸 American English</option>
-              <option value="en-GB">🇬🇧 British English</option>
-              <option value="en-AU">🇦🇺 Australian English</option>
-              <option value="en-IN">🇮🇳 Indian English</option>
-              <option value="en-CA">🇨🇦 Canadian English</option>
+              <option value="en-US">🇺🇸 American English (en-US)</option>
+              <option value="en-GB">🇬🇧 British English (en-GB)</option>
+              <option value="en-AU">🇦🇺 Australian English (en-AU)</option>
+              <option value="en-IN">🇮🇳 Indian English (en-IN)</option>
+              <option value="en-CA">🇨🇦 Canadian English (en-CA)</option>
+              <option value="en-IE">🇮🇪 Irish English (en-IE)</option>
+              <option value="en-ZA">🇿🇦 South African English (en-ZA)</option>
+              <option value="en-NZ">🇳🇿 New Zealand English (en-NZ)</option>
+              <option value="en-SG">🇸🇬 Singaporean English (en-SG)</option>
             </select>
           </div>
         </div>
@@ -620,7 +676,25 @@ tr:hover td{background:rgba(79,142,247,0.03);}
           <button onclick="previewAIVoice()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(67,97,238,.08));border:1.5px solid rgba(124,58,237,.3);border-radius:9px;color:#7c3aed;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
             🔊 Preview Voice
           </button>
+          <button onclick="listAvailableVoices()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;background:rgba(67,97,238,.08);border:1.5px solid rgba(67,97,238,.2);border-radius:9px;color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;">
+            🎙️ Show Available Voices
+          </button>
           <div id="rc-voice-preview-label" style="font-size:13px;color:var(--muted);font-style:italic;padding:8px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;"></div>
+        </div>
+        <!-- Cost info banner -->
+        <div style="margin-top:16px;padding:12px 16px;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.18);border-radius:10px;">
+          <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:6px;">💰 Costing Info — AI Interviewer Voice</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--muted);line-height:1.6;">
+            <div>🆓 <strong>Browser TTS (current):</strong> Completely free. Uses your device's built-in speech engine. Quality varies by OS & browser.</div>
+            <div>💎 <strong>Google Cloud TTS:</strong> ~$4/1M characters. High-quality WaveNet voices. Requires API key.</div>
+            <div>💎 <strong>AWS Polly:</strong> ~$4/1M characters. Neural voices available. Requires AWS credentials.</div>
+            <div>💎 <strong>ElevenLabs:</strong> From $5/mo. Most realistic AI voices. Best for premium experience.</div>
+          </div>
+        </div>
+        <!-- Available voices list -->
+        <div id="available-voices-panel" style="display:none;margin-top:12px;padding:12px 16px;background:var(--s2);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Available Voices on This Device</div>
+          <div id="voices-list-content" style="font-size:12px;color:var(--text2);"></div>
         </div>
       </div>
 
@@ -817,55 +891,103 @@ tr:hover td{background:rgba(79,142,247,0.03);}
 </div><!-- /.layout -->
 
 <!-- FOOTER -->
-<footer style="background:var(--s);border-top:1px solid var(--border);padding:32px 48px;margin-top:0;position:relative;z-index:1;">
-  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;align-items:start;">
-    <!-- Brand -->
-    <div>
-      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);margin-bottom:10px;">🤖 RecruitAI</div>
-      <div style="font-size:13px;color:var(--muted);line-height:1.7;max-width:280px;">AI-powered hiring platform for modern companies. Automate interviews, proctoring and candidate evaluation — all in one place.</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:16px;">
-        <div style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:pulseDot 2s infinite;"></div>
-        <span style="font-size:12px;color:#059669;font-weight:600;">All systems operational</span>
+<footer style="background:#0a0f1e;position:relative;z-index:1;overflow:hidden;">
+  <!-- Subtle gradient overlay -->
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(67,97,238,0.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(79,142,247,0.05) 0%,transparent 50%);pointer-events:none;"></div>
+
+  <!-- Top divider line with gradient -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(67,97,238,0.5),rgba(79,142,247,0.6),rgba(67,97,238,0.5),transparent);"></div>
+
+  <div style="max-width:1200px;margin:0 auto;padding:56px 48px 40px;position:relative;">
+
+    <!-- Main grid -->
+    <div style="display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr;gap:48px;align-items:start;margin-bottom:48px;">
+
+      <!-- Brand column -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div style="width:38px;height:38px;background:linear-gradient(135deg,#4361ee,#1e3a8a);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 14px rgba(67,97,238,0.4);">🤖</div>
+          <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#6d83f3,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">RecruitAI</span>
+        </div>
+        <p style="font-size:13px;color:#94a3b8;line-height:1.8;max-width:270px;margin-bottom:24px;">The AI-powered hiring platform built for modern teams. Automate interviews, proctoring, and candidate evaluation — all in one intelligent workspace.</p>
+        <!-- Status pill -->
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:30px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 6px rgba(16,185,129,0.6);animation:pulseDot 2s infinite;"></span>
+          <span style="font-size:12px;color:#34d399;font-weight:600;letter-spacing:.02em;">All systems operational</span>
+        </div>
+        <!-- Tech badges -->
+        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(67,97,238,0.1);border:1px solid rgba(67,97,238,0.2);color:#818cf8;letter-spacing:.05em;">GEMINI AI</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.18);color:#fbbf24;letter-spacing:.05em;">WEBRTC</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.18);color:#34d399;letter-spacing:.05em;">SUPABASE</span>
+        </div>
+      </div>
+
+      <!-- Platform column -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Platform</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <a onclick="showPage('overview',document.querySelector('[data-page=overview]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Dashboard</a>
+          <a onclick="showPage('jobs',document.querySelector('[data-page=jobs]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Job Postings</a>
+          <a onclick="showPage('applicants',document.querySelector('[data-page=applicants]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Applicants</a>
+          <a onclick="showPage('scheduled',document.querySelector('[data-page=scheduled]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Scheduled Interviews</a>
+          <a onclick="showPage('interviewers',document.querySelector('[data-page=interviewers]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Interviewers</a>
+          <a onclick="showPage('create',document.querySelector('[data-page=create]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Create Interview</a>
+        </div>
+      </div>
+
+      <!-- Configuration column -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Configuration</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <a onclick="showPage('roundconfig',document.querySelector('[data-page=roundconfig]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Round Config</a>
+          <a onclick="showPage('emailsettings',document.querySelector('[data-page=emailsettings]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Email Settings</a>
+          <a onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Company Profile</a>
+          <a href="/logout" style="font-size:13px;color:#f87171;text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:8px;margin-top:4px;" onmouseover="this.style.color='#fca5a5';this.style.paddingLeft='4px'" onmouseout="this.style.color='#f87171';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Logout</a>
+        </div>
+      </div>
+
+      <!-- Trust & Security column -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Security & Trust</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(67,97,238,0.12);border:1px solid rgba(67,97,238,0.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🔒</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">SSL Encrypted</div><div style="font-size:11px;color:#475569;">End-to-end secure</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🧠</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">AI Proctoring</div><div style="font-size:11px;color:#475569;">Real-time monitoring</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.18);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🛡️</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">GDPR Compliant</div><div style="font-size:11px;color:#475569;">Data privacy first</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.15);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">📊</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">Data Analytics</div><div style="font-size:11px;color:#475569;">Insights at a glance</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div style="padding-top:28px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#334155;">© 2026 RecruitAI. All rights reserved.</span>
+        <span style="width:1px;height:14px;background:#1e293b;display:inline-block;"></span>
+        <span style="font-size:12px;color:#334155;">Powered by <span style="color:#6d83f3;font-weight:600;">Gemini AI</span></span>
+        <span style="width:1px;height:14px;background:#1e293b;display:inline-block;"></span>
+        <span style="font-size:12px;color:#334155;">Built for modern hiring</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Privacy Policy</span>
+        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Terms of Service</span>
+        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Support</span>
       </div>
     </div>
-    <!-- Platform -->
-    <div>
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">Platform</div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <a onclick="showPage('overview',document.querySelector('[data-page=overview]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Dashboard</a>
-        <a onclick="showPage('jobs',document.querySelector('[data-page=jobs]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Job Postings</a>
-        <a onclick="showPage('scheduled',document.querySelector('[data-page=scheduled]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Scheduled Interviews</a>
-        <a onclick="showPage('interviewers',document.querySelector('[data-page=interviewers]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Interviewers</a>
-      </div>
-    </div>
-    <!-- Settings -->
-    <div>
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">Settings</div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <a onclick="showPage('emailsettings',document.querySelector('[data-page=emailsettings]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Email Settings</a>
-        <a onclick="showPage('roundconfig',document.querySelector('[data-page=roundconfig]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Round Config</a>
-        <a onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Company Profile</a>
-        <a href="/logout" style="font-size:13px;color:var(--red);text-decoration:none;transition:color .15s;" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">Logout</a>
-      </div>
-    </div>
-    <!-- Security -->
-    <div>
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;">Security & Trust</div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">🔒 <span>SSL Encrypted</span></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">🧠 <span>AI Proctoring</span></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">🛡️ <span>GDPR Compliant</span></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">📊 <span>Data Analytics</span></div>
-      </div>
-    </div>
-  </div>
-  <div style="max-width:1200px;margin:24px auto 0;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-    <div style="font-size:12px;color:var(--muted2);">© 2025 RecruitAI · Powered by Gemini AI · Built for modern hiring</div>
-    <div style="font-size:12px;color:var(--muted2);display:flex;gap:20px;">
-      <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted2)'">Privacy Policy</span>
-      <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted2)'">Terms of Service</span>
-      <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted2)'">Support</span>
-    </div>
+
   </div>
 </footer>
 
@@ -1028,9 +1150,13 @@ function updateVoicePreview() {
   const gender = document.getElementById('rc-voice-gender')?.value || 'male';
   const tone   = document.getElementById('rc-voice-tone')?.value   || 'normal';
   const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
-  const accentLabels = {'en-US':'American','en-GB':'British','en-AU':'Australian','en-IN':'Indian','en-CA':'Canadian'};
+  const accentLabels = {
+    'en-US':'American English','en-GB':'British English','en-AU':'Australian English',
+    'en-IN':'Indian English','en-CA':'Canadian English','en-IE':'Irish English',
+    'en-ZA':'South African English','en-NZ':'New Zealand English','en-SG':'Singaporean English'
+  };
   const label = document.getElementById('rc-voice-preview-label');
-  if (label) label.textContent = `${gender === 'male' ? '👨' : '👩'} ${gender.charAt(0).toUpperCase()+gender.slice(1)} · ${tone.charAt(0).toUpperCase()+tone.slice(1)} · ${accentLabels[accent]||accent}`;
+  if (label) label.textContent = `${gender==='male'?'👨':'👩'} ${gender.charAt(0).toUpperCase()+gender.slice(1)} · ${tone.charAt(0).toUpperCase()+tone.slice(1)} · ${accentLabels[accent]||accent}`;
 }
 
 function previewAIVoice() {
@@ -1039,28 +1165,53 @@ function previewAIVoice() {
   const gender = document.getElementById('rc-voice-gender')?.value || 'male';
   const tone   = document.getElementById('rc-voice-tone')?.value   || 'normal';
   const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
-  const utt = new SpeechSynthesisUtterance('Hello! I am your AI interviewer. Welcome to your interview session. Are you ready to begin?');
+  const sampleText = {
+    'en-US': "Hello! I am your AI interviewer. Welcome to your interview session. Are you ready to begin?",
+    'en-GB': "Good day! I shall be your AI interviewer today. Welcome to your interview session.",
+    'en-AU': "G'day! I'm your AI interviewer. Welcome to your interview session today. Ready to begin?",
+    'en-IN': "Namaste! I am your AI interviewer. Welcome to your interview session. Shall we begin?",
+    'en-CA': "Hello! I'm your AI interviewer. Welcome to your interview session. Are you ready to start?",
+    'en-IE': "Hello there! I'll be your AI interviewer today. Welcome to your interview session.",
+    'en-ZA': "Hello! I am your AI interviewer. Welcome to your interview session. Let us begin.",
+    'en-NZ': "Kia ora! I'm your AI interviewer. Welcome to your interview session. Ready to go?",
+    'en-SG': "Hello! I am your AI interviewer. Welcome to your interview session. Shall we get started?"
+  };
+  const text = sampleText[accent] || sampleText['en-US'];
+  const utt = new SpeechSynthesisUtterance(text);
   utt.lang = accent;
-  // Apply tone
   switch(tone) {
     case 'slow':     utt.rate=0.7;  utt.pitch=1.0;  break;
     case 'fast':     utt.rate=1.3;  utt.pitch=1.0;  break;
-    case 'deep':     utt.rate=0.85; utt.pitch=0.7;  break;
-    case 'friendly': utt.rate=1.0;  utt.pitch=1.2;  break;
+    case 'deep':     utt.rate=0.85; utt.pitch=0.65; break;
+    case 'friendly': utt.rate=1.0;  utt.pitch=1.25; break;
     default:         utt.rate=0.9;  utt.pitch=1.0;
   }
-  // Try to pick a matching voice by gender preference
-  const voices = speechSynthesis.getVoices();
-  const langVoices = voices.filter(v => v.lang.startsWith(accent.split('-')[0]) || v.lang === accent);
-  if (langVoices.length) {
-    // Heuristic: "male" voices often don't have "female"/"woman" in the name
-    const genderMatch = gender === 'female'
-      ? langVoices.find(v => /female|woman|girl|zira|susan|samantha|victoria|karen|moira/i.test(v.name))
-      : langVoices.find(v => /male|man|david|daniel|alex|fred|lee|thomas/i.test(v.name));
-    utt.voice = genderMatch || langVoices[0];
+  // Try to find a voice matching the accent language code and gender
+  const loadAndSpeak = () => {
+    const voices = speechSynthesis.getVoices();
+    const accentCode = accent.toLowerCase();
+    const langCode = accent.split('-')[0].toLowerCase();
+    // First try exact accent match
+    let pool = voices.filter(v => v.lang.toLowerCase() === accentCode);
+    // Fallback: same language family
+    if (!pool.length) pool = voices.filter(v => v.lang.toLowerCase().startsWith(langCode));
+    if (pool.length) {
+      const femaleKeywords = /female|woman|girl|zira|susan|samantha|victoria|karen|moira|fiona|tessa|veena|heera|raveena|neerja/i;
+      const maleKeywords   = /male|man|david|daniel|alex|fred|lee|thomas|rishi|lekha/i;
+      const genderMatch = gender === 'female'
+        ? pool.find(v => femaleKeywords.test(v.name))
+        : pool.find(v => maleKeywords.test(v.name));
+      utt.voice = genderMatch || pool[gender==='female'?pool.length-1:0];
+    }
+    speechSynthesis.speak(utt);
+    showToast(`🔊 Playing ${document.querySelector(`#rc-voice-accent option[value="${accent}"]`)?.textContent || accent} voice preview…`);
+  };
+  // Voices may not be loaded yet
+  if (speechSynthesis.getVoices().length) {
+    loadAndSpeak();
+  } else {
+    speechSynthesis.onvoiceschanged = () => { loadAndSpeak(); speechSynthesis.onvoiceschanged=null; };
   }
-  speechSynthesis.speak(utt);
-  showToast('🔊 Playing voice preview…');
 }
 
 async function saveRoundConfig() {
@@ -1155,21 +1306,61 @@ async function loadRoles() {
   });
 }
 
+let _rawStats = {};
+let _rawJpData = [];
+
 async function loadDashboard() {
   const [stats, jpData] = await Promise.all([
     fetch('/api/dashboard-stats').then(r=>r.json()).catch(()=>({success:false})),
     fetch('/api/job-postings/all').then(r=>r.json()).catch(()=>({success:false,postings:[]}))
   ]);
   if (!stats.success) return;
-  document.getElementById('s-candidates').textContent = stats.stats.total_candidates;
-  document.getElementById('s-submissions').textContent = stats.stats.total_submissions;
-  document.getElementById('s-violations').textContent = stats.stats.total_violations;
-  document.getElementById('s-active').textContent = stats.stats.active_sessions;
-  document.getElementById('s-jobs').textContent = (jpData.postings||[]).filter(p=>p.is_active).length;
+  _rawStats  = stats.stats || {};
+  _rawJpData = (jpData.postings||[]).filter(p=>p.is_active);
   allSubmissionsData = stats.recent_submissions || [];
+
+  // Populate year dropdown from data
+  _populateYearDropdown();
   applyOverviewFilters();
-  renderSessionsTable(allSubmissionsData.slice(0,20), 'sessions-table');
   renderLive(stats.active_sessions_list || []);
+}
+
+function _populateYearDropdown() {
+  const sel = document.getElementById('ov-filter-year');
+  if (!sel) return;
+  const years = [...new Set(allSubmissionsData.map(s => {
+    const d = new Date(s.submitted_at);
+    return isNaN(d) ? null : d.getFullYear();
+  }).filter(Boolean))].sort((a,b)=>b-a);
+  const cur = new Date().getFullYear();
+  if (!years.includes(cur)) years.unshift(cur);
+  sel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join('');
+}
+
+function _dateMatchesFilter(dateStr) {
+  const period = document.getElementById('ov-filter-period')?.value || 'all';
+  if (period === 'all') return true;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return true;
+  const now = new Date();
+  if (period === 'today') {
+    return d.toDateString() === now.toDateString();
+  }
+  if (period === 'day') {
+    const sel = document.getElementById('ov-filter-date')?.value;
+    if (!sel) return true;
+    return d.toISOString().slice(0,10) === sel;
+  }
+  if (period === 'month') {
+    const m = parseInt(document.getElementById('ov-filter-month')?.value||0);
+    const y = parseInt(document.getElementById('ov-filter-year')?.value||0);
+    return d.getMonth()+1 === m && d.getFullYear() === y;
+  }
+  if (period === 'year') {
+    const y = parseInt(document.getElementById('ov-filter-year')?.value||0);
+    return d.getFullYear() === y;
+  }
+  return true;
 }
 
 async function loadCandidates() {
@@ -1391,6 +1582,7 @@ async function createJobPosting() {
   if (!jpSkills.length) { jpShowError('⚠️ Please add at least one required skill.'); return; }
   if (!experience) { jpShowError('⚠️ Please select the experience level required.'); return; }
   if (!jobType)    { jpShowError('⚠️ Please select a Job Type.'); return; }
+  if (!pkg)        { jpShowError('⚠️ Salary package is required.'); return; }
 
   const btn = document.querySelector('[onclick="createJobPosting()"]');
   if (btn) { btn.disabled=true; btn.textContent='Publishing…'; }
@@ -1408,7 +1600,7 @@ async function createJobPosting() {
         skills_required: jpSkills,
         experience_required: experience,
         job_type: jobType,
-        package: pkg,
+        salary_package: pkg,
         work_mode: workMode,
       })
     });
@@ -1580,12 +1772,75 @@ async function confirmSchedule() {
   setTimeout(()=>{ closeScheduleModal(); loadMyPostings(); }, 9000);
 }
 
-// ── Manual Session ─────────────────────────────────────────────────────────────
+let currentMcqSource = 'hardcoded';
+
+function selectMcqSource(source) {
+  currentMcqSource = source;
+  document.getElementById('c-mcq-source').value = source;
+  const hardEl = document.getElementById('mcq-src-hardcoded');
+  const aiEl   = document.getElementById('mcq-src-ai');
+  if (source === 'hardcoded') {
+    hardEl.style.border = '2px solid var(--accent)';
+    hardEl.style.background = 'rgba(67,97,238,.07)';
+    hardEl.querySelector('div:nth-child(2)').style.color = 'var(--accent2)';
+    aiEl.style.border = '2px solid var(--border)';
+    aiEl.style.background = 'var(--s)';
+  } else {
+    aiEl.style.border = '2px solid var(--accent)';
+    aiEl.style.background = 'rgba(67,97,238,.07)';
+    aiEl.querySelector('div:nth-child(2)').style.color = 'var(--accent2)';
+    hardEl.style.border = '2px solid var(--border)';
+    hardEl.style.background = 'var(--s)';
+    hardEl.querySelector('div:nth-child(2)').style.color = 'var(--text)';
+  }
+}
+
+function listAvailableVoices() {
+  const panel = document.getElementById('available-voices-panel');
+  const content = document.getElementById('voices-list-content');
+  if (panel.style.display !== 'none') { panel.style.display='none'; return; }
+  if (!window.speechSynthesis) { showToast('Speech synthesis not available in this browser'); return; }
+  const voices = speechSynthesis.getVoices();
+  const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
+  const langCode = accent.split('-')[0];
+  const relevant = voices.filter(v => v.lang.startsWith(langCode) || v.lang === accent);
+  const all = voices.filter(v => v.lang.startsWith('en'));
+  if (!voices.length) {
+    content.innerHTML = '<span style="color:var(--muted2);">No voices loaded yet. Try clicking Preview Voice first.</span>';
+  } else {
+    const renderVoice = v => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <span><strong>${v.name}</strong> <span style="color:var(--muted);">(${v.lang})</span>${v.default?' ⭐':''}</span>
+      <button onclick="testSingleVoice('${v.name.replace(/'/g,"\\'")}')" style="padding:2px 8px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.2);border-radius:5px;color:var(--accent2);font-size:11px;cursor:pointer;">▶ Test</button>
+    </div>`;
+    const relevantHtml = relevant.length
+      ? `<div style="font-size:11px;color:var(--accent2);font-weight:700;margin-bottom:4px;">Matching selected accent (${accent}):</div>${relevant.map(renderVoice).join('')}<div style="margin:8px 0;font-size:11px;color:var(--muted);font-weight:700;">All English voices:</div>${all.map(renderVoice).join('')}`
+      : all.map(renderVoice).join('');
+    content.innerHTML = relevantHtml || '<span style="color:var(--muted2);">No English voices found on this device.</span>';
+  }
+  panel.style.display = 'block';
+}
+
+function testSingleVoice(voiceName) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const voices = speechSynthesis.getVoices();
+  const voice = voices.find(v => v.name === voiceName);
+  if (!voice) return;
+  const utt = new SpeechSynthesisUtterance('Hello, I am your AI interviewer. Welcome!');
+  utt.voice = voice;
+  utt.rate = 0.9;
+  speechSynthesis.speak(utt);
+}
+
+// Auto-hide MCQ source panel when not in MCQ mode
 function selectMode(mode) {
   selectedMode=mode;
   document.querySelectorAll('#page-create .mode-card').forEach(c=>c.classList.remove('selected'));
   document.getElementById('mode-'+mode).classList.add('selected');
+  document.getElementById('mcq-source-section').style.display = mode==='mcq' ? 'block' : 'none';
 }
+
+
 
 async function onRoleChange() {
   const role = document.getElementById('c-role').value;
@@ -1691,7 +1946,7 @@ async function createSession() {
     const data = await fetch('/api/create-session', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode})
+      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode, mcq_source: currentMcqSource})
     }).then(r=>r.json());
 
     if (!data.success) { showToast('❌ '+(data.message||'Failed')); return; }
@@ -1740,16 +1995,137 @@ function resetCreateForm() {
   lastCreatedSession = null;
 }
 
-// ── Filters & Tables ──────────────────────────────────────────────────────────
-function applyOverviewFilters() {
-  const name=(document.getElementById('ov-filter-name')?.value||'').toLowerCase();
-  const filtered=allSubmissionsData.filter(s=>{ const n=(s.full_name||s.username||'').toLowerCase(); return !name||n.includes(name); }).slice(0,10);
-  renderSessionsTable(filtered,'recent-table');
+// ── Date filter UI helpers ────────────────────────────────────────────────────
+function onPeriodFilterChange() {
+  const period = document.getElementById('ov-filter-period')?.value || 'all';
+  const dateEl  = document.getElementById('ov-filter-date');
+  const monthEl = document.getElementById('ov-filter-month');
+  const yearEl  = document.getElementById('ov-filter-year');
+  const resetBtn= document.getElementById('ov-reset-btn');
+  const badge   = document.getElementById('ov-filter-badge');
+
+  // Set today as default for day picker
+  if (period === 'day' && dateEl && !dateEl.value) {
+    dateEl.value = new Date().toISOString().slice(0,10);
+  }
+  // Set current month/year as default
+  if ((period === 'month' || period === 'year') && yearEl) {
+    const cur = new Date();
+    if (!yearEl.value || yearEl.value === '') yearEl.value = cur.getFullYear();
+    if (monthEl && !monthEl.value) monthEl.value = cur.getMonth()+1;
+  }
+
+  dateEl.style.display  = period==='day'   ? 'block' : 'none';
+  monthEl.style.display = period==='month' ? 'block' : 'none';
+  yearEl.style.display  = (period==='month'||period==='year') ? 'block' : 'none';
+  resetBtn.style.display = period!=='all'  ? 'block' : 'none';
+  badge.style.display   = 'none';
+
+  applyOverviewFilters();
 }
+
+function resetDateFilter() {
+  document.getElementById('ov-filter-period').value = 'all';
+  onPeriodFilterChange();
+}
+
+// ── Pagination state ──────────────────────────────────────────────────────────
+let _ovCurrentPage = 1;
+const OV_PAGE_SIZE = 10;
+
+function changeOvPage(delta) {
+  _ovCurrentPage += delta;
+  applyOverviewFilters(false); // don't reset page
+}
+
+// ── Filters & Tables ──────────────────────────────────────────────────────────
+function applyOverviewFilters(resetPage=true) {
+  if (resetPage) _ovCurrentPage = 1;
+  const name = (document.getElementById('ov-filter-name')?.value||'').toLowerCase();
+
+  // Filter by name + date
+  const filtered = allSubmissionsData.filter(s => {
+    const n = (s.full_name||s.username||'').toLowerCase();
+    return (!name || n.includes(name)) && _dateMatchesFilter(s.submitted_at);
+  });
+
+  // Update stats based on filtered data
+  _updateFilteredStats(filtered);
+
+  // Pagination
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / OV_PAGE_SIZE));
+  _ovCurrentPage = Math.min(_ovCurrentPage, totalPages);
+  const start = (_ovCurrentPage-1)*OV_PAGE_SIZE;
+  const pageData = filtered.slice(start, start+OV_PAGE_SIZE);
+
+  renderSessionsTable(pageData, 'recent-table');
+  _renderPagination(total, totalPages);
+
+  // Update badge
+  const period = document.getElementById('ov-filter-period')?.value||'all';
+  const badge = document.getElementById('ov-filter-badge');
+  if (period !== 'all' && badge) {
+    badge.style.display='block';
+    badge.textContent = `${total} result${total!==1?'s':''}`;
+  } else if (badge) { badge.style.display='none'; }
+}
+
+function _updateFilteredStats(filtered) {
+  const period = document.getElementById('ov-filter-period')?.value||'all';
+  if (period === 'all') {
+    // Use raw API stats
+    document.getElementById('s-candidates').textContent = _rawStats.total_candidates ?? '—';
+    document.getElementById('s-submissions').textContent = _rawStats.total_submissions ?? '—';
+    document.getElementById('s-violations').textContent = _rawStats.total_violations ?? '—';
+    document.getElementById('s-active').textContent = _rawStats.active_sessions ?? '—';
+    document.getElementById('s-jobs').textContent = _rawJpData.length ?? '—';
+  } else {
+    // Derive from filtered submissions
+    const candidates = new Set(filtered.map(s=>s.username||s.full_name)).size;
+    const violations = filtered.reduce((acc,s)=>acc+(s.total_violations||0),0);
+    const active = filtered.filter(s=>!s.passed && s.credibility_score===100).length;
+    document.getElementById('s-candidates').textContent = candidates;
+    document.getElementById('s-submissions').textContent = filtered.length;
+    document.getElementById('s-violations').textContent = violations;
+    document.getElementById('s-active').textContent = _rawStats.active_sessions ?? '—';
+    document.getElementById('s-jobs').textContent = _rawJpData.length ?? '—';
+  }
+}
+
+function _renderPagination(total, totalPages) {
+  const pg = document.getElementById('ov-pagination');
+  if (!pg) return;
+  if (total === 0) { pg.style.display='none'; return; }
+  pg.style.display = 'flex';
+  const start = (_ovCurrentPage-1)*OV_PAGE_SIZE+1;
+  const end = Math.min(_ovCurrentPage*OV_PAGE_SIZE, total);
+  document.getElementById('ov-page-info').textContent = `Showing ${start}–${end} of ${total} sessions`;
+
+  const prevBtn = document.getElementById('ov-prev-btn');
+  const nextBtn = document.getElementById('ov-next-btn');
+  prevBtn.disabled = _ovCurrentPage <= 1;
+  prevBtn.style.opacity = _ovCurrentPage<=1 ? '0.4' : '1';
+  nextBtn.disabled = _ovCurrentPage >= totalPages;
+  nextBtn.style.opacity = _ovCurrentPage>=totalPages ? '0.4' : '1';
+
+  // Page number buttons (show max 5 around current)
+  const btns = document.getElementById('ov-page-btns');
+  let pages = [];
+  for (let i=1;i<=totalPages;i++) {
+    if (i===1||i===totalPages||Math.abs(i-_ovCurrentPage)<=1) pages.push(i);
+    else if (pages[pages.length-1]!=='…') pages.push('…');
+  }
+  btns.innerHTML = pages.map(p => p==='…'
+    ? `<span style="padding:6px 4px;font-size:12px;color:var(--muted);">…</span>`
+    : `<button onclick="_ovCurrentPage=${p};applyOverviewFilters(false)" style="padding:6px 11px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${p===_ovCurrentPage?'var(--accent)':'var(--border)'};background:${p===_ovCurrentPage?'var(--accent)':'var(--s2)'};color:${p===_ovCurrentPage?'#fff':'var(--text)'};">${p}</button>`
+  ).join('');
+}
+
 function renderSessionsTable(subs, containerId) {
   const el=document.getElementById(containerId);
-  if (!subs?.length) { el.innerHTML='<div class="empty">No sessions yet</div>'; return; }
-  el.innerHTML=`<table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+  if (!subs?.length) { el.innerHTML='<div class="empty">No sessions found</div>'; return; }
+  el.innerHTML=`<div style="overflow-x:auto;"><table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
     ${subs.map(s=>`<tr><td><strong>${s.full_name||s.username}</strong></td><td>${s.job_role||'—'}</td>
     <td><span class="badge badge-blue">${(s.mode||'mcq').replace('_',' ')}</span></td>
     <td><strong style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</strong></td>
@@ -1758,14 +2134,37 @@ function renderSessionsTable(subs, containerId) {
     <td style="color:var(--muted);font-size:12px;">${s.submitted_at}</td>
     <td><button class="btn-sm btn-blue" onclick="window.location.href='results.html?id=${s.id}'">Report</button></td>
     </tr>`).join('')}
-  </tbody></table>`;
+  </tbody></table></div>`;
 }
 function downloadSessionsExcel() {
-  const h=['Candidate','Role','Mode','Credibility','Score','Status','Date'];
-  const rows=allSubmissionsData.map(s=>[s.full_name||s.username,s.job_role,s.mode,s.credibility_score,s.interview_score,s.passed?'PASSED':'FAILED',s.submitted_at]);
+  // Export ALL data matching current name + date filter (not just current page)
+  const name = (document.getElementById('ov-filter-name')?.value||'').toLowerCase();
+  const exportData = allSubmissionsData.filter(s => {
+    const n = (s.full_name||s.username||'').toLowerCase();
+    return (!name || n.includes(name)) && _dateMatchesFilter(s.submitted_at);
+  });
+  if (!exportData.length) { showToast('No data to export for current filter'); return; }
+  const h=['#','Candidate','Username','Role','Mode','Credibility Score','Interview Score','Status','Violations','Date'];
+  const rows=exportData.map((s,i)=>[
+    i+1,
+    s.full_name||s.username,
+    s.username||'',
+    s.job_role||'',
+    (s.mode||'mcq').replace(/_/g,' '),
+    s.credibility_score,
+    s.interview_score||0,
+    s.passed?'PASSED':'FAILED',
+    s.total_violations||0,
+    s.submitted_at
+  ]);
   const tsv=[h,...rows].map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join('\t')).join('\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+tsv],{type:'application/vnd.ms-excel'}));
-  a.download='RecruitAI_Sessions.xls'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+tsv],{type:'application/vnd.ms-excel'}));
+  const period = document.getElementById('ov-filter-period')?.value||'all';
+  const suffix = period!=='all' ? `_${period}` : '';
+  a.download=`RecruitAI_Sessions${suffix}_${new Date().toISOString().slice(0,10)}.xls`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast(`✅ Exported ${exportData.length} sessions`);
 }
 function renderLive(sessions) {
   const el=document.getElementById('live-grid');

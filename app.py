@@ -1483,6 +1483,111 @@ def detect_face():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/check-head-pose', methods=['POST'])
+@login_required
+def check_head_pose():
+    """
+    Verify whether the candidate has turned their head/body in the required direction
+    during the 360° room scan. Uses face bounding-box position + aspect-ratio heuristics:
+      - 'left'   : face bbox shifted toward the LEFT side of the frame
+                   OR face becomes narrow (profile view, width < 55% of height)
+      - 'right'  : face bbox shifted toward the RIGHT side of the frame
+                   OR face becomes narrow (profile view)
+      - 'center' : face bbox is horizontally centred AND reasonably square
+      - 'down'   : face bbox is in the BOTTOM half of the frame
+                   OR face is tilted down (eye region very high in face box)
+    A 'profile' view is identified when the face is narrow (aspect ratio < 0.60),
+    meaning the candidate has turned far enough that only a side view is visible.
+    """
+    try:
+        data          = request.get_json() or {}
+        required_pose = data.get('required_pose')          # 'left','right','center','down'
+        img_b64       = data.get('image', '')
+        if not img_b64 or not required_pose:
+            return jsonify({'success': True, 'pose_detected': True})   # fail open
+
+        # Decode image
+        img_bytes = base64.b64decode(img_b64.split(',')[-1])
+        frame     = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_COLOR)
+        if frame is None:
+            return jsonify({'success': True, 'pose_detected': True})
+
+        fh, fw = frame.shape[:2]
+        gray   = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray   = cv2.equalizeHist(gray)
+        faces  = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(50, 50))
+
+        if len(faces) == 0:
+            # No face — for 'down' pose this is expected (camera pointing at desk)
+            pose_ok = (required_pose == 'down')
+            return jsonify({'success': True, 'pose_detected': pose_ok,
+                            'reason': 'no_face_detected'})
+
+        # Use the largest detected face
+        x, y, w, h = max(faces, key=lambda f: f[2] * f[3])
+
+        # Face centre as fraction of frame width / height
+        cx_ratio = (x + w / 2) / fw   # 0=left edge, 1=right edge
+        cy_ratio = (y + h / 2) / fh   # 0=top edge,  1=bottom edge
+
+        # Face aspect ratio: narrow face → profile/side view
+        face_aspect = w / max(h, 1)   # < 0.60 = narrow/profile view
+        is_profile  = face_aspect < 0.62
+
+        # Face occupies what fraction of the horizontal zone?
+        left_zone  = cx_ratio < 0.42   # clearly shifted left
+        right_zone = cx_ratio > 0.58   # clearly shifted right
+        centre_zone = 0.35 < cx_ratio < 0.65
+
+        # Eye-region check for downward tilt: detect if eyes are near top of face box
+        eyes_high = False
+        face_roi  = gray[y:y+h, x:x+w]
+        eyes      = eye_cascade.detectMultiScale(face_roi, 1.1, 6, minSize=(15, 15))
+        if len(eyes) >= 1:
+            avg_eye_y = sum(ey + eh / 2 for (_, ey, _, eh) in eyes) / len(eyes)
+            eye_v_ratio = avg_eye_y / max(h, 1)   # > 0.45 means eyes are mid-or-lower = tilt down
+            eyes_high   = eye_v_ratio < 0.38       # eyes near top of face box = tilt up (not down)
+
+        pose_ok = False
+        reason  = ''
+
+        if required_pose == 'center':
+            # Face must be roughly centred and not a profile view
+            pose_ok = centre_zone and not is_profile
+            reason  = f'cx={cx_ratio:.2f} aspect={face_aspect:.2f}'
+
+        elif required_pose == 'left':
+            # Video feed is mirrored (CSS scaleX(-1)) so the raw frame sent to server
+            # is the UNMIRRORED pixel data. When candidate turns LEFT (their left),
+            # their face moves to the RIGHT side of the raw (unmirrored) frame.
+            # Also accept profile view — they've turned far enough for a side silhouette.
+            pose_ok = right_zone or is_profile
+            reason  = f'cx={cx_ratio:.2f} profile={is_profile} (mirrored: right_zone={right_zone})'
+
+        elif required_pose == 'right':
+            # Candidate turning RIGHT → face moves to LEFT of raw frame
+            pose_ok = left_zone or is_profile
+            reason  = f'cx={cx_ratio:.2f} profile={is_profile} (mirrored: left_zone={left_zone})'
+
+        elif required_pose == 'down':
+            # Face in bottom half of frame OR no face (camera pointing at desk)
+            pose_ok = (cy_ratio > 0.55) or not eyes_high
+            reason  = f'cy={cy_ratio:.2f}'
+
+        return jsonify({
+            'success': True,
+            'pose_detected': pose_ok,
+            'reason': reason,
+            'cx_ratio': round(cx_ratio, 3),
+            'face_aspect': round(face_aspect, 3),
+            'is_profile': is_profile,
+        })
+
+    except Exception as e:
+        print(f'check_head_pose error: {e}')
+        return jsonify({'success': True, 'pose_detected': True})   # fail open
+
+
 @app.route('/analyze-gaze', methods=['POST'])
 @login_required
 def analyze_gaze():
@@ -2269,21 +2374,77 @@ def retake_exam():
 def dashboard_stats():
     if not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+
+    rid = current_user.id
+
+    # Get session IDs that belong to this recruiter
+    recruiter_session_ids = [
+        s.id for s in InterviewSession.query.filter_by(recruiter_id=rid).all()
+    ]
+
+    # Get candidate IDs who have sessions with this recruiter
+    recruiter_candidate_ids = list(set(
+        s.candidate_id for s in InterviewSession.query.filter_by(recruiter_id=rid).all()
+    ))
+
+    # Get posting IDs belonging to this recruiter
+    recruiter_posting_ids = [
+        p.id for p in JobPosting.query.filter_by(recruiter_id=rid).all()
+    ]
+
+    # Count candidates who applied to this recruiter's postings
+    candidate_count = len(set(
+        a.candidate_id for a in JobApplication.query.filter(
+            JobApplication.posting_id.in_(recruiter_posting_ids)
+        ).all()
+    )) if recruiter_posting_ids else 0
+
+    total_submissions = TestSubmission.query.filter(
+        TestSubmission.session_id.in_(recruiter_session_ids)
+    ).count() if recruiter_session_ids else 0
+
+    total_violations = Violation.query.filter(
+        Violation.session_id.in_(recruiter_session_ids)
+    ).count() if recruiter_session_ids else 0
+
+    active_sessions = InterviewSession.query.filter(
+        InterviewSession.recruiter_id == rid,
+        InterviewSession.status == 'active'
+    ).count()
+
+    total_gaze = GazeEvent.query.filter(
+        GazeEvent.session_id.in_(recruiter_session_ids)
+    ).count() if recruiter_session_ids else 0
+
+    total_device = DeviceAlert.query.filter(
+        DeviceAlert.session_id.in_(recruiter_session_ids)
+    ).count() if recruiter_session_ids else 0
+
+    recent_submissions = TestSubmission.query.filter(
+        TestSubmission.session_id.in_(recruiter_session_ids)
+    ).order_by(TestSubmission.submitted_at.desc()).limit(20).all() if recruiter_session_ids else []
+
+    recent_violations = Violation.query.filter(
+        Violation.session_id.in_(recruiter_session_ids)
+    ).order_by(Violation.timestamp.desc()).limit(30).all() if recruiter_session_ids else []
+
+    active_sessions_list = InterviewSession.query.filter(
+        InterviewSession.recruiter_id == rid,
+        InterviewSession.status == 'active'
+    ).all()
+
     return jsonify({'success': True,
         'stats': {
-            'total_candidates': User.query.filter_by(role='candidate').count(),
-            'total_submissions': TestSubmission.query.count(),
-            'total_violations': Violation.query.count(),
-            'active_sessions': InterviewSession.query.filter_by(status='active').count(),
-            'total_gaze_events': GazeEvent.query.count(),
-            'total_device_alerts': DeviceAlert.query.count(),
+            'total_candidates': candidate_count,
+            'total_submissions': total_submissions,
+            'total_violations': total_violations,
+            'active_sessions': active_sessions,
+            'total_gaze_events': total_gaze,
+            'total_device_alerts': total_device,
         },
-        'recent_submissions': [s.to_dict() for s in
-            TestSubmission.query.order_by(TestSubmission.submitted_at.desc()).limit(20).all()],
-        'recent_violations': [v.to_dict() for v in
-            Violation.query.order_by(Violation.timestamp.desc()).limit(30).all()],
-        'active_sessions_list': [s.to_dict() for s in
-            InterviewSession.query.filter_by(status='active').all()],
+        'recent_submissions': [s.to_dict() for s in recent_submissions],
+        'recent_violations': [v.to_dict() for v in recent_violations],
+        'active_sessions_list': [s.to_dict() for s in active_sessions_list],
     })
 
 
@@ -2292,10 +2453,47 @@ def dashboard_stats():
 def get_candidates():
     if not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    candidates = User.query.filter_by(role='candidate').all()
+
+    rid = current_user.id
+
+    # Get candidate IDs from sessions with this recruiter
+    session_candidate_ids = set(
+        s.candidate_id for s in InterviewSession.query.filter_by(recruiter_id=rid).all()
+    )
+
+    # Get candidate IDs from applications to this recruiter's postings
+    recruiter_posting_ids = [
+        p.id for p in JobPosting.query.filter_by(recruiter_id=rid).all()
+    ]
+    posting_candidate_ids = set(
+        a.candidate_id for a in JobApplication.query.filter(
+            JobApplication.posting_id.in_(recruiter_posting_ids)
+        ).all()
+    ) if recruiter_posting_ids else set()
+
+    all_candidate_ids = session_candidate_ids | posting_candidate_ids
+
+    if not all_candidate_ids:
+        return jsonify({'success': True, 'candidates': []})
+
+    candidates = User.query.filter(
+        User.id.in_(all_candidate_ids),
+        User.role == 'candidate'
+    ).all()
+
+    # Count only submissions linked to this recruiter's sessions
+    recruiter_session_ids = set(
+        s.id for s in InterviewSession.query.filter_by(recruiter_id=rid).all()
+    )
+
     return jsonify({'success': True, 'candidates': [
         {'id': c.id, 'username': c.username, 'full_name': c.full_name,
-         'email': c.email, 'submissions': c.submissions.count()} for c in candidates
+         'email': c.email,
+         'submissions': TestSubmission.query.filter(
+             TestSubmission.user_id == c.id,
+             TestSubmission.session_id.in_(recruiter_session_ids)
+         ).count() if recruiter_session_ids else 0
+        } for c in candidates
     ]})
 
 
