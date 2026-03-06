@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Company Dashboard — RecruitAI</title>
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -105,9 +104,6 @@ tr:hover td{background:rgba(79,142,247,0.03);}
 .mode-card.selected{border-color:var(--accent);background:rgba(79,142,247,.1);}
 .mode-icon{font-size:28px;margin-bottom:6px;}
 .mode-name{font-weight:600;font-size:13px;}
-.live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
-.live-card{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;}
-.pulse-dot{width:10px;height:10px;border-radius:50%;background:var(--green);position:absolute;top:20px;right:20px;animation:pulseDot 2s infinite;}
 @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4);}50%{box-shadow:0 0 0 8px rgba(16,185,129,0);}}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
 .modal-overlay.hidden{display:none;}
@@ -1265,7 +1261,7 @@ window.fetch = (url, opts={}) => {
   opts.credentials = opts.credentials || 'same-origin';
   return _origFetch(url, opts);
 };
-let socket, selectedMode='mcq', schedMode='mcq', lastCreatedSession=null;
+let selectedMode='mcq', schedMode='mcq', lastCreatedSession=null;
 let currentApplicationId=null, allSubmissionsData=[];
 
 let _companyName = '';
@@ -1289,7 +1285,6 @@ async function init() {
   const jpComp = document.getElementById('jp-company');
   if (jpComp) jpComp.value = _companyName;
   await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadMyPostings()]);
-  initSocket();
 }
 
 async function loadJobSections() {
@@ -1322,7 +1317,6 @@ async function loadDashboard() {
   // Populate year dropdown from data
   _populateYearDropdown();
   applyOverviewFilters();
-  renderLive(stats.active_sessions_list || []);
 }
 
 function _populateYearDropdown() {
@@ -2166,30 +2160,7 @@ function downloadSessionsExcel() {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   showToast(`✅ Exported ${exportData.length} sessions`);
 }
-function renderLive(sessions) {
-  const el=document.getElementById('live-grid');
-  if (!sessions.length) { el.innerHTML='<div class="empty" style="grid-column:1/-1">No active sessions</div>'; return; }
-  el.innerHTML=sessions.map(s=>`<div class="live-card"><div class="pulse-dot"></div>
-    <div style="font-weight:600;font-size:15px;margin-bottom:3px;">${s.candidate_name}</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">${s.job_role} · ${(s.mode||'').replace('_',' ')}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-      <div style="background:var(--s2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;color:${scoreColor(s.credibility_score)}">${s.credibility_score}</div><div style="font-size:10px;color:var(--muted);">CREDIBILITY</div></div>
-      <div style="background:var(--s2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:22px;font-weight:700;">${s.interview_score}</div><div style="font-size:10px;color:var(--muted);">SCORE</div></div>
-    </div>
-    ${s.room_code ? (() => {
-      const st = s.status || 'pending';
-      const isLive = s.mode === 'live_recruiter';
-      if (st === 'completed' || st === 'abandoned') {
-        return `<div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic;">Session already ended</div>
-          <button class="btn-sm" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);width:100%;">📋 View Results</button>`;
-      } else if (st === 'active') {
-        return `<button class="btn-sm btn-green" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="width:100%;">${isLive ? '🎥 Rejoin' : '👁 Monitor'}</button>`;
-      } else {
-        return `<button class="btn-sm btn-green" onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="width:100%;">${isLive ? '🎥 Join Session' : '👁 Monitor'}</button>`;
-      }
-    })() : ''}
-  </div>`).join('');
-}
+
 function scoreColor(s) { return s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e'; }
 function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -2204,11 +2175,6 @@ function showPage(name, el) {
   if (name==='scheduled') loadScheduled();
   if (name==='interviewers') loadInterviewersPage();
   if (name==='profile') loadCompanyProfile();
-}
-function initSocket() {
-  socket=io();
-  socket.on('connect',()=>socket.emit('join_dashboard'));
-  socket.on('violation_alert',()=>{ const sv=document.getElementById('s-violations'); if(sv) sv.textContent=parseInt(sv.textContent||'0')+1; });
 }
 function showToast(msg,dur=3500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
 
@@ -2386,7 +2352,7 @@ async function loadCompanyProfile() {
   try {
     const data = await fetch('/api/recruiter/profile').then(r=>r.json());
     if (!data.success) return;
-    const p = data.profile || {};
+    const p = data.profile || data; // API returns fields at top level
     const setVal = (id,val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
     setVal('prof-company-name', p.company_name || _companyName);
     setVal('prof-firstname', p.first_name);

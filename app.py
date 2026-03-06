@@ -132,6 +132,7 @@ class InterviewSession(db.Model):
     round_name    = db.Column(db.String(100))
     posting_id    = db.Column(db.Integer, db.ForeignKey('job_postings.id', ondelete='SET NULL'), nullable=True)
     parent_session_id = db.Column(db.Integer, db.ForeignKey('interview_sessions.id', ondelete='SET NULL'), nullable=True)
+    mcq_source    = db.Column(db.String(20), default='hardcoded')  # 'hardcoded' or 'ai' 
 
     candidate = db.relationship('User', foreign_keys=[candidate_id], backref='sessions_as_candidate')
     recruiter = db.relationship('User', foreign_keys=[recruiter_id], backref='sessions_as_recruiter')
@@ -352,13 +353,20 @@ def log_violation_db(user_id, session_id, vtype, gaze_data=None, device_data=Non
     if sess:
         sess.credibility_score = new_score
         db.session.commit()
-    socketio.emit('violation_alert', {
+    alert_data = {
         'user_id': user_id,
         'username': db.session.get(User, user_id).username,
         'violation_type': vtype, 'severity': info['severity'],
+        'description': info['description'],
         'timestamp': datetime.utcnow().strftime('%H:%M:%S'),
         'new_credibility': new_score,
-    }, room='dashboard')
+        'session_id': session_id,
+    }
+    # Emit to recruiter dashboard overview
+    socketio.emit('violation_alert', alert_data, room='dashboard')
+    # Also emit to the specific interview room so recruiter_room can show it live
+    if sess and sess.room_code:
+        socketio.emit('violation_alert', alert_data, room=sess.room_code)
     return v
 
 
@@ -941,6 +949,14 @@ def init_database():
             u = User(username='student', email='student@test.com', full_name='Test Student', role='candidate')
             u.set_password('student123'); db.session.add(u); db.session.commit()
         seed_questions()
+        # ── Safe column migrations (add new columns without breaking existing DBs) ──
+        try:
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                conn.execute(text("ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS mcq_source VARCHAR(20) DEFAULT 'hardcoded'"))
+                conn.commit()
+        except Exception:
+            pass  # Column may already exist or DB doesn't support IF NOT EXISTS
         print("✅ Database ready")
 
 with app.app_context():
@@ -1229,19 +1245,24 @@ def create_session():
                 mode       = detail.interview_mode
                 round_name = detail.round_name
 
+    mcq_source = data.get('mcq_source', 'hardcoded')  # 'hardcoded' or 'ai'
+
     question_ids = []
-    if mode == 'mcq':
+    if mode == 'mcq' and mcq_source != 'ai':
+        # Hardcoded: load questions from DB immediately
         qs = ExamQuestion.query.filter_by(job_role=job_role).all()
         if len(qs) < 10:
             qs = ExamQuestion.query.limit(15).all()
         selected = random.sample(qs, min(10, len(qs)))
         question_ids = [q.id for q in selected]
+    # If mcq_source == 'ai', questions will be generated at join-time via AI
 
     sess = InterviewSession(
         candidate_id=candidate.id, recruiter_id=recruiter_id,
         job_role=job_role, mode=mode,
         room_code=make_room_code(), status='pending',
         credibility_score=100, question_ids=json.dumps(question_ids),
+        mcq_source=mcq_source if mode == 'mcq' else None,
         round_number=round_number, round_name=round_name,
         posting_id=posting_id,
     )
@@ -1305,11 +1326,59 @@ def join_session(room_code):
 
         questions = []
         try:
-            if sess.mode == 'mcq' and sess.question_ids:
-                ids = json.loads(sess.question_ids)
-                questions = [db.session.get(ExamQuestion, i).to_dict() for i in ids
-                             if db.session.get(ExamQuestion, i)]
-        except Exception:
+            mcq_src = getattr(sess, 'mcq_source', 'hardcoded') or 'hardcoded'
+            if sess.mode == 'mcq':
+                # If AI-sourced MCQ: generate questions via Gemini on-the-fly
+                if mcq_src == 'ai' and not sess.question_ids:
+                    try:
+                        client = get_gemini_client()
+                        if client:
+                            prompt = (
+                                f"Generate exactly 10 multiple-choice questions for a {sess.job_role} interview. "
+                                "Return ONLY a JSON array of objects with keys: question_text, options (object with a,b,c,d), correct_answer (letter a/b/c/d). "
+                                "No markdown, no explanation, just pure JSON array."
+                            )
+                            result = client.generate_content(prompt)
+                            raw = result.text.strip().lstrip('').lstrip('json').strip()
+                            ai_qs = json.loads(raw)
+                            questions = [
+                                {
+                                    'id': -(i+1),  # negative IDs = AI-generated
+                                    'question_text': q.get('question_text', q.get('question', '')),
+                                    'options': q.get('options', {'a':'','b':'','c':'','d':''}),
+                                    'correct_answer': q.get('correct_answer','a'),
+                                    'difficulty': 'medium', 'category': sess.job_role
+                                }
+                                for i, q in enumerate(ai_qs[:10])
+                            ]
+                        else:
+                            raise Exception('No Gemini key')
+                    except Exception as ae:
+                        print(f'[join_session] AI MCQ generation failed: {ae}. Falling back to DB questions.')
+                        # Fall back to DB questions
+                        qs = ExamQuestion.query.filter_by(job_role=sess.job_role).all()
+                        if not qs:
+                            qs = ExamQuestion.query.limit(15).all()
+                        selected = random.sample(qs, min(10, len(qs)))
+                        questions = [q.to_dict() for q in selected]
+                        # Save them so next join is consistent
+                        sess.question_ids = json.dumps([q.id for q in selected])
+                        db.session.commit()
+                elif sess.question_ids:
+                    ids = json.loads(sess.question_ids)
+                    questions = [db.session.get(ExamQuestion, i).to_dict() for i in ids
+                                 if db.session.get(ExamQuestion, i)]
+                else:
+                    # No question_ids and not ai — fallback to DB
+                    qs = ExamQuestion.query.filter_by(job_role=sess.job_role).all()
+                    if not qs:
+                        qs = ExamQuestion.query.limit(15).all()
+                    selected = random.sample(qs, min(10, len(qs)))
+                    questions = [q.to_dict() for q in selected]
+                    sess.question_ids = json.dumps([q.id for q in selected])
+                    db.session.commit()
+        except Exception as qe:
+            print(f'[join_session] Question load error: {qe}')
             questions = []
 
         ice_servers = app.config.get('WEBRTC_ICE_SERVERS', [])
@@ -3167,6 +3236,55 @@ def schedule_interview():
         'portal_url': portal_url,
         'message': f'Interview scheduled for {scheduled_at_display}. Emails sent to all parties.'
     })
+
+
+
+@app.route('/api/recruiter/profile', methods=['GET'])
+@login_required
+def get_recruiter_profile():
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    posting = JobPosting.query.filter_by(recruiter_id=current_user.id, is_active=True).first()
+    company_name = posting.company_name if posting else (current_user.full_name or current_user.username)
+    parts = (current_user.full_name or '').split(' ', 1)
+    return jsonify({
+        'success': True,
+        'username': current_user.username,
+        'email': current_user.email,
+        'full_name': current_user.full_name or '',
+        'first_name': parts[0] if parts else '',
+        'last_name': parts[1] if len(parts) > 1 else '',
+        'company_name': company_name,
+        'logo_url': None, 'industry': '', 'company_size': '', 'website': '', 'about': '',
+    })
+
+
+@app.route('/api/recruiter/profile', methods=['POST'])
+@login_required
+def save_recruiter_profile():
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    first_name   = data.get('first_name', '').strip()
+    last_name    = data.get('last_name', '').strip()
+    company_name = data.get('company_name', '').strip()
+    cur_pass     = data.get('current_password', '').strip()
+    new_pass     = data.get('new_password', '').strip()
+    full_name    = f'{first_name} {last_name}'.strip()
+    if full_name:
+        current_user.full_name = full_name
+    if new_pass:
+        if not cur_pass:
+            return jsonify({'success': False, 'message': 'Current password required to change password.'}), 400
+        if not current_user.check_password(cur_pass):
+            return jsonify({'success': False, 'message': 'Current password is incorrect.'}), 400
+        if len(new_pass) < 8:
+            return jsonify({'success': False, 'message': 'New password must be at least 8 characters.'}), 400
+        current_user.set_password(new_pass)
+    if company_name:
+        JobPosting.query.filter_by(recruiter_id=current_user.id, is_active=True).update({'company_name': company_name})
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Profile saved successfully!'})
 
 
 @app.route('/api/recruiter/email-settings', methods=['GET'])
