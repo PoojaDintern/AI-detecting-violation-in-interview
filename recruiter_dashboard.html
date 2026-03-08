@@ -2483,20 +2483,8 @@ async function loadInterviewersPage() {
   if (!el) return;
   el.innerHTML = '<div class="empty">Loading…</div>';
   try {
-    const schedData = await fetch('/api/my-scheduled-interviews').then(r=>r.json());
-    if (!schedData.success || !schedData.scheduled.length) {
-      el.innerHTML = '<div class="empty">No scheduled interviews yet. Schedule an interview with an interviewer assigned in Round Config to see them here.</div>';
-      return;
-    }
-    const sessionIds = [...new Set(schedData.scheduled.map(s=>s.session_id).filter(Boolean))];
-    const all = [];
-    await Promise.all(sessionIds.map(async sid => {
-      try {
-        const d = await fetch(`/api/interviewer-assignments/${sid}`).then(r=>r.json());
-        if (d.success && d.assignments.length) all.push(...d.assignments);
-      } catch(e){}
-    }));
-    if (!all.length) {
+    const data = await fetch('/api/my-interviewer-assignments').then(r=>r.json());
+    if (!data.success || !data.assignments || !data.assignments.length) {
       el.innerHTML = `<div class="empty" style="padding:40px;text-align:center;">
         <div style="font-size:40px;margin-bottom:12px;">🎙️</div>
         <div style="font-weight:700;margin-bottom:6px;">No interviewers assigned yet</div>
@@ -2510,7 +2498,7 @@ async function loadInterviewersPage() {
       completed:'background:rgba(5,150,105,.1);color:#047857;border:1px solid rgba(5,150,105,.25);'
     };
     const statusLabel = { assigned:'📨 Assigned', seen:'👀 Seen', completed:'✅ Completed' };
-    el.innerHTML = all.map(a => {
+    el.innerHTML = data.assignments.map(a => {
       const ss = statusStyle[a.status] || statusStyle.assigned;
       const sl = statusLabel[a.status] || a.status;
       const scoreHtml = a.interviewer_score != null
@@ -2525,9 +2513,10 @@ async function loadInterviewersPage() {
             <span style="${ss}padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;">${sl}</span>
           </div>
           <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">📧 ${a.interviewer_email}</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">👤 Candidate: <strong style="color:var(--text);">${a.candidate_name}</strong></div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">💼 ${a.job_role} &nbsp;·&nbsp; 🔄 ${a.round_name}</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:${a.interviewer_feedback?'10':'0'}px;">🔑 <code style="background:var(--bg2);color:var(--accent2);padding:1px 7px;border-radius:4px;font-size:11px;letter-spacing:.5px;">${a.room_code}</code></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">👤 Candidate: <strong style="color:var(--text);">${a.candidate_name||'—'}</strong></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">💼 ${a.job_role||'—'} &nbsp;·&nbsp; 🔄 ${a.round_name||'Round 1'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">📅 Assigned: ${a.created_at||'—'}</div>
+          ${a.room_code ? `<div style="font-size:12px;color:var(--muted);margin-bottom:${a.interviewer_feedback?'10':'0'}px;">🔑 <code style="background:var(--bg2);color:var(--accent2);padding:1px 7px;border-radius:4px;font-size:11px;letter-spacing:.5px;">${a.room_code}</code></div>` : ''}
           ${a.interviewer_feedback ? `<div style="padding:10px 12px;background:var(--s);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;font-style:italic;">"${a.interviewer_feedback}"</div>` : ''}
         </div>
         <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:110px;">

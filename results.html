@@ -206,8 +206,31 @@ body::before {
 ::-webkit-scrollbar-track{background:var(--bg2)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+/* ── Recruiter Proctoring Panel ── */
+.proctor-only{margin-top:24px}
+.recruiter-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent2);background:var(--accent-light);padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle}
+.proctor-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.ps-box{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.ps-val{font-family:'Playfair Display',serif;font-size:28px;font-weight:800;margin-bottom:2px}
+.ps-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.ptabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.ptab{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--s2);color:var(--muted);transition:all .15s;text-transform:uppercase;letter-spacing:.04em}
+.ptab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.ppane{display:none}.ppane.active{display:block}
+.pvt{width:100%;border-collapse:collapse;font-size:13px}
+.pvt th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;padding:9px 12px;border-bottom:2px solid var(--border);background:var(--s2)}
+.pvt td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.pvt tr:last-child td{border-bottom:none}
+.pvt tr:hover td{background:rgba(67,97,238,.03)}
+.ts{color:var(--muted);font-size:12px;white-space:nowrap;font-family:monospace}
+.sbadge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase}
+.sbadge.low{background:rgba(234,179,8,.12);color:#ca8a04}
+.sbadge.medium{background:rgba(249,115,22,.14);color:#c2410c}
+.sbadge.high{background:rgba(220,38,38,.12);color:#dc2626}
+.sbadge.gaze{background:rgba(6,182,212,.12);color:#0891b2}
+.sbadge.device{background:rgba(124,58,237,.12);color:#7c3aed}
+.pempty{text-align:center;padding:32px;color:var(--muted);font-size:14px}
 </style>
-</head>
 <body>
 <div class="container">
   <a class="back-btn" href="javascript:history.back()">← Back</a>
@@ -352,7 +375,7 @@ async function init() {
     return;
   }
 
-  await loadRoles();
+  if (auth.role === 'candidate') { await loadRoles(); }
   await loadResults();
 }
 
@@ -369,10 +392,11 @@ async function loadResults() {
     const data = await fetch(`/api/results/${id}`).then(r=>r.json());
     if (!data.success) return renderError(data.message);
     submissionData = data;
-    // Pre-select role for retake
-    const sel = document.getElementById('retake-role');
-    if (data.submission.job_role) {
-      [...sel.options].forEach(o=>{if(o.value===data.submission.job_role)o.selected=true;});
+    if (currentUser && currentUser.role === 'candidate') {
+      const sel = document.getElementById('retake-role');
+      if (sel && data.submission && data.submission.job_role) {
+        [...sel.options].forEach(o=>{if(o.value===data.submission.job_role)o.selected=true;});
+      }
     }
     renderResults(data);
   } catch(e) { renderError('Failed to load results: ' + e.message); }
@@ -479,6 +503,8 @@ function renderResults(data) {
       ${currentUser.role === 'candidate' ? `<button class="btn btn-retake" onclick="showRetakeModal()">🔄 Retake Exam (Score Resets)</button>` : ''}
       ${currentUser.role !== 'candidate' ? `<button class="btn btn-secondary" onclick="window.location.href='recruiter_dashboard.html'">← Dashboard</button>` : ''}
     </div>
+
+    ${currentUser.role !== 'candidate' ? buildProctoringPanel(data) : ''}
   `;
 
   // Animate circles
@@ -524,6 +550,105 @@ async function startRetake() {
   }).then(r=>r.json());
   if (!data.success) return;
   window.location.href = `interview_room.html?room=${data.room_code}`;
+}
+
+function buildProctoringPanel(data) {
+  const vios     = data.violations  || [];
+  const gazeList = data.gaze_list   || [];
+  const devList  = data.device_list || [];
+  const highCount = vios.filter(v=>v.severity===3).length;
+  const cap = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  const sevCls = s => s===3?'high':s===2?'medium':'low';
+  const sevLbl = s => s===3?'High':s===2?'Medium':'Low';
+
+  const vioRows = vios.length ? vios.map(v=>`
+    <tr>
+      <td class="ts">${v.timestamp}</td>
+      <td><strong>${cap(v.violation_type)}</strong></td>
+      <td style="color:var(--muted);font-size:12px;">${v.description||'—'}</td>
+      <td><span class="sbadge ${sevCls(v.severity)}">${sevLbl(v.severity)}</span></td>
+    </tr>`).join('') :
+    `<tr><td colspan="4"><div class="pempty">✅ No violations recorded</div></td></tr>`;
+
+  const gazeRows = gazeList.length ? gazeList.map(g=>`
+    <tr>
+      <td class="ts">${g.timestamp}</td>
+      <td><strong>${cap(g.direction||'unknown')}</strong></td>
+      <td><span class="sbadge gaze">${Math.round((g.confidence||0)*100)}% conf</span></td>
+    </tr>`).join('') :
+    `<tr><td colspan="3"><div class="pempty">✅ No gaze events recorded</div></td></tr>`;
+
+  const devRows = devList.length ? devList.map(d=>`
+    <tr>
+      <td class="ts">${d.timestamp}</td>
+      <td><strong>${cap(d.device_type||'Unknown Device')}</strong></td>
+      <td><span class="sbadge device">${Math.round((d.confidence||0)*100)}% conf</span></td>
+    </tr>`).join('') :
+    `<tr><td colspan="3"><div class="pempty">✅ No device detections recorded</div></td></tr>`;
+
+  return `
+  <div class="proctor-only">
+    <div class="card">
+      <div class="card-title">
+        🔍 Detailed Proctoring Log
+        <span class="recruiter-badge">🔒 Recruiter Only</span>
+      </div>
+      <div class="proctor-summary">
+        <div class="ps-box">
+          <div class="ps-val" style="color:${vios.length>0?'#f43f5e':'#10b981'}">${vios.length}</div>
+          <div class="ps-lbl">Total Violations</div>
+        </div>
+        <div class="ps-box">
+          <div class="ps-val" style="color:${highCount>0?'#f43f5e':'#10b981'}">${highCount}</div>
+          <div class="ps-lbl">High Severity</div>
+        </div>
+        <div class="ps-box">
+          <div class="ps-val" style="color:${gazeList.length>5?'#f59e0b':'#10b981'}">${gazeList.length}</div>
+          <div class="ps-lbl">Gaze Alerts</div>
+        </div>
+        <div class="ps-box">
+          <div class="ps-val" style="color:${devList.length>0?'#7c3aed':'#10b981'}">${devList.length}</div>
+          <div class="ps-lbl">Device Detections</div>
+        </div>
+      </div>
+      <div class="ptabs">
+        <div class="ptab active" onclick="switchPTab(this,'pp-vio')">⚠️ Violations (${vios.length})</div>
+        <div class="ptab" onclick="switchPTab(this,'pp-gaze')">👁 Gaze Events (${gazeList.length})</div>
+        <div class="ptab" onclick="switchPTab(this,'pp-device')">📱 Device Detections (${devList.length})</div>
+      </div>
+      <div id="pp-vio" class="ppane active" style="overflow-x:auto">
+        <table class="pvt">
+          <thead><tr><th>Timestamp</th><th>Violation Type</th><th>Description</th><th>Severity</th></tr></thead>
+          <tbody>${vioRows}</tbody>
+        </table>
+      </div>
+      <div id="pp-gaze" class="ppane" style="overflow-x:auto">
+        <table class="pvt">
+          <thead><tr><th>Timestamp</th><th>Gaze Direction</th><th>Confidence</th></tr></thead>
+          <tbody>${gazeRows}</tbody>
+        </table>
+      </div>
+      <div id="pp-device" class="ppane">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 14px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.18);border-radius:8px;line-height:1.6">
+          ℹ️ Device detections are logged for recruiter review only — they do <strong>not</strong> reduce the candidate's credibility score.
+        </p>
+        <div style="overflow-x:auto">
+          <table class="pvt">
+            <thead><tr><th>Timestamp</th><th>Device Type</th><th>Confidence</th></tr></thead>
+            <tbody>${devRows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function switchPTab(el, paneId) {
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ppane').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const p = document.getElementById(paneId);
+  if(p) p.classList.add('active');
 }
 
 init();

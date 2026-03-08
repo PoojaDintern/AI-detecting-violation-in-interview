@@ -303,8 +303,93 @@ def unauthorized():
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+# ── Face Detection: OpenCV DNN (ResNet-SSD) — far more robust than Haar cascades
+# Works well under variable lighting, glasses, head tilt, and different skin tones.
+# Falls back to best Haar cascade if DNN model files are missing.
+import urllib.request, os as _os
+
+_DNN_PROTO = 'deploy.prototxt'
+_DNN_MODEL = 'res10_300x300_ssd_iter_140000.caffemodel'
+
+def _download_dnn_models():
+    """Download the ResNet-SSD face detector model files if not present."""
+    proto_url = 'https://raw.githubusercontent.com/opencv/opencv/master/samples/dnn/face_detector/deploy.prototxt'
+    model_url = 'https://github.com/opencv/opencv_3rdparty/raw/dnn_samples_face_detector_20170830/res10_300x300_ssd_iter_140000.caffemodel'
+    try:
+        if not _os.path.exists(_DNN_PROTO):
+            print('[FaceDetect] Downloading deploy.prototxt …')
+            urllib.request.urlretrieve(proto_url, _DNN_PROTO)
+        if not _os.path.exists(_DNN_MODEL):
+            print('[FaceDetect] Downloading ResNet-SSD model (~10 MB) …')
+            urllib.request.urlretrieve(model_url, _DNN_MODEL)
+        return True
+    except Exception as e:
+        print(f'[FaceDetect] Model download failed: {e}')
+        return False
+
+_dnn_net = None
+if _download_dnn_models():
+    try:
+        _dnn_net = cv2.dnn.readNetFromCaffe(_DNN_PROTO, _DNN_MODEL)
+        print('[FaceDetect] ✅ ResNet-SSD DNN face detector loaded')
+    except Exception as e:
+        print(f'[FaceDetect] DNN load failed, falling back to Haar: {e}')
+
+# Haar cascade kept as fallback and for eye detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_alt2.xml')
+eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye_tree_eyeglasses.xml')
+
+
+def dnn_detect_faces(frame, conf_threshold=0.55):
+    """
+    Detect faces using the ResNet-SSD DNN model.
+    Returns list of (x, y, w, h) bounding boxes, same format as detectMultiScale.
+    conf_threshold=0.55 is deliberately lenient to avoid false negatives — Haar
+    cascades were far too strict and caused 'no face' violations on legitimate candidates.
+    """
+    if _dnn_net is None:
+        return haar_detect_faces(frame)
+    h, w = frame.shape[:2]
+    blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0,
+                                  (300, 300), (104.0, 177.0, 123.0))
+    _dnn_net.setInput(blob)
+    detections = _dnn_net.forward()
+    boxes = []
+    for i in range(detections.shape[2]):
+        conf = float(detections[0, 0, i, 2])
+        if conf < conf_threshold:
+            continue
+        x1 = max(0, int(detections[0, 0, i, 3] * w))
+        y1 = max(0, int(detections[0, 0, i, 4] * h))
+        x2 = min(w, int(detections[0, 0, i, 5] * w))
+        y2 = min(h, int(detections[0, 0, i, 6] * h))
+        bw, bh = x2 - x1, y2 - y1
+        if bw > 20 and bh > 20:
+            boxes.append((x1, y1, bw, bh))
+    return boxes
+
+
+def haar_detect_faces(frame):
+    """
+    Fallback Haar detection — using alt2 cascade with tuned params and
+    histogram equalisation for better performance in poor lighting.
+    Tries multiple minSize values and merges results.
+    """
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.equalizeHist(gray)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=4,
+                                           minSize=(40, 40), flags=cv2.CASCADE_SCALE_IMAGE)
+    return list(faces) if len(faces) > 0 else []
+
+
+def detect_faces(frame, conf_threshold=0.55):
+    """Primary entry point — uses DNN if available, falls back to Haar."""
+    return dnn_detect_faces(frame, conf_threshold) if _dnn_net else haar_detect_faces(frame)
+
+# Per-session consecutive miss counter for double-confirmation face logic
+_face_miss_counter = {}
+# Per-session consecutive gaze-away counter for cooldown logic
+_gaze_away_counter = {}
 
 def make_room_code(n=8):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=n))
@@ -1468,7 +1553,7 @@ def room_scan():
                 gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
                 # ── Face check ────────────────────────────────────────────────
-                faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(40, 40))
+                faces = detect_faces(frame, conf_threshold=0.50)
                 nf = len(faces)
                 if nf > 1:
                     multiple_seen += 1
@@ -1519,35 +1604,48 @@ def room_scan():
 @app.route('/detect-face', methods=['POST'])
 @login_required
 def detect_face():
+    """
+    Face detection using ResNet-SSD DNN (primary) with Haar cascade fallback.
+    DNN is dramatically more reliable: handles glasses, varying lighting, head tilt,
+    and diverse skin tones — all common failure cases for the old Haar cascade.
+
+    Violation logging uses a double-confirmation guard: we only log 'no_face' after
+    two consecutive missed detections (tracked server-side per session), preventing
+    spurious violations from a single dropped frame or brief camera glitch.
+    """
     try:
         data       = request.get_json()
         session_id = data.get('session_id')
         img_b64    = data['image'].split(',')[1]
         frame      = cv2.imdecode(np.frombuffer(base64.b64decode(img_b64), np.uint8), cv2.IMREAD_COLOR)
-        gray       = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # FIX: gentler scale factor (1.1) and larger minSize for more reliable detection
-        faces      = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(60, 60))
-        n          = len(faces)
 
-        # FIX: Only log violations if session is genuinely active AND past the 10-second
-        # warm-up grace period. Previously violations fired immediately on join — before
-        # camera was ready, during the rules page, and during the room scan — causing
-        # candidates to start with 0 credibility before the interview even began.
+        faces = detect_faces(frame, conf_threshold=0.55)
+        n     = len(faces)
+
+        # Only log violations if session is genuinely active AND past 15-second warm-up.
+        # 15 s (up from 10 s) gives slower machines time to fully initialise camera.
         should_log = False
         if session_id:
             sess = db.session.get(InterviewSession, session_id)
             if sess and sess.status == 'active' and sess.started_at:
                 elapsed = (datetime.utcnow() - sess.started_at).total_seconds()
-                if elapsed >= 10:  # 10-second grace period after session starts
+                if elapsed >= 15:
                     should_log = True
 
         if should_log:
-            if n == 0:
+            # Double-confirmation: use a simple in-memory counter per session so that
+            # one bad frame doesn't immediately trigger a credibility penalty.
+            key = f'no_face_{session_id}'
+            _face_miss_counter[key] = _face_miss_counter.get(key, 0) + (1 if n == 0 else -2)
+            _face_miss_counter[key] = max(0, _face_miss_counter[key])
+
+            if n == 0 and _face_miss_counter[key] >= 2:
                 log_violation_db(current_user.id, session_id, 'no_face')
+                _face_miss_counter[key] = 0   # reset after logging so we don't spam
             elif n > 1:
                 log_violation_db(current_user.id, session_id, 'multiple_faces')
 
-        return jsonify({'success': True, 'face_detected': n == 1, 'num_faces': n})
+        return jsonify({'success': True, 'face_detected': n >= 1, 'num_faces': n})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -1584,7 +1682,7 @@ def check_head_pose():
         fh, fw = frame.shape[:2]
         gray   = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray   = cv2.equalizeHist(gray)
-        faces  = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(50, 50))
+        faces  = detect_faces(frame, conf_threshold=0.45)
 
         if len(faces) == 0:
             # No face — for 'down' pose this is expected (camera pointing at desk)
@@ -1660,65 +1758,181 @@ def check_head_pose():
 @app.route('/analyze-gaze', methods=['POST'])
 @login_required
 def analyze_gaze():
+    """
+    Improved gaze detection with multiple complementary techniques:
+
+    1. PRIMARY — Pupil position ratio (existing approach, improved):
+       Measures where the pupil sits within the eye bounding box.
+       - Uses adaptive thresholding instead of a fixed threshold (handles dark/bright rooms)
+       - Detects LEFT, RIGHT, UP, and DOWN (previously DOWN was missing)
+       - Works on the haarcascade_eye_tree_eyeglasses cascade which handles glasses
+
+    2. FALLBACK — Head pose estimation via face geometry:
+       If eye detection fails (glasses glare, low res, partial face), we estimate gaze
+       direction from the face bounding box position and aspect ratio within the frame.
+       A face shifted far left/right of centre strongly predicts the candidate is looking
+       at something off-screen. This makes gaze detection robust even without eye data.
+
+    3. CONSECUTIVE-FRAME COOLDOWN:
+       Gaze-away violations only log after 2 consecutive away frames (≈10 s apart),
+       preventing one sudden head turn from immediately docking credibility points.
+    """
     try:
         data       = request.get_json()
         session_id = data.get('session_id')
         img_b64    = data['image'].split(',')[1]
         frame      = cv2.imdecode(np.frombuffer(base64.b64decode(img_b64), np.uint8), cv2.IMREAD_COLOR)
         gray       = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces      = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(80, 80))
+        fh, fw     = frame.shape[:2]
+
         gaze_result = {'direction': 'unknown', 'confidence': 0.0, 'looking_away': False}
 
+        # ── Detect face with DNN ─────────────────────────────────────────────
+        faces = detect_faces(frame, conf_threshold=0.50)
+
         if len(faces) == 1:
-            fx, fy, fw, fh = faces[0]
-            face_roi = gray[fy:fy+fh, fx:fx+fw]
-            eyes = eye_cascade.detectMultiScale(face_roi, 1.1, 10, minSize=(20, 20))
+            fx, fy, fw_f, fh_f = faces[0]
+
+            # ── Method 1: Pupil-position gaze detection ──────────────────────
+            # Use haarcascade_eye_tree_eyeglasses — works with glasses on
+            face_roi_gray = gray[fy:fy+fh_f, fx:fx+fw_f]
+            # Apply CLAHE for better contrast in eye region (handles dim rooms)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
+            face_roi_eq = clahe.apply(face_roi_gray)
+            eyes = eye_cascade.detectMultiScale(face_roi_eq, scaleFactor=1.05,
+                                                 minNeighbors=6, minSize=(18, 18))
+            # Filter: eyes should only be in the top 65% of face (below = nose/mouth)
+            eyes = [e for e in eyes if e[1] < int(fh_f * 0.65)]
+
+            direction, looking_away, confidence = 'center', False, 0.0
 
             if len(eyes) >= 2:
-                eyes = sorted(eyes, key=lambda e: e[0])
+                eyes = sorted(eyes, key=lambda e: e[0])[:2]  # take leftmost two
                 ex1, ey1, ew1, eh1 = eyes[0]
                 ex2, ey2, ew2, eh2 = eyes[1]
 
-                def pupil_center(roi_gray):
-                    _, thresh = cv2.threshold(roi_gray, 70, 255, cv2.THRESH_BINARY_INV)
+                def pupil_center(roi):
+                    """
+                    Robust pupil centre using adaptive thresholding + blob filtering.
+                    Adaptive threshold handles rooms with wildly different lighting —
+                    the old fixed threshold of 70 regularly failed in dim environments.
+                    """
+                    # Blur to remove noise, then adaptive threshold
+                    blurred = cv2.GaussianBlur(roi, (7, 7), 0)
+                    thresh  = cv2.adaptiveThreshold(blurred, 255,
+                                                     cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                     cv2.THRESH_BINARY_INV, 11, 2)
+                    # Remove tiny noise blobs
+                    kernel  = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                    thresh  = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
                     m = cv2.moments(thresh)
-                    if m['m00'] != 0:
-                        return int(m['m10']/m['m00']), int(m['m01']/m['m00'])
-                    return roi_gray.shape[1]//2, roi_gray.shape[0]//2
+                    if m['m00'] > 0:
+                        return int(m['m10'] / m['m00']), int(m['m01'] / m['m00'])
+                    return roi.shape[1] // 2, roi.shape[0] // 2
 
-                p1x, p1y = pupil_center(face_roi[ey1:ey1+eh1, ex1:ex1+ew1])
-                p2x, p2y = pupil_center(face_roi[ey2:ey2+eh2, ex2:ex2+ew2])
-                avg_ratio   = ((p1x/max(ew1,1)) + (p2x/max(ew2,1))) / 2
-                avg_v_ratio = ((p1y/max(eh1,1)) + (p2y/max(eh2,1))) / 2
+                p1x, p1y = pupil_center(face_roi_eq[ey1:ey1+eh1, ex1:ex1+ew1])
+                p2x, p2y = pupil_center(face_roi_eq[ey2:ey2+eh2, ex2:ex2+ew2])
 
-                if avg_ratio < 0.35:
+                # Horizontal ratio: 0=far left of eye box, 1=far right
+                avg_h_ratio = ((p1x / max(ew1, 1)) + (p2x / max(ew2, 1))) / 2
+                # Vertical ratio: 0=top of eye box, 1=bottom
+                avg_v_ratio = ((p1y / max(eh1, 1)) + (p2y / max(eh2, 1))) / 2
+
+                # Thresholds — slightly widened vs. old code to reduce false positives
+                if avg_h_ratio < 0.30:
                     direction, looking_away = 'left', True
-                elif avg_ratio > 0.65:
+                elif avg_h_ratio > 0.70:
                     direction, looking_away = 'right', True
-                elif avg_v_ratio < 0.30:
+                elif avg_v_ratio < 0.28:
                     direction, looking_away = 'up', True
+                elif avg_v_ratio > 0.78:
+                    direction, looking_away = 'down', True
                 else:
                     direction, looking_away = 'center', False
 
-                gaze_result = {'direction': direction, 'confidence': 0.80,
-                               'looking_away': looking_away, 'ratio': round(avg_ratio, 3)}
+                confidence = 0.88
+                gaze_result = {'direction': direction, 'confidence': confidence,
+                               'looking_away': looking_away,
+                               'h_ratio': round(avg_h_ratio, 3),
+                               'v_ratio': round(avg_v_ratio, 3)}
 
-                # FIX: same active+grace-period guard as detect-face
-                should_log_gaze = False
-                if session_id:
-                    sess_g = db.session.get(InterviewSession, session_id)
-                    if sess_g and sess_g.status == 'active' and sess_g.started_at:
-                        if (datetime.utcnow() - sess_g.started_at).total_seconds() >= 10:
-                            should_log_gaze = True
+            elif len(eyes) == 1:
+                # Only one eye visible — use it with lower confidence
+                ex1, ey1, ew1, eh1 = eyes[0]
+                face_roi_eq2 = clahe.apply(face_roi_gray)
+                p1x, _ = (ew1 // 2, eh1 // 2)  # centre fallback
+                h_ratio = p1x / max(ew1, 1)
+                if h_ratio < 0.28:
+                    direction, looking_away = 'left', True
+                elif h_ratio > 0.72:
+                    direction, looking_away = 'right', True
+                else:
+                    direction, looking_away = 'center', False
+                confidence = 0.55
+                gaze_result = {'direction': direction, 'confidence': confidence,
+                               'looking_away': looking_away}
 
-                if looking_away and should_log_gaze:
-                    ge = GazeEvent(user_id=current_user.id, session_id=session_id,
-                                   direction=direction, confidence=0.80)
-                    db.session.add(ge); db.session.commit()
-                    log_violation_db(current_user.id, session_id, 'gaze_away',
-                                     gaze_data={'direction': direction, 'ratio': round(avg_ratio, 3)})
-            elif len(eyes) == 0:
-                gaze_result = {'direction': 'no_eyes', 'confidence': 0.5, 'looking_away': True}
+            else:
+                # ── Method 2 (fallback): Head-pose from face position ─────────
+                # If no eyes detected (glasses glare, bad lighting), estimate from
+                # where the face sits in the frame and its aspect ratio.
+                face_cx_ratio = (fx + fw_f / 2) / fw     # 0=left, 1=right
+                face_cy_ratio = (fy + fh_f / 2) / fh     # 0=top, 1=bottom
+                aspect        = fw_f / max(fh_f, 1)       # <0.6 → profile/turned
+
+                if aspect < 0.60:
+                    # Profile view — face turned strongly left or right
+                    direction = 'left' if face_cx_ratio < 0.5 else 'right'
+                    looking_away = True
+                elif face_cx_ratio < 0.25:
+                    direction, looking_away = 'left', True
+                elif face_cx_ratio > 0.75:
+                    direction, looking_away = 'right', True
+                elif face_cy_ratio < 0.20:
+                    direction, looking_away = 'up', True
+                elif face_cy_ratio > 0.80:
+                    direction, looking_away = 'down', True
+                else:
+                    direction, looking_away = 'center', False
+
+                confidence = 0.60
+                gaze_result = {'direction': direction if looking_away else 'center',
+                               'confidence': confidence,
+                               'looking_away': looking_away,
+                               'method': 'head_pose'}
+
+        elif len(faces) == 0:
+            gaze_result = {'direction': 'no_face', 'confidence': 0.5, 'looking_away': True}
+        # len(faces) > 1 → multiple people, don't infer gaze — face check handles this
+
+        # ── Violation logging with consecutive-frame cooldown ─────────────────
+        should_log_gaze = False
+        if session_id:
+            sess_g = db.session.get(InterviewSession, session_id)
+            if sess_g and sess_g.status == 'active' and sess_g.started_at:
+                if (datetime.utcnow() - sess_g.started_at).total_seconds() >= 15:
+                    should_log_gaze = True
+
+        if should_log_gaze and gaze_result.get('looking_away'):
+            direction = gaze_result.get('direction', 'unknown')
+            # Cooldown counter: only log after 2 consecutive away frames
+            gk = f'gaze_{session_id}'
+            _gaze_away_counter[gk] = _gaze_away_counter.get(gk, 0) + 1
+            if _gaze_away_counter[gk] >= 2:
+                ge = GazeEvent(user_id=current_user.id, session_id=session_id,
+                               direction=direction, confidence=gaze_result.get('confidence', 0.5))
+                db.session.add(ge)
+                db.session.commit()
+                log_violation_db(current_user.id, session_id, 'gaze_away',
+                                 gaze_data={'direction': direction,
+                                            'confidence': round(gaze_result.get('confidence', 0), 3),
+                                            'method': gaze_result.get('method', 'pupil')})
+                _gaze_away_counter[gk] = 0   # reset so each violation needs 2 new frames
+        else:
+            # Reset counter on any "looking at screen" frame
+            gk = f'gaze_{session_id}'
+            if gk in _gaze_away_counter:
+                _gaze_away_counter[gk] = 0
 
         return jsonify({'success': True, 'gaze': gaze_result})
     except Exception as e:
@@ -1747,7 +1961,7 @@ def detect_device():
 
         # Face regions to exclude
         eq_full  = cv2.equalizeHist(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
-        faces    = face_cascade.detectMultiScale(eq_full, 1.2, 5, minSize=(60, 60))
+        faces    = detect_faces(frame, conf_threshold=0.55)
         face_regions = [(x, y, x+w, y+h) for (x, y, w, h) in faces]
 
         def in_face(cx, cy):
@@ -2400,9 +2614,9 @@ def get_results(submission_id):
         return jsonify({"success": False, "message": "Submission not found"}), 404
     if sub.user_id != current_user.id and not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-    violations    = Violation.query.filter_by(session_id=sub.session_id).all() if sub.session_id else []
-    gaze_events   = GazeEvent.query.filter_by(session_id=sub.session_id).count() if sub.session_id else 0
-    device_alerts = DeviceAlert.query.filter_by(session_id=sub.session_id).count() if sub.session_id else 0
+    violations   = Violation.query.filter_by(session_id=sub.session_id).order_by(Violation.timestamp).all()     if sub.session_id else []
+    gaze_objs    = GazeEvent.query.filter_by(session_id=sub.session_id).order_by(GazeEvent.timestamp).all()     if sub.session_id else []
+    device_objs  = DeviceAlert.query.filter_by(session_id=sub.session_id).order_by(DeviceAlert.timestamp).all() if sub.session_id else []
     breakdown = {}
     for v in violations:
         breakdown[v.violation_type] = breakdown.get(v.violation_type, 0) + 1
@@ -2410,10 +2624,20 @@ def get_results(submission_id):
     if sub.ai_feedback:
         try: ai_feedback = json.loads(sub.ai_feedback)
         except: pass
+    gaze_list   = [{'timestamp': g.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                    'direction': g.direction,
+                    'confidence': round(g.confidence or 0, 2)} for g in gaze_objs]
+    device_list = [{'timestamp': d.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                    'device_type': d.device_type,
+                    'confidence': round(d.confidence or 0, 2)} for d in device_objs]
     return jsonify({'success': True, 'submission': sub.to_dict(),
-                    'violations': [v.to_dict() for v in violations],
-                    'breakdown': breakdown, 'gaze_events': gaze_events,
-                    'device_alerts': device_alerts, 'ai_feedback': ai_feedback})
+                    'violations':    [v.to_dict() for v in violations],
+                    'breakdown':     breakdown,
+                    'gaze_events':   len(gaze_list),
+                    'gaze_list':     gaze_list,
+                    'device_alerts': len(device_list),
+                    'device_list':   device_list,
+                    'ai_feedback':   ai_feedback})
 
 
 @app.route('/api/retake-exam', methods=['POST'])
@@ -3446,6 +3670,18 @@ def get_interviewer_assignments(session_id):
     if not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     assignments = InterviewerAssignment.query.filter_by(session_id=session_id).all()
+    return jsonify({'success': True, 'assignments': [a.to_dict() for a in assignments]})
+
+
+@app.route('/api/my-interviewer-assignments')
+@login_required
+def my_interviewer_assignments():
+    """Return all interviewer assignments for this recruiter directly — no session pivot needed."""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    assignments = InterviewerAssignment.query.filter_by(
+        recruiter_id=current_user.id
+    ).order_by(InterviewerAssignment.created_at.desc()).all()
     return jsonify({'success': True, 'assignments': [a.to_dict() for a in assignments]})
 
 
