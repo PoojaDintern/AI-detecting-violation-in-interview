@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecruitAI — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  color:var(--text);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 20% 20%, rgba(67,97,238,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 80% 80%, rgba(67,97,238,0.03) 0%, transparent 60%);
+}
+
+/* Dark scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+.wrapper{
+  position:relative;z-index:1;
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  max-width:1020px;width:100%;
+  background:var(--s);
+  border:1px solid var(--border);
+  border-radius:20px;
+  overflow:hidden;
+  box-shadow:var(--shadow-lg);
+  animation:up 0.4s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes up{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── LEFT: Dark navy gradient panel ── */
+.left{
+  padding:56px 48px;
+  background:linear-gradient(155deg, #0d1f3c 0%, #162d50 55%, #1e3a65 100%);
+  display:flex;flex-direction:column;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.left::before{
+  content:'';position:absolute;
+  top:-120px;right:-80px;
+  width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle, rgba(79,142,247,0.08) 0%, transparent 70%);
+  pointer-events:none;
+}
+.left::after{
+  content:'';position:absolute;
+  bottom:-100px;left:-60px;
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+  pointer-events:none;
+}
+.deco{position:absolute;border-radius:50%;pointer-events:none;border:1px solid rgba(255,255,255,0.06);}
+.deco1{width:200px;height:200px;top:20px;right:20px;}
+.deco2{width:320px;height:320px;top:-40px;right:-40px;}
+
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:52px;position:relative;z-index:1;}
+.brand-logo{
+  width:42px;height:42px;border-radius:11px;
+  background:rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.3);
+}
+.brand-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;font-weight:800;color:#fff;letter-spacing:-0.02em;}
+
+.left h1{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:32px;font-weight:800;line-height:1.25;
+  margin-bottom:14px;
+  position:relative;z-index:1;
+  color:#fff;letter-spacing:-0.03em;
+}
+.left h1 em{font-style:normal;color:rgba(255,255,255,0.45);}
+
+.left p{font-size:14px;line-height:1.8;color:rgba(255,255,255,0.4);margin-bottom:44px;position:relative;z-index:1;}
+
+.features{list-style:none;position:relative;z-index:1;}
+.features li{
+  display:flex;align-items:center;gap:13px;
+  margin-bottom:15px;font-size:13.5px;
+  color:rgba(255,255,255,0.65);
+}
+.feat-icon{
+  width:31px;height:31px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.1);
+}
+
+.trust{
+  margin-top:44px;position:relative;z-index:1;
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 16px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:100px;
+  font-size:12px;color:rgba(255,255,255,0.4);
+}
+.trust-dot{width:7px;height:7px;border-radius:50%;background:#059669;box-shadow:0 0 0 2px rgba(5,150,105,0.2);}
+
+/* ── RIGHT: Dark form panel ── */
+.right{
+  padding:48px 44px;
+  background:var(--s);
+  border-left:1px solid var(--border);
+}
+
+.panel-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;margin-bottom:5px;color:var(--text);letter-spacing:-0.025em;}
+.panel-sub{font-size:13.5px;color:var(--muted);margin-bottom:28px;}
+
+.tabs{
+  display:flex;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:10px;padding:4px;
+  margin-bottom:26px;
+}
+.tab{flex:1;padding:9px 16px;text-align:center;cursor:pointer;border-radius:7px;font-size:13.5px;font-weight:500;color:var(--muted);transition:all 0.18s;}
+.tab.active{
+  background:var(--accent);
+  color:#fff;font-weight:600;
+  box-shadow:0 2px 8px var(--accent-glow);
+}
+
+.form{display:none;animation:fs 0.22s ease;}
+.form.active{display:block;}
+@keyframes fs{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:7px;}
+.form-group input{
+  width:100%;padding:12px 14px;
+  background:var(--s2);
+  border:1.5px solid var(--border);
+  border-radius:9px;
+  font-size:14px;color:var(--text);
+  font-family:'Outfit',sans-serif;
+  transition:all 0.18s;outline:none;
+  box-shadow:var(--shadow-sm);
+}
+.form-group input:hover{border-color:var(--border2);}
+.form-group input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light);}
+.form-group input::placeholder{color:var(--muted2);}
+
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:17px;}
+.role-card{
+  padding:15px 12px;
+  border:1.5px solid var(--border);
+  border-radius:11px;cursor:pointer;text-align:center;
+  transition:all 0.18s;background:var(--s2);
+  box-shadow:var(--shadow-sm);
+}
+.role-card:hover{border-color:var(--border2);box-shadow:var(--shadow-md);}
+.role-card.active{
+  border-color:var(--accent);
+  background:var(--accent-light);
+  box-shadow:0 0 0 3px var(--accent-glow);
+}
+.role-card .rc-icon{font-size:26px;margin-bottom:7px;}
+.role-card .rc-label{font-size:13px;font-weight:600;color:var(--text);}
+.role-card .rc-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+.btn-main{
+  width:100%;padding:13px;
+  background:var(--accent);
+  border:none;border-radius:9px;
+  color:#fff;font-size:14.5px;font-weight:600;
+  cursor:pointer;font-family:'Outfit',sans-serif;
+  transition:all 0.2s;
+  box-shadow:0 4px 14px var(--accent-glow);
+  letter-spacing:0.01em;
+}
+.btn-main:hover:not(:disabled){background:var(--accent2);transform:translateY(-1px);box-shadow:0 8px 22px var(--accent-glow);}
+.btn-main:active:not(:disabled){transform:translateY(0);}
+.btn-main:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+.msg{margin-top:12px;padding:11px 13px;border-radius:8px;font-size:13px;display:none;}
+.msg.success{background:rgba(5,150,105,.08);border:1px solid rgba(16,185,129,0.3);color:#059669;}
+.msg.error{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#991b1b;}
+
+.demo-box{
+  margin-top:20px;padding:15px;
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:11px;
+}
+.demo-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:11px;}
+.demo-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
+.demo-row:last-child{border-bottom:none;padding-bottom:0;}
+.demo-role{color:var(--muted);font-size:11.5px;}
+.demo-creds{
+  color:var(--text2);font-family:monospace;font-size:12px;font-weight:500;
+  background:var(--s);border:1px solid var(--border);
+  padding:2px 8px;border-radius:5px;
+}
+
+.field-err{font-size:11.5px;color:var(--red);margin-top:4px;min-height:14px;}
+.form-group input.invalid{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(220,38,38,0.1)!important;}
+
+@media(max-width:768px){
+  .wrapper{grid-template-columns:1fr;}
+  .left{padding:36px 28px;}
+  .right{padding:32px 28px;}
+  .left h1{font-size:26px;}
+  .deco1,.deco2{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="left">
+    <div class="deco deco1"></div>
+    <div class="deco deco2"></div>
+    <div class="brand">
+      <div class="brand-logo">🤖</div>
+      <span class="brand-name">RecruitAI</span>
+    </div>
+    <h1>Hire smarter with<br><em>AI-powered</em> interviews</h1>
+    <p>Real-time proctoring, gaze detection, and intelligent scoring — all in one platform built for modern recruiting teams.</p>
+    <ul class="features">
+      <li><div class="feat-icon">👁️</div> Real-time gaze &amp; face monitoring</li>
+      <li><div class="feat-icon">📱</div> Phone &amp; secondary device detection</li>
+      <li><div class="feat-icon">🧠</div> AI animated interviewer (Alex)</li>
+      <li><div class="feat-icon">🎥</div> Live recruiter WebRTC video calls</li>
+      <li><div class="feat-icon">📊</div> Dual scoring: credibility + interview</li>
+    </ul>
+    <div class="trust"><div class="trust-dot"></div> Trusted by 500+ recruiting teams worldwide</div>
+  </div>
+
+  <div class="right">
+    <div class="panel-title">Welcome back</div>
+    <div class="panel-sub">Sign in to your account or create a new one</div>
+    <div class="tabs">
+      <div class="tab active" id="tab-login" onclick="switchTab('login')">Sign In</div>
+      <div class="tab" id="tab-signup" onclick="switchTab('signup')">Create Account</div>
+    </div>
+
+    <div id="login-form" class="form active">
+      <div class="form-group"><label>Username</label><input type="text" id="l-username" placeholder="Enter your username" autocomplete="username"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="l-password" placeholder="Enter your password" autocomplete="current-password"></div>
+      <button class="btn-main" id="login-btn">Sign In →</button>
+      <div id="login-msg" class="msg"></div>
+    </div>
+
+    <div id="signup-form" class="form">
+      <!-- Role selector first -->
+      <div class="form-group"><label>I am a…</label></div>
+      <div class="role-grid" style="margin-bottom:18px;">
+        <div class="role-card active" id="rb-candidate" onclick="selectRole('candidate')"><div class="rc-icon">🎓</div><div class="rc-label">Candidate</div><div class="rc-sub">Taking interviews</div></div>
+        <div class="role-card" id="rb-recruiter" onclick="selectRole('recruiter')"><div class="rc-icon">🏢</div><div class="rc-label">Company</div><div class="rc-sub">Hiring talent</div></div>
+      </div>
+
+      <!-- Name row — 2 columns -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label>First Name <span style="color:var(--red)">*</span></label>
+          <input type="text" id="s-firstname" placeholder="First name" autocomplete="given-name">
+          <div class="field-err" id="err-firstname"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>Last Name</label>
+          <input type="text" id="s-lastname" placeholder="Last name (optional)" autocomplete="family-name">
+        </div>
+      </div>
+
+      <!-- Company name — shown only for recruiter -->
+      <div class="form-group" id="company-name-group" style="display:none;">
+        <label>Company Name <span style="color:var(--red)">*</span></label>
+        <input type="text" id="s-company" placeholder="Your company or organisation name">
+        <div class="field-err" id="err-company"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Email Address <span style="color:var(--red)">*</span></label>
+        <input type="email" id="s-email" placeholder="you@company.com" autocomplete="email">
+        <div class="field-err" id="err-email"></div>
+      </div>
+
+      <!-- Phone — shown only for recruiter -->
+      <div class="form-group" id="phone-group" style="display:none;">
+        <label>Phone Number <span style="color:var(--red)">*</span></label>
+        <input type="tel" id="s-phone" placeholder="10-digit mobile number (e.g. 9876543210)" autocomplete="tel" maxlength="15">
+        <div class="field-err" id="err-phone"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Username <span style="color:var(--red)">*</span></label>
+        <input type="text" id="s-username" placeholder="Choose a unique username" autocomplete="username">
+        <div class="field-err" id="err-username"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Password <span style="color:var(--red)">*</span></label>
+        <div style="position:relative;">
+          <input type="password" id="s-password" placeholder="Minimum 6 characters" autocomplete="new-password" oninput="updatePassStrength(this.value)">
+          <button type="button" onclick="togglePassVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;" id="pass-toggle">👁</button>
+        </div>
+        <div id="pass-strength-bar" style="height:4px;background:var(--border);border-radius:99px;margin-top:6px;overflow:hidden;"><div id="pass-strength-fill" style="height:100%;border-radius:99px;width:0%;transition:all .3s;"></div></div>
+        <div id="pass-strength-label" style="font-size:11px;color:var(--muted);margin-top:3px;"></div>
+        <div class="field-err" id="err-password"></div>
+      </div>
+
+      <button class="btn-main" id="signup-btn">Create Account →</button>
+      <div id="signup-msg" class="msg"></div>
+    </div>
+  </div>
+</div>
+<script>
+const _origFetch = window.fetch;
+window.fetch = (url, opts={}) => {
+  opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
+  opts.credentials = opts.credentials || 'same-origin';
+  return _origFetch(url, opts);
+};
+
+let selectedRole = 'candidate';
+
+function selectRole(r) {
+  selectedRole = r;
+  document.getElementById('rb-candidate').classList.toggle('active', r==='candidate');
+  document.getElementById('rb-recruiter').classList.toggle('active', r==='recruiter');
+  // Show/hide company-only fields
+  const isRecruiter = r === 'recruiter';
+  document.getElementById('company-name-group').style.display = isRecruiter ? 'block' : 'none';
+  document.getElementById('phone-group').style.display = isRecruiter ? 'block' : 'none';
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.form').forEach(x=>x.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById(t+'-form').classList.add('active');
+  document.querySelectorAll('.msg').forEach(m=>m.style.display='none');
+}
+
+function showMsg(id,type,text){const el=document.getElementById(id);el.className='msg '+type;el.textContent=text;el.style.display='block';}
+
+function setErr(id, msg) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = msg;
+}
+function clearErrs() {
+  ['err-firstname','err-company','err-email','err-phone','err-username','err-password'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent='';
+  });
+  document.querySelectorAll('#signup-form input').forEach(i=>i.classList.remove('invalid'));
+}
+function markInvalid(inputId) {
+  const el = document.getElementById(inputId);
+  if (el) el.classList.add('invalid');
+}
+
+function isValidEmail(e) {
+  return /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(e);
+}
+function isValidPhone(p) {
+  // Accept exactly 10 digits (Indian standard), optionally prefixed with +91 or 0
+  const clean = p.replace(/[\s\-().]/g,'');
+  // Strip country code if present
+  const stripped = clean.replace(/^\+91|^91|^0/, '');
+  return /^[6-9][0-9]{9}$/.test(stripped);
+}
+
+function updatePassStrength(val) {
+  let score = 0;
+  if (val.length >= 6) score++;
+  if (val.length >= 10) score++;
+  if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const colors = ['#dc2626','#f59e0b','#059669','#4361ee'];
+  const labels = ['Weak','Fair','Good','Strong'];
+  const widths = [25,50,75,100];
+  const fill = document.getElementById('pass-strength-fill');
+  const lbl  = document.getElementById('pass-strength-label');
+  if (fill) { fill.style.width=(val?widths[score-1]||0:0)+'%'; fill.style.background=colors[score-1]||'var(--border)'; }
+  if (lbl)  lbl.textContent = val ? labels[score-1]||'' : '';
+}
+
+function togglePassVis() {
+  const inp = document.getElementById('s-password');
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  document.getElementById('pass-toggle').textContent = inp.type==='password' ? '👁' : '🙈';
+}
+
+// ── Login ──────────────────────────────────────────────────────────────────────
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const username = document.getElementById('l-username').value.trim();
+  const password = document.getElementById('l-password').value;
+  if (!username || !password) return showMsg('login-msg','error','Please fill all fields');
+  document.getElementById('login-btn').disabled = true;
+  showMsg('login-msg','success','Signing in…');
+  try {
+    const res = await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password}),credentials:'same-origin'});
+    const data = await res.json();
+    if (data.success) {
+      showMsg('login-msg','success','Success! Redirecting…');
+      setTimeout(()=>{
+        const intendedUrl = sessionStorage.getItem('redirect_after_login');
+        if (intendedUrl) { sessionStorage.removeItem('redirect_after_login'); window.location.href=intendedUrl; }
+        else { window.location.href = data.redirect; }
+      }, 800);
+    } else {
+      showMsg('login-msg','error', data.message||'Login failed');
+      document.getElementById('login-btn').disabled = false;
+    }
+  } catch(e) {
+    showMsg('login-msg','error','Network error');
+    document.getElementById('login-btn').disabled = false;
+  }
+});
+
+// ── Signup ─────────────────────────────────────────────────────────────────────
+document.getElementById('signup-btn').addEventListener('click', async () => {
+  clearErrs();
+  let valid = true;
+
+  const firstname = document.getElementById('s-firstname').value.trim();
+  const lastname  = document.getElementById('s-lastname').value.trim();
+  const company   = document.getElementById('s-company').value.trim();
+  const email     = document.getElementById('s-email').value.trim();
+  const phone     = document.getElementById('s-phone').value.trim();
+  const username  = document.getElementById('s-username').value.trim();
+  const password  = document.getElementById('s-password').value;
+
+  // First name mandatory
+  if (!firstname) {
+    setErr('err-firstname','First name is required'); markInvalid('s-firstname'); valid=false;
+  } else if (firstname.length < 2) {
+    setErr('err-firstname','Must be at least 2 characters'); markInvalid('s-firstname'); valid=false;
+  }
+
+  // Company required for recruiter
+  if (selectedRole === 'recruiter' && !company) {
+    setErr('err-company','Company name is required'); markInvalid('s-company'); valid=false;
+  }
+
+  // Email validation
+  if (!email) {
+    setErr('err-email','Email is required'); markInvalid('s-email'); valid=false;
+  } else if (!isValidEmail(email)) {
+    setErr('err-email','Please enter a valid email address (e.g. you@company.com)'); markInvalid('s-email'); valid=false;
+  } else {
+    const badDomains = ['mailinator.com','guerrillamail.com','temp-mail.org','throwaway.email','fakeinbox.com','yopmail.com','trashmail.com'];
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (badDomains.includes(domain)) {
+      setErr('err-email','Disposable email addresses are not allowed'); markInvalid('s-email'); valid=false;
+    }
+  }
+
+  // Phone required for recruiter
+  if (selectedRole === 'recruiter') {
+    if (!phone) {
+      setErr('err-phone','Phone number is required for company accounts'); markInvalid('s-phone'); valid=false;
+    } else if (!isValidPhone(phone)) {
+      setErr('err-phone','Enter a valid 10-digit phone number (e.g. 9876543210)'); markInvalid('s-phone'); valid=false;
+    }
+  }
+
+  // Username validation
+  if (!username) {
+    setErr('err-username','Username is required'); markInvalid('s-username'); valid=false;
+  } else if (username.length < 3) {
+    setErr('err-username','Username must be at least 3 characters'); markInvalid('s-username'); valid=false;
+  } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    setErr('err-username','Only letters, numbers, and underscores allowed'); markInvalid('s-username'); valid=false;
+  }
+
+  // Password validation
+  if (!password) {
+    setErr('err-password','Password is required'); markInvalid('s-password'); valid=false;
+  } else if (password.length < 6) {
+    setErr('err-password','Password must be at least 6 characters'); markInvalid('s-password'); valid=false;
+  }
+
+  if (!valid) return;
+
+  const full_name = selectedRole === 'recruiter'
+    ? (company ? `${firstname}${lastname?' '+lastname:''} (${company})` : `${firstname}${lastname?' '+lastname:''}`)
+    : `${firstname}${lastname?' '+lastname:''}`;
+
+  document.getElementById('signup-btn').disabled = true;
+  try {
+    const res = await fetch('/signup',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({full_name, email, username, password, role:selectedRole,
+        company_name: selectedRole==='recruiter' ? company : undefined,
+        phone: selectedRole==='recruiter' ? phone : undefined})
+    });
+    const data = await res.json();
+    if (data.success) {
+      showMsg('signup-msg','success', data.message);
+      setTimeout(()=>{ switchTab('login'); document.getElementById('l-username').value=username; }, 2000);
+    } else {
+      // Map server errors back to specific fields
+      const msg = data.message || 'Registration failed';
+      if (msg.toLowerCase().includes('email')) { setErr('err-email', msg); markInvalid('s-email'); }
+      else if (msg.toLowerCase().includes('username')) { setErr('err-username', msg); markInvalid('s-username'); }
+      else { showMsg('signup-msg','error', msg); }
+      document.getElementById('signup-btn').disabled = false;
+    }
+  } catch(e) {
+    showMsg('signup-msg','error','Network error');
+    document.getElementById('signup-btn').disabled = false;
+  }
+});
+
+// Enter key support
+document.querySelectorAll('input').forEach(inp=>inp.addEventListener('keypress',e=>{
+  if(e.key==='Enter'){
+    const af=document.querySelector('.form.active').id;
+    document.getElementById(af==='login-form'?'login-btn':'signup-btn').click();
+  }
+}));
+// Real-time email validation
+document.getElementById('s-email')?.addEventListener('blur', () => {
+  const v = document.getElementById('s-email').value.trim();
+  if (v && !isValidEmail(v)) { setErr('err-email','Invalid email format'); markInvalid('s-email'); }
+  else { setErr('err-email',''); document.getElementById('s-email').classList.remove('invalid'); }
+});
+// Real-time phone validation
+document.getElementById('s-phone')?.addEventListener('blur', () => {
+  const v = document.getElementById('s-phone').value.trim();
+  if (v && !isValidPhone(v)) { setErr('err-phone','Phone must be exactly 10 digits (Indian mobile number)'); markInvalid('s-phone'); }
+  else { setErr('err-phone',''); document.getElementById('s-phone').classList.remove('invalid'); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Company Dashboard — RecruitAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 25%,rgba(67,97,238,0.03) 0%,transparent 50%),radial-gradient(ellipse at 85% 75%,rgba(79,142,247,0.02) 0%,transparent 50%);pointer-events:none;z-index:0;}
+.topbar{background:white;border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(67,97,238,0.08);}
+.brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--accent2);}
+.topbar-right{display:flex;align-items:center;gap:16px;font-size:14px;color:var(--muted);}
+.logout-btn{padding:8px 18px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s;text-decoration:none;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+.layout{display:grid;grid-template-columns:260px 1fr;position:relative;z-index:1;align-items:start;}
+.sidebar{background:var(--s);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 24px;cursor:pointer;color:var(--muted);font-size:14px;transition:all .2s;border-left:3px solid transparent;}
+.nav-item:hover{color:var(--text);background:rgba(79,142,247,0.05);}
+.nav-item.active{color:var(--accent2);background:rgba(79,142,247,0.08);border-left-color:var(--accent);}
+.nav-icon{font-size:18px;width:24px;text-align:center;}
+.main{padding:32px;overflow-y:auto;align-self:start;}
+.page{display:none;animation:fadeIn .3s ease;}
+.page.active{display:block;}
+#page-roundconfig.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.page-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:6px;}
+.page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;}
+.stat{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat.blue::before{background:linear-gradient(90deg,#4361ee,#6d83f3);}
+.stat.green::before{background:linear-gradient(90deg,#059669,#10b981);}
+.stat.yellow::before{background:linear-gradient(90deg,#d97706,#f59e0b);}
+.stat.red::before{background:linear-gradient(90deg,#dc2626,#ef4444);}
+.stat.purple::before{background:linear-gradient(90deg,#7c3aed,#a78bfa);}
+.stat-val{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;margin-bottom:4px;}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
+.card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;}
+.fg label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;font-weight:600;}
+.fg select,.fg input,.fg textarea{width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.fg textarea{resize:vertical;min-height:72px;}
+.fg select:focus,.fg input:focus,.fg textarea:focus{border-color:var(--accent);}
+.fg select option{background:var(--s2);}
+.btn-primary{padding:11px 24px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,142,247,0.3);}
+.btn-sm{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s;white-space:nowrap;}
+.btn-green{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.25);}
+.btn-green:hover{background:rgba(16,185,129,.25);}
+.btn-red{background:rgba(220,38,38,.1);color:#991b1b;border:1px solid rgba(220,38,38,.25);}
+.btn-red:hover{background:rgba(239,68,68,.25);}
+.btn-blue{background:rgba(79,142,247,.12);color:var(--accent2);border:1px solid rgba(79,142,247,.25);}
+.btn-blue:hover{background:rgba(79,142,247,.22);}
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 14px;text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);font-weight:600;}
+td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(42,51,80,.5);}
+tr:hover td{background:rgba(79,142,247,0.03);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-green{background:rgba(5,150,105,.1);color:#047857;}
+.badge-red{background:rgba(244,63,94,.15);color:#fda4af;}
+.badge-yellow{background:rgba(217,119,6,.1);color:#fcd34d;}
+.badge-blue{background:rgba(79,142,247,.12);color:var(--accent2);}
+.badge-purple{background:rgba(124,58,237,.15);color:#c4b5fd;}
+.empty{text-align:center;padding:48px;color:var(--muted);font-size:14px;}
+.jobs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.job-card{background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:20px;transition:all .2s;}
+.job-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(79,142,247,0.1);}
+.job-section-chip{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);background:rgba(79,142,247,.1);padding:3px 10px;border-radius:20px;}
+.job-card-role{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin:10px 0 3px;}
+.job-card-company{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.job-card-desc{font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:14px;max-height:48px;overflow:hidden;}
+.applicant-card{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.applicant-avatar{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.mode-card{border:2px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;}
+.mode-card:hover{border-color:var(--accent);background:rgba(79,142,247,.07);}
+.mode-card.selected{border-color:var(--accent);background:rgba(79,142,247,.1);}
+.mode-icon{font-size:28px;margin-bottom:6px;}
+.mode-name{font-weight:600;font-size:13px;}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.4);}50%{box-shadow:0 0 0 8px rgba(16,185,129,0);}}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.modal-overlay.hidden{display:none;}
+.modal-card{background:var(--s);border:1px solid var(--border);border-radius:18px;padding:32px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--s);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:13px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4);display:none;max-width:340px;}
+.toast.show{display:block;animation:slideUp .3s ease;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">🤖 RecruitAI</div>
+  <div class="topbar-right">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div id="company-logo-wrap" style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0;">
+        <img id="company-logo-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+        <span id="company-logo-initials">?</span>
+      </div>
+      <div style="line-height:1.3;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);" id="admin-name">…</div>
+        <div style="font-size:11px;color:var(--muted);" id="company-tagline">Company Account</div>
+      </div>
+    </div>
+    <button onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⚙️ Settings</button>
+    <a href="/logout" class="logout-btn">Logout</a>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="nav-item active" data-page="overview" onclick="showPage('overview',this)"><span class="nav-icon">📊</span>Overview</div>
+    <div class="nav-item" data-page="jobs" onclick="showPage('jobs',this)"><span class="nav-icon">💼</span>Job Postings</div>
+    <div class="nav-item" data-page="applicants" onclick="showPage('applicants',this)"><span class="nav-icon">👥</span>Applicants</div>
+    <div class="nav-item" data-page="create" onclick="showPage('create',this)"><span class="nav-icon">➕</span>Create Interview</div>
+    <div class="nav-item" data-page="scheduled" onclick="showPage('scheduled',this)"><span class="nav-icon">📅</span>Scheduled</div>
+    <div class="nav-item" data-page="interviewers" onclick="showPage('interviewers',this)"><span class="nav-icon">🎙️</span>Interviewers</div>
+    <div class="nav-item" data-page="emailsettings" onclick="showPage('emailsettings',this)"><span class="nav-icon">📧</span>Email Settings</div>
+    <div class="nav-item" data-page="roundconfig" onclick="showPage('roundconfig',this)"><span class="nav-icon">🎯</span>Round Config</div>
+    <div class="nav-item" data-page="profile" onclick="showPage('profile',this)"><span class="nav-icon">🏢</span>Company Profile</div>
+  </div>
+
+  <div class="main">
+    <!-- OVERVIEW -->
+    <div class="page active" id="page-overview">
+      <div class="page-title">Dashboard Overview</div>
+      <div class="page-sub">Real-time recruiting intelligence</div>
+
+      <!-- Date Filter Bar -->
+      <div style="background:var(--s);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">🗓 Filter By</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <select id="ov-filter-period" onchange="onPeriodFilterChange()"
+            style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="day">Specific Day</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+          <input id="ov-filter-date" type="date" onchange="applyOverviewFilters()" style="display:none;padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+          <select id="ov-filter-month" onchange="applyOverviewFilters()" style="display:none;padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+          </select>
+          <select id="ov-filter-year" onchange="applyOverviewFilters()" style="display:none;padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"></select>
+        </div>
+        <div id="ov-filter-badge" style="display:none;padding:4px 12px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.2);border-radius:20px;font-size:12px;color:var(--accent2);font-weight:600;"></div>
+        <button onclick="resetDateFilter()" id="ov-reset-btn" style="display:none;padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕ Reset</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat blue"><div class="stat-val" id="s-candidates">—</div><div class="stat-lbl">Candidates</div></div>
+        <div class="stat green"><div class="stat-val" id="s-submissions">—</div><div class="stat-lbl">Submissions</div></div>
+        <div class="stat yellow"><div class="stat-val" id="s-violations">—</div><div class="stat-lbl">Violations</div></div>
+        <div class="stat red"><div class="stat-val" id="s-active">—</div><div class="stat-lbl">Active Sessions</div></div>
+        <div class="stat purple"><div class="stat-val" id="s-jobs">—</div><div class="stat-lbl">Job Postings</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="flex-wrap:wrap;gap:12px;">
+          <span>📋 Recent Sessions</span>
+          <div style="display:flex;gap:10px;margin-left:auto;align-items:center;flex-wrap:wrap;">
+            <input id="ov-filter-name" type="text" placeholder="Search…" oninput="applyOverviewFilters()"
+              style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;width:130px;outline:none;">
+            <button onclick="downloadSessionsExcel()" style="padding:7px 14px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:8px;color:#059669;font-size:12px;font-weight:600;cursor:pointer;">⬇ Export All</button>
+          </div>
+        </div>
+        <div id="recent-table"><div class="empty">Loading…</div></div>
+        <!-- Pagination -->
+        <div id="ov-pagination" style="display:none;padding:14px 0 2px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <span id="ov-page-info" style="font-size:12px;color:var(--muted);"></span>
+          <div style="display:flex;gap:6px;">
+            <button id="ov-prev-btn" onclick="changeOvPage(-1)" style="padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);">← Prev</button>
+            <div id="ov-page-btns" style="display:flex;gap:4px;"></div>
+            <button id="ov-next-btn" onclick="changeOvPage(1)" style="padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOB POSTINGS -->
+    <div class="page" id="page-jobs">
+      <div class="page-title">Post a Job</div>
+      <div class="page-sub">Fill in all details to publish a job opening that candidates can discover and apply for</div>
+
+      <!-- Alert messages -->
+      <div id="jp-success-alert" style="display:none;align-items:center;gap:12px;padding:14px 18px;background:rgba(5,150,105,.08);border:1.5px solid rgba(5,150,105,.25);border-radius:10px;color:#065f46;font-size:14px;font-weight:600;margin-bottom:20px;">
+        <span style="font-size:18px;">✅</span><span id="jp-success-msg">Job posted successfully!</span>
+      </div>
+      <div id="jp-error-alert" style="display:none;align-items:center;gap:12px;padding:14px 18px;background:rgba(220,38,38,.07);border:1.5px solid rgba(220,38,38,.2);border-radius:10px;color:#991b1b;font-size:14px;font-weight:600;margin-bottom:20px;">
+        <span style="font-size:18px;">⚠️</span><span id="jp-error-msg">Please fill in all required fields.</span>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">🏢 Basic Information</div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Job Title <span style="color:var(--red)">*</span></label>
+            <input type="text" id="jp-job-title" placeholder="e.g., Senior Software Engineer">
+          </div>
+          <div class="fg">
+            <label>Company Name</label>
+            <input type="text" id="jp-company" placeholder="Auto-filled from your account" readonly style="background:var(--bg2);cursor:not-allowed;color:var(--muted);">
+            <div style="font-size:11px;color:var(--muted2);margin-top:4px;">🔒 Locked to your company account</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Department / Section <span style="color:var(--red)">*</span></label>
+            <select id="jp-section"><option value="">Select department…</option></select>
+          </div>
+          <div class="fg">
+            <label>Job Role <span style="color:var(--red)">*</span></label>
+            <select id="jp-role"><option value="">Select role…</option></select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:0;">
+          <label>Job Description <span style="color:var(--red)">*</span></label>
+          <textarea id="jp-desc" placeholder="Describe the role, responsibilities, and what makes this opportunity unique…" style="min-height:110px;"></textarea>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">🛠️ Skills &amp; Requirements</div>
+        <div class="fg" style="margin-bottom:14px;">
+          <label>Skills Required <span style="color:var(--red)">*</span></label>
+          <div style="display:flex;gap:10px;margin-bottom:10px;">
+            <input type="text" id="jp-skill-input" placeholder="e.g., Python, React, SQL…" style="flex:1;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onkeydown="if(event.key==='Enter'){event.preventDefault();jpAddSkill();}">
+            <button type="button" onclick="jpAddSkill()" style="padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">+ Add Skill</button>
+          </div>
+          <div id="jp-skills-list" style="display:flex;flex-wrap:wrap;gap:8px;min-height:38px;padding:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;">
+            <span style="color:var(--muted2);font-size:13px;font-style:italic;align-self:center;" id="jp-skills-placeholder">No skills added yet — type above and press Enter or click Add Skill</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">📋 Experience &amp; Job Type</div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Experience Required <span style="color:var(--red)">*</span></label>
+            <select id="jp-experience">
+              <option value="">Select level…</option>
+              <option value="Fresher">Fresher (0–1 years)</option>
+              <option value="Junior">Junior (1–3 years)</option>
+              <option value="Mid-Level">Mid-Level (3–5 years)</option>
+              <option value="Senior">Senior (5–8 years)</option>
+              <option value="Lead">Lead (8+ years)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Job Type <span style="color:var(--red)">*</span></label>
+            <select id="jp-job-type">
+              <option value="">Select type…</option>
+              <option value="Full-Time">Full-Time</option>
+              <option value="Part-Time">Part-Time</option>
+              <option value="Contract">Contract</option>
+              <option value="Freelance">Freelance</option>
+              <option value="Internship">Internship</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Salary Package <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;">( optional )</span></label>
+            <input type="text" id="jp-package" placeholder="e.g., ₹8–12 LPA, $80,000–$100,000/yr, Competitive">
+          </div>
+          <div class="fg">
+            <label>Work Mode</label>
+            <select id="jp-work-mode">
+              <option value="">Select mode…</option>
+              <option value="On-site">On-site</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:32px;">
+        <button class="btn-primary" onclick="createJobPosting()" style="padding:13px 32px;font-size:15px;">
+          📢 Publish Job Posting
+        </button>
+        <button onclick="jpResetForm()" style="padding:13px 24px;background:transparent;border:1.5px solid var(--border);border-radius:8px;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          ↺ Reset Form
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📌 Your Active Postings</div>
+        <div id="jobs-grid-wrap"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+    <!-- APPLICANTS -->
+    <div class="page" id="page-applicants">
+      <div class="page-title">Applicants</div>
+      <div class="page-sub">Select a posting to see who applied, then schedule interviews</div>
+      <div id="applicants-role-select-card">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+            <div class="card-title" style="margin-bottom:0;">🎯 Your Job Postings</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <label style="font-size:12px;color:var(--muted);font-weight:600;">Filter:</label>
+              <input type="text" id="apps-company-filter" placeholder="Search by company or role…" oninput="filterApplicantPostings(this.value)" style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;width:220px;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+              <select id="apps-status-filter" onchange="filterApplicantPostings(document.getElementById('apps-company-filter').value)" style="padding:7px 11px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div id="applicants-posting-list"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+      <div id="applicants-list-card" style="display:none;">
+        <div class="card">
+          <div class="card-title">
+            <span id="applicants-job-title">Applicants</span>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+              <input type="text" id="apps-candidate-filter" placeholder="Search candidates…" oninput="filterCandidateList(this.value)" style="padding:6px 11px;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;outline:none;width:180px;">
+              <button class="btn-sm btn-blue" onclick="clearApplicantView()">← Back</button>
+            </div>
+          </div>
+          <div id="applicants-list"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREATE INTERVIEW -->
+    <div class="page" id="page-create">
+      <div class="page-title">Create Interview Session</div>
+      <div class="page-sub">Select a job role to see applicants, then create a session instantly</div>
+      <div class="card">
+        <div class="card-title">🎯 Interview Mode</div>
+        <div class="mode-grid">
+          <div class="mode-card selected" id="mode-mcq" onclick="selectMode('mcq')"><div class="mode-icon">📝</div><div class="mode-name">MCQ Exam</div></div>
+          <div class="mode-card" id="mode-ai_interview" onclick="selectMode('ai_interview')"><div class="mode-icon">🤖</div><div class="mode-name">AI Interviewer</div></div>
+          <div class="mode-card" id="mode-live_recruiter" onclick="selectMode('live_recruiter')"><div class="mode-icon">🎥</div><div class="mode-name">Live Recruiter</div></div>
+        </div>
+
+        <!-- MCQ Question Source (only shown when MCQ mode selected) -->
+        <div id="mcq-source-section" style="margin-bottom:16px;padding:16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">📝 MCQ Question Source</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div id="mcq-src-hardcoded" onclick="selectMcqSource('hardcoded')" style="border:2px solid var(--accent);border-radius:10px;padding:14px;cursor:pointer;background:rgba(67,97,238,.07);transition:all .2s;">
+              <div style="font-size:22px;margin-bottom:6px;">🗄️</div>
+              <div style="font-weight:700;font-size:13px;color:var(--accent2);">Hardcoded Questions</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;">Questions pulled from your database. Consistent, pre-verified set.</div>
+            </div>
+            <div id="mcq-src-ai" onclick="selectMcqSource('ai')" style="border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;background:var(--s);transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="if(currentMcqSource!=='ai')this.style.borderColor='var(--border)'">
+              <div style="font-size:22px;margin-bottom:6px;">🤖</div>
+              <div style="font-weight:700;font-size:13px;">AI Chat-Based Questions</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;">Gemini AI generates fresh questions dynamically per candidate.</div>
+            </div>
+          </div>
+          <input type="hidden" id="c-mcq-source" value="hardcoded">
+        </div>
+
+        <!-- Step 1: Role -->
+        <div class="fg" style="margin-bottom:16px;">
+          <label>① Job Role <span style="color:var(--red)">*</span></label>
+          <select id="c-role" onchange="onRoleChange()" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;">
+            <option value="">— Select a job role —</option>
+          </select>
+        </div>
+
+        <!-- Step 2: Candidate (shown after role selected) -->
+        <div id="candidate-section" style="display:none;margin-bottom:16px;">
+          <div class="fg">
+            <label>② Select Candidate <span style="color:var(--red)">*</span></label>
+            <!-- Loading state -->
+            <div id="candidate-loading" style="display:none;padding:12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;">
+              <span style="animation:spin 1s linear infinite;display:inline-block;">⏳</span> Loading applicants…
+            </div>
+            <!-- No candidates state -->
+            <div id="candidate-empty" style="display:none;padding:14px 16px;background:rgba(217,119,6,.06);border:1.5px dashed rgba(217,119,6,.35);border-radius:8px;text-align:center;">
+              <div style="font-size:22px;margin-bottom:4px;">🚫</div>
+              <div style="font-size:13px;font-weight:600;color:#92400e;">No candidates have applied for this role yet</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;">Share your job posting so candidates can apply first</div>
+            </div>
+            <!-- Candidates dropdown -->
+            <select id="c-candidate-select" style="display:none;width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onchange="onCandidateSelect()">
+              <option value="">— Select a candidate —</option>
+            </select>
+          </div>
+
+          <!-- Candidate info card (shown after selecting candidate) -->
+          <div id="candidate-info-card" style="display:none;margin-top:12px;padding:14px 16px;background:linear-gradient(135deg,rgba(67,97,238,.07),rgba(67,97,238,.03));border:1px solid rgba(67,97,238,.2);border-radius:10px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div id="c-info-avatar" style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0;">?</div>
+              <div style="flex:1;">
+                <div id="c-info-name" style="font-weight:700;font-size:14px;color:var(--text);">—</div>
+                <div id="c-info-meta" style="font-size:12px;color:var(--muted);margin-top:2px;">—</div>
+              </div>
+              <div id="c-info-status" style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden field for username (used by createSession) -->
+        <input type="hidden" id="c-candidate">
+
+        <button class="btn-primary" id="create-session-btn" onclick="createSession()" style="padding:12px 28px;font-size:15px;" disabled>
+          🚀 Create Session
+        </button>
+
+        <div id="session-result" style="display:none;margin-top:20px;padding:20px;background:var(--s2);border-radius:12px;border:1px solid var(--border);">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Room Code — share with candidate:</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-family:monospace;font-size:20px;font-weight:700;color:var(--accent2);background:white;padding:8px 14px;border-radius:8px;letter-spacing:.12em;" id="created-code">—</span>
+            <button class="btn-sm btn-blue" onclick="copyCode()">📋 Copy</button>
+          </div>
+          <div style="margin-top:10px;font-size:13px;color:var(--muted);">URL: <code style="color:var(--accent2);" id="join-url">—</code></div>
+          <div id="cal-link-wrap" style="display:none;margin-top:10px;">
+            <a id="cal-link" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent2);text-decoration:none;padding:7px 14px;background:rgba(67,97,238,.09);border:1px solid rgba(67,97,238,.2);border-radius:8px;">
+              📅 Add to Google Calendar
+            </a>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;">
+            <button class="btn-sm btn-green" onclick="openRecruiterRoom()">Join as Recruiter →</button>
+            <button class="btn-sm btn-blue" onclick="resetCreateForm()">New Session</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div class="page" id="page-sessions">
+      <div class="page-title">All Sessions</div>
+      <div class="page-sub">History of all interview sessions</div>
+      <div class="card">
+        <div class="card-title">📋 Sessions</div>
+        <div style="max-height:480px;overflow-y:auto;overflow-x:auto;" id="sessions-table"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULED INTERVIEWS PAGE -->
+    <div class="page" id="page-scheduled">
+      <div class="page-title">📅 Scheduled Interviews</div>
+      <div class="page-sub">Track all interviews by status — upcoming, live, or completed</div>
+
+      <!-- Tab bar -->
+      <div style="display:flex;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:5px;margin-bottom:24px;width:fit-content;">
+        <button id="sched-tab-upcoming" onclick="setSchedTab('upcoming')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--accent);color:#fff;">🗓️ Upcoming</button>
+        <button id="sched-tab-live" onclick="setSchedTab('live')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);">🔴 Live</button>
+        <button id="sched-tab-completed" onclick="setSchedTab('completed')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);">✅ Completed</button>
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-weight:700;font-size:14px;" id="sched-tab-label">🗓️ Upcoming Interviews</div>
+          <button onclick="loadScheduled()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🔄 Refresh</button>
+        </div>
+        <div id="scheduled-table" style="max-height:520px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div class="empty">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERVIEWERS PAGE -->
+    <div class="page" id="page-interviewers">
+      <div class="page-title">🎙️ Assigned Interviewers</div>
+      <div class="page-sub">Track interviewers assigned to each interview round — view their status, scores and feedback</div>
+
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-weight:700;font-size:14px;">🎙️ All Interviewer Assignments</div>
+          <button onclick="loadInterviewersPage()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🔄 Refresh</button>
+        </div>
+        <div id="interviewers-table" style="max-height:600px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div class="empty">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMAIL SETTINGS PAGE -->
+    <div class="page" id="page-emailsettings">
+      <div class="page-title">📧 Email Settings</div>
+      <div class="page-sub">Connect your email provider — emails send automatically every time you schedule an interview</div>
+
+      <div id="email-status-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;max-width:100%;"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <!-- LEFT: Gmail -->
+        <div class="card">
+          <div class="card-title">📧 Gmail Connection</div>
+          <div style="background:linear-gradient(135deg,rgba(234,67,53,.06),rgba(234,67,53,.02));border:1px solid rgba(234,67,53,.2);border-radius:12px;padding:18px;margin-bottom:22px;">
+            <div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:12px;">⚡ One-time setup — 3 simple steps:</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#ea4335;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">1</span>
+                <span>Go to your Google Account → <strong>Security</strong> → Turn on <strong>2-Step Verification</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#ea4335;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">2</span>
+                <span>Visit <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#ea4335;font-weight:600;">myaccount.google.com/apppasswords</a> → Create App Password → Name it <strong>RecruitAI</strong> → Copy the 16-char password</span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#ea4335;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">3</span>
+                <span>Paste your Gmail and App Password below → Click <strong>Save &amp; Test</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:16px;">
+            <label>Your Gmail Address</label>
+            <input type="email" id="es-email" placeholder="yourname@gmail.com" style="width:100%;padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#ea4335'" onblur="this.style.borderColor='var(--border)'" oninput="updateEmailPreview()">
+          </div>
+          <div class="fg" style="margin-bottom:8px;">
+            <label>Gmail App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(16-char — NOT your Gmail login password)</span></label>
+            <div style="position:relative;">
+              <input type="password" id="es-pass" placeholder="abcd efgh ijkl mnop" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#ea4335'" onblur="this.style.borderColor='var(--border)'">
+              <button onclick="togglePassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;" title="Show/hide">👁</button>
+            </div>
+            <div id="pass-hint" style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep your existing saved password</div>
+          </div>
+          <div id="email-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:4px;font-size:12px;color:var(--muted);">
+            📬 Candidates will receive emails <strong>from</strong>: <span id="preview-addr" style="color:#ea4335;font-weight:600;"></span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
+            <button class="btn-primary" onclick="saveEmailSettings()" id="es-save-btn" style="padding:12px 28px;background:#ea4335;">💾 Save &amp; Test Gmail</button>
+            <button onclick="clearEmailSettings()" style="padding:12px 20px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Disconnect</button>
+          </div>
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">🔒 <strong>Secure:</strong> App Password stored in DB, never shown again</div>
+            <div style="background:rgba(234,67,53,.06);border:1px solid rgba(234,67,53,.15);border-radius:9px;padding:12px;font-size:12px;color:#b91c1c;line-height:1.6;">✉️ <strong>Personal:</strong> Candidates see your Gmail as sender</div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Outlook -->
+        <div class="card">
+          <div class="card-title">🔵 Outlook / Microsoft 365</div>
+          <div id="outlook-status-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;"></div>
+          <div style="background:linear-gradient(135deg,rgba(0,120,212,.06),rgba(0,120,212,.02));border:1px solid rgba(0,120,212,.2);border-radius:12px;padding:18px;margin-bottom:22px;">
+            <div style="font-size:13px;font-weight:700;color:#0078d4;margin-bottom:12px;">⚡ Setup steps for Outlook / Microsoft 365:</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">1</span>
+                <span>Go to <a href="https://account.microsoft.com/security" target="_blank" style="color:#0078d4;font-weight:600;">account.microsoft.com/security</a> → Enable <strong>Two-step verification</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">2</span>
+                <span>Under Advanced security → <strong>App passwords</strong> → Create a new app password for <strong>RecruitAI</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">3</span>
+                <span>Enter your Outlook email and the app password below → Click <strong>Save &amp; Test</strong></span>
+              </div>
+              <div style="display:flex;align-items:flex-start;gap:12px;font-size:13px;color:var(--text2);line-height:1.6;">
+                <span style="background:#0078d4;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;">4</span>
+                <span><strong>SMTP Server:</strong> smtp-mail.outlook.com &nbsp;·&nbsp; <strong>Port:</strong> 587 (STARTTLS)</span>
+              </div>
+            </div>
+          </div>
+          <div class="fg" style="margin-bottom:16px;">
+            <label>Your Outlook / Microsoft Email</label>
+            <input type="email" id="ol-email" placeholder="yourname@outlook.com" style="width:100%;padding:11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#0078d4'" onblur="this.style.borderColor='var(--border)'" oninput="updateOutlookPreview()">
+            <div style="font-size:11px;color:var(--muted2);margin-top:4px;">Supports @outlook.com, @hotmail.com, @live.com, @microsoft.com</div>
+          </div>
+          <div class="fg" style="margin-bottom:8px;">
+            <label>App Password <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(NOT your Microsoft login password)</span></label>
+            <div style="position:relative;">
+              <input type="password" id="ol-pass" placeholder="App password from Microsoft account" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='#0078d4'" onblur="this.style.borderColor='var(--border)'">
+              <button onclick="toggleOutlookPassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;" title="Show/hide">👁</button>
+            </div>
+            <div style="font-size:12px;color:var(--muted2);margin-top:6px;">Leave blank to keep your existing saved password</div>
+          </div>
+          <div id="outlook-preview" style="display:none;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:4px;font-size:12px;color:var(--muted);">
+            📬 Candidates will receive emails <strong>from</strong>: <span id="outlook-preview-addr" style="color:#0078d4;font-weight:600;"></span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px;">
+            <button onclick="saveOutlookSettings()" id="ol-save-btn" style="padding:12px 28px;background:#0078d4;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;">💾 Save &amp; Test Outlook</button>
+            <button onclick="clearOutlookSettings()" style="padding:12px 20px;background:transparent;border:1.5px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">🗑 Disconnect</button>
+          </div>
+          <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="background:rgba(0,120,212,.06);border:1px solid rgba(0,120,212,.15);border-radius:9px;padding:12px;font-size:12px;color:#0078d4;line-height:1.6;">🔒 <strong>Secure:</strong> Stored encrypted, never shown again</div>
+            <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;font-size:12px;color:#065f46;line-height:1.6;">✉️ <strong>Works with:</strong> Outlook, Hotmail, Microsoft 365</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROUND CONFIGURATION PAGE -->
+    <div class="page" id="page-roundconfig">
+      <div style="width:100%;max-width:700px;margin:0 auto;">
+
+      <div class="page-title">🎯 Round Configuration</div>
+      <div class="page-sub" style="margin-bottom:28px;">Set up 1–5 interview rounds per job posting. Name each round and assign an interview mode.</div>
+
+      <!-- Step 1: Select Job Posting -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">📌 Select Job Posting</div>
+        <div class="fg" style="margin-bottom:0;">
+          <label>Job Posting</label>
+          <select id="rc-posting-select" onchange="loadRoundConfigForPosting()" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+            <option value="">— Select a job posting —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 2: AI Voice Settings (always visible, applies globally to AI rounds) -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">🎙️ AI Interviewer Voice Settings</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6;">
+          Configure how the AI interviewer sounds during <strong>AI Interview</strong> rounds. These settings apply to all AI rounds across all job postings.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="fg" style="margin-bottom:0;">
+            <label>Voice Gender</label>
+            <select id="rc-voice-gender" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateVoicePreview()">
+              <option value="male">👨 Male</option>
+              <option value="female">👩 Female</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <label>Voice Tone</label>
+            <select id="rc-voice-tone" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateVoicePreview()">
+              <option value="normal">Normal</option>
+              <option value="slow">Slow &amp; Clear</option>
+              <option value="fast">Fast</option>
+              <option value="deep">Deep &amp; Formal</option>
+              <option value="friendly">Friendly</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:0;">
+            <label>Accent <span style="color:var(--muted2);font-size:10px;font-weight:400;text-transform:none;">(browser TTS — free)</span></label>
+            <select id="rc-voice-accent" style="width:100%;padding:10px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;" onchange="updateVoicePreview()">
+              <option value="en-US">🇺🇸 American English (en-US)</option>
+              <option value="en-GB">🇬🇧 British English (en-GB)</option>
+              <option value="en-AU">🇦🇺 Australian English (en-AU)</option>
+              <option value="en-IN">🇮🇳 Indian English (en-IN)</option>
+              <option value="en-CA">🇨🇦 Canadian English (en-CA)</option>
+              <option value="en-IE">🇮🇪 Irish English (en-IE)</option>
+              <option value="en-ZA">🇿🇦 South African English (en-ZA)</option>
+              <option value="en-NZ">🇳🇿 New Zealand English (en-NZ)</option>
+              <option value="en-SG">🇸🇬 Singaporean English (en-SG)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:4px;">
+          <button onclick="previewAIVoice()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(67,97,238,.08));border:1.5px solid rgba(124,58,237,.3);border-radius:9px;color:#7c3aed;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+            🔊 Preview Voice
+          </button>
+          <button onclick="listAvailableVoices()" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;background:rgba(67,97,238,.08);border:1.5px solid rgba(67,97,238,.2);border-radius:9px;color:var(--accent2);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;">
+            🎙️ Show Available Voices
+          </button>
+          <div id="rc-voice-preview-label" style="font-size:13px;color:var(--muted);font-style:italic;padding:8px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;"></div>
+        </div>
+        <!-- Cost info banner -->
+        <div style="margin-top:16px;padding:12px 16px;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.18);border-radius:10px;">
+          <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:6px;">💰 Costing Info — AI Interviewer Voice</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--muted);line-height:1.6;">
+            <div>🆓 <strong>Browser TTS (current):</strong> Completely free. Uses your device's built-in speech engine. Quality varies by OS & browser.</div>
+            <div>💎 <strong>Google Cloud TTS:</strong> ~$4/1M characters. High-quality WaveNet voices. Requires API key.</div>
+            <div>💎 <strong>AWS Polly:</strong> ~$4/1M characters. Neural voices available. Requires AWS credentials.</div>
+            <div>💎 <strong>ElevenLabs:</strong> From $5/mo. Most realistic AI voices. Best for premium experience.</div>
+          </div>
+        </div>
+        <!-- Available voices list -->
+        <div id="available-voices-panel" style="display:none;margin-top:12px;padding:12px 16px;background:var(--s2);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Available Voices on This Device</div>
+          <div id="voices-list-content" style="font-size:12px;color:var(--text2);"></div>
+        </div>
+      </div>
+
+      <div id="rc-main" style="display:none;width:100%;">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-title">⚙️ Round Setup</div>
+
+          <div style="background:linear-gradient(135deg,rgba(67,97,238,.06),rgba(67,97,238,.02));border:1px solid rgba(67,97,238,.18);border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.7;">
+            <strong style="color:var(--accent2);">How rounds work:</strong>
+            Candidates complete rounds in order. Each round can use a different interview mode.
+            After completing a round, candidates are automatically blocked from re-entering it.
+            They must meet the pass threshold to unlock the next round (or you can manually unlock it).
+          </div>
+
+          <div class="fg" style="margin-bottom:20px;">
+            <label>Number of Rounds <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;">(1 to 5)</span></label>
+            <select id="rc-total-rounds" onchange="renderRoundRows()" style="width:180px;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+              <option value="1">1 Round</option>
+              <option value="2">2 Rounds</option>
+              <option value="3" selected>3 Rounds</option>
+              <option value="4">4 Rounds</option>
+              <option value="5">5 Rounds</option>
+            </select>
+          </div>
+
+          <div id="rc-rows-container" style="display:flex;flex-direction:column;gap:14px;margin-bottom:22px;"></div>
+
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-primary" onclick="saveRoundConfig()" id="rc-save-btn" style="padding:12px 28px;">💾 Save Round Configuration</button>
+            <span id="rc-save-status" style="font-size:13px;color:var(--muted);"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📋 Candidate Round Blocking Rules</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+            <div style="background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.15);border-radius:9px;padding:12px;color:#065f46;line-height:1.6;">
+              🔒 <strong>Auto-blocked:</strong> After completing any round, candidates cannot re-enter that round
+            </div>
+            <div style="background:rgba(67,97,238,.06);border:1px solid rgba(67,97,238,.15);border-radius:9px;padding:12px;color:var(--accent2);line-height:1.6;">
+              🔓 <strong>Auto-unlock:</strong> Next round unlocks only when pass threshold is met
+            </div>
+            <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:9px;padding:12px;color:#92400e;line-height:1.6;">
+              ⚡ <strong>Manual override:</strong> You can unlock any round for a candidate from the Applicants page
+            </div>
+            <div style="background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:9px;padding:12px;color:#991b1b;line-height:1.6;">
+              ⏳ <strong>Cooldown:</strong> Failing all rounds triggers a 60-day global application ban
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div><!-- /inner width wrapper -->
+    </div><!-- /page-roundconfig -->
+
+    <!-- COMPANY PROFILE PAGE -->
+    <div class="page" id="page-profile">
+      <div class="page-title">🏢 Company Profile &amp; Settings</div>
+      <div class="page-sub">Manage your company details, branding and account security</div>
+
+      <div id="profile-save-banner" style="display:none;padding:14px 18px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:20px;"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <!-- LEFT COL -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Company Logo & Avatar -->
+          <div class="card">
+            <div class="card-title">🖼️ Company Logo</div>
+            <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;">
+              <div style="position:relative;">
+                <div id="profile-logo-preview" style="width:90px;height:90px;border-radius:18px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;color:#fff;overflow:hidden;border:3px solid var(--border);">
+                  <img id="profile-logo-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;">
+                  <span id="profile-logo-letter">?</span>
+                </div>
+                <label for="profile-logo-input" style="position:absolute;bottom:-6px;right:-6px;width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);" title="Upload logo">📷</label>
+                <input type="file" id="profile-logo-input" accept="image/*" style="display:none;" onchange="previewLogo(this)">
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:14px;" id="profile-company-display">Your Company</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px;">Click the camera icon to upload your logo</div>
+                <div style="font-size:11px;color:var(--muted2);margin-top:2px;">Recommended: 200×200px, PNG or JPG, max 2MB</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Company Info -->
+          <div class="card">
+            <div class="card-title">🏢 Company Information</div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Company Name <span style="color:var(--red)">*</span></label>
+              <input type="text" id="prof-company-name" placeholder="Your company's full legal name">
+            </div>
+            <div class="form-row">
+              <div class="fg">
+                <label>Industry</label>
+                <select id="prof-industry">
+                  <option value="">Select industry…</option>
+                  <option>Technology</option>
+                  <option>Finance &amp; Banking</option>
+                  <option>Healthcare</option>
+                  <option>Education</option>
+                  <option>E-Commerce &amp; Retail</option>
+                  <option>Manufacturing</option>
+                  <option>Consulting</option>
+                  <option>Media &amp; Entertainment</option>
+                  <option>Real Estate</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Company Size</label>
+                <select id="prof-size">
+                  <option value="">Select size…</option>
+                  <option>1–10 employees</option>
+                  <option>11–50 employees</option>
+                  <option>51–200 employees</option>
+                  <option>201–1000 employees</option>
+                  <option>1000+ employees</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Company Website</label>
+              <input type="url" id="prof-website" placeholder="https://yourcompany.com">
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label>About / Description</label>
+              <textarea id="prof-about" placeholder="Brief description of your company, culture and what you do…" style="min-height:90px;"></textarea>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COL -->
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+          <!-- Account Settings -->
+          <div class="card">
+            <div class="card-title">👤 Contact Person</div>
+            <div class="form-row">
+              <div class="fg">
+                <label>First Name</label>
+                <input type="text" id="prof-firstname" placeholder="e.g. Rahul">
+              </div>
+              <div class="fg">
+                <label>Last Name</label>
+                <input type="text" id="prof-lastname" placeholder="e.g. Sharma">
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label>Contact Email <span style="color:var(--muted2);font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;">(login email)</span></label>
+              <input type="email" id="prof-email" placeholder="contact@yourcompany.com" readonly style="background:var(--bg2);cursor:not-allowed;color:var(--muted);">
+              <div style="font-size:11px;color:var(--muted2);margin-top:4px;">🔒 Email cannot be changed. Contact support to update it.</div>
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="card">
+            <div class="card-title">🔑 Change Password</div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Current Password</label>
+              <div style="position:relative;">
+                <input type="password" id="prof-cur-pass" placeholder="Your current password" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                <button onclick="toggleProfPassVis('prof-cur-pass')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;">👁</button>
+              </div>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>New Password</label>
+              <div style="position:relative;">
+                <input type="password" id="prof-new-pass" placeholder="Min 8 characters" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" oninput="checkPassStrength(this.value)">
+                <button onclick="toggleProfPassVis('prof-new-pass')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;">👁</button>
+              </div>
+              <div id="pass-strength-bar" style="height:4px;border-radius:2px;margin-top:8px;transition:all .3s;background:var(--border);"></div>
+              <div id="pass-strength-label" style="font-size:11px;color:var(--muted2);margin-top:4px;"></div>
+            </div>
+            <div class="fg" style="margin-bottom:0;">
+              <label>Confirm New Password</label>
+              <div style="position:relative;">
+                <input type="password" id="prof-conf-pass" placeholder="Re-enter new password" style="width:100%;padding:11px 44px 11px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                <button onclick="toggleProfPassVis('prof-conf-pass')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:0;">👁</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save button -->
+          <button class="btn-primary" onclick="saveCompanyProfile()" style="padding:14px 32px;font-size:15px;width:100%;">💾 Save All Changes</button>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.main -->
+</div><!-- /.layout -->
+
+<!-- FOOTER -->
+<footer style="background:#0a0f1e;position:relative;z-index:1;overflow:hidden;">
+  <!-- Subtle gradient overlay -->
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(67,97,238,0.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(79,142,247,0.05) 0%,transparent 50%);pointer-events:none;"></div>
+
+  <!-- Top divider line with gradient -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(67,97,238,0.5),rgba(79,142,247,0.6),rgba(67,97,238,0.5),transparent);"></div>
+
+  <div style="max-width:1200px;margin:0 auto;padding:56px 48px 40px;position:relative;">
+
+    <!-- Main grid -->
+    <div style="display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr;gap:48px;align-items:start;margin-bottom:48px;">
+
+      <!-- Brand column -->
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div style="width:38px;height:38px;background:linear-gradient(135deg,#4361ee,#1e3a8a);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 14px rgba(67,97,238,0.4);">🤖</div>
+          <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#6d83f3,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">RecruitAI</span>
+        </div>
+        <p style="font-size:13px;color:#94a3b8;line-height:1.8;max-width:270px;margin-bottom:24px;">The AI-powered hiring platform built for modern teams. Automate interviews, proctoring, and candidate evaluation — all in one intelligent workspace.</p>
+        <!-- Status pill -->
+        <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:30px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 6px rgba(16,185,129,0.6);animation:pulseDot 2s infinite;"></span>
+          <span style="font-size:12px;color:#34d399;font-weight:600;letter-spacing:.02em;">All systems operational</span>
+        </div>
+        <!-- Tech badges -->
+        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;">
+          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(67,97,238,0.1);border:1px solid rgba(67,97,238,0.2);color:#818cf8;letter-spacing:.05em;">GEMINI AI</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.18);color:#fbbf24;letter-spacing:.05em;">WEBRTC</span>
+          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.18);color:#34d399;letter-spacing:.05em;">SUPABASE</span>
+        </div>
+      </div>
+
+      <!-- Platform column -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Platform</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <a onclick="showPage('overview',document.querySelector('[data-page=overview]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Dashboard</a>
+          <a onclick="showPage('jobs',document.querySelector('[data-page=jobs]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Job Postings</a>
+          <a onclick="showPage('applicants',document.querySelector('[data-page=applicants]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Applicants</a>
+          <a onclick="showPage('scheduled',document.querySelector('[data-page=scheduled]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Scheduled Interviews</a>
+          <a onclick="showPage('interviewers',document.querySelector('[data-page=interviewers]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Interviewers</a>
+          <a onclick="showPage('create',document.querySelector('[data-page=create]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Create Interview</a>
+        </div>
+      </div>
+
+      <!-- Configuration column -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Configuration</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <a onclick="showPage('roundconfig',document.querySelector('[data-page=roundconfig]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Round Config</a>
+          <a onclick="showPage('emailsettings',document.querySelector('[data-page=emailsettings]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Email Settings</a>
+          <a onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Company Profile</a>
+          <a href="/logout" style="font-size:13px;color:#f87171;text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:8px;margin-top:4px;" onmouseover="this.style.color='#fca5a5';this.style.paddingLeft='4px'" onmouseout="this.style.color='#f87171';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Logout</a>
+        </div>
+      </div>
+
+      <!-- Trust & Security column -->
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Security & Trust</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(67,97,238,0.12);border:1px solid rgba(67,97,238,0.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🔒</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">SSL Encrypted</div><div style="font-size:11px;color:#475569;">End-to-end secure</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🧠</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">AI Proctoring</div><div style="font-size:11px;color:#475569;">Real-time monitoring</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.18);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🛡️</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">GDPR Compliant</div><div style="font-size:11px;color:#475569;">Data privacy first</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:28px;height:28px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.15);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">📊</span>
+            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">Data Analytics</div><div style="font-size:11px;color:#475569;">Insights at a glance</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom bar -->
+    <div style="padding-top:28px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:#334155;">© 2026 RecruitAI. All rights reserved.</span>
+        <span style="width:1px;height:14px;background:#1e293b;display:inline-block;"></span>
+        <span style="font-size:12px;color:#334155;">Powered by <span style="color:#6d83f3;font-weight:600;">Gemini AI</span></span>
+        <span style="width:1px;height:14px;background:#1e293b;display:inline-block;"></span>
+        <span style="font-size:12px;color:#334155;">Built for modern hiring</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Privacy Policy</span>
+        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Terms of Service</span>
+        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Support</span>
+      </div>
+    </div>
+
+  </div>
+</footer>
+
+<!-- Schedule Interview Modal -->
+<div class="modal-overlay hidden" id="schedule-modal">
+  <div class="modal-card" style="max-width:540px;">
+    <div class="modal-title">
+      📅 Schedule Interview
+      <button onclick="closeScheduleModal()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>
+    </div>
+    <div id="schedule-candidate-info" style="background:var(--s2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;border:1px solid var(--border);"></div>
+
+    <!-- Interviewer info (auto-filled from round config) -->
+    <div id="sched-interviewer-info" style="display:none;background:rgba(67,97,238,.05);border:1px solid rgba(67,97,238,.18);border-radius:9px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
+
+    <div class="fg" style="margin-bottom:14px;" id="sched-round-section">
+      <label>Round <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(auto-fills from Round Config)</span></label>
+      <select id="sched-round-number" onchange="onSchedRoundChange()" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+        <option value="1">Round 1</option>
+        <option value="2">Round 2</option>
+        <option value="3">Round 3</option>
+        <option value="4">Round 4</option>
+        <option value="5">Round 5</option>
+      </select>
+      <input type="text" id="sched-round-name" placeholder="Round name (e.g. Aptitude Test, HR Final…)" value="Round 1"
+        style="width:100%;margin-top:8px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+
+    <div class="fg" style="margin-bottom:14px;">
+      <label>Interview Mode <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">(overridden by Round Config)</span></label>
+      <div class="mode-grid">
+        <div class="mode-card selected" id="sched-mode-mcq" onclick="selectSchedMode('mcq')"><div class="mode-icon">📝</div><div class="mode-name">MCQ</div></div>
+        <div class="mode-card" id="sched-mode-ai_interview" onclick="selectSchedMode('ai_interview')"><div class="mode-icon">🤖</div><div class="mode-name">AI Interviewer</div></div>
+        <div class="mode-card" id="sched-mode-live_recruiter" onclick="selectSchedMode('live_recruiter')"><div class="mode-icon">🎥</div><div class="mode-name">Live Recruiter</div></div>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:20px;">
+      <label>Interview Date &amp; Time</label>
+      <input type="datetime-local" id="sched-datetime" style="width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;">
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <button class="btn-primary" id="sched-confirm-btn" onclick="confirmSchedule()" style="flex:1;">📨 Schedule &amp; Send Email</button>
+      <button class="btn-sm btn-red" onclick="closeScheduleModal()" style="padding:11px 18px;">Cancel</button>
+    </div>
+    <div id="sched-result" style="display:none;padding:16px;background:rgba(16,185,129,.06);border:1px solid rgba(5,150,105,.2);border-radius:12px;font-size:13px;line-height:1.7;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+// ── Round Config JS ────────────────────────────────────────────────────────────
+async function loadRoundConfigPage() {
+  // Load all recruiter's postings into the dropdown
+  const data = await fetch('/api/job-postings/all').then(r=>r.json()).catch(()=>({postings:[]}));
+  const sel = document.getElementById('rc-posting-select');
+  const postings = (data.postings || []).filter(p=>p.is_active);
+  sel.innerHTML = '<option value="">— Select a job posting —</option>' +
+    postings.map(p=>`<option value="${p.id}">${p.company_name} — ${p.job_role} (ID:${p.id})</option>`).join('');
+}
+
+async function loadRoundConfigForPosting() {
+  const postingId = document.getElementById('rc-posting-select').value;
+  if (!postingId) { document.getElementById('rc-main').style.display='none'; return; }
+  document.getElementById('rc-main').style.display='block';
+  const data = await fetch(`/api/round-config/${postingId}`).then(r=>r.json()).catch(()=>({success:false}));
+  if (data.success && data.config) {
+    document.getElementById('rc-total-rounds').value = data.config.total_rounds;
+    renderRoundRows(data.config.rounds);
+    // Restore saved voice settings if any
+    if (data.config.voice_settings) {
+      const vs = data.config.voice_settings;
+      if (document.getElementById('rc-voice-gender')) document.getElementById('rc-voice-gender').value = vs.gender || 'male';
+      if (document.getElementById('rc-voice-tone'))   document.getElementById('rc-voice-tone').value   = vs.tone   || 'normal';
+      if (document.getElementById('rc-voice-accent')) document.getElementById('rc-voice-accent').value = vs.accent || 'en-US';
+      updateVoicePreview();
+    }
+  } else {
+    document.getElementById('rc-total-rounds').value = 3;
+    renderRoundRows();
+  }
+}
+
+function renderRoundRows(existingRounds=[]) {
+  const n = parseInt(document.getElementById('rc-total-rounds').value);
+  const container = document.getElementById('rc-rows-container');
+  const BADGE_COLORS = ['#4361ee','#7c3aed','#059669','#d97706','#dc2626'];
+  container.innerHTML = '';
+  for (let i=1; i<=n; i++) {
+    const ex = existingRounds.find(r=>r.round_number===i) || {};
+    const bg = BADGE_COLORS[i-1] || '#64748b';
+    container.innerHTML += `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <span style="background:${bg};color:#fff;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;letter-spacing:.04em;">ROUND ${i}</span>
+          <span style="font-size:13px;color:var(--muted);">Configure this round's name, type and interviewer</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:12px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Round Name</div>
+            <input type="text" id="rc-name-${i}" placeholder="e.g. Aptitude Test, Coding Round, HR Final…"
+              value="${ex.round_name||''}"
+              style="width:100%;padding:9px 12px;background:var(--s);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Interview Mode</div>
+            <select id="rc-mode-${i}" onchange="checkVoiceSettingsVisibility()" style="width:100%;padding:9px 12px;background:var(--s);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+              <option value="mcq" ${(ex.interview_mode||'mcq')==='mcq'?'selected':''}>📝 MCQ Exam</option>
+              <option value="ai_interview" ${ex.interview_mode==='ai_interview'?'selected':''}>🤖 AI Interviewer</option>
+              <option value="live_recruiter" ${ex.interview_mode==='live_recruiter'?'selected':''}>🎥 Live Recruiter</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Pass %</div>
+            <input type="number" id="rc-pass-${i}" min="0" max="100" value="${ex.pass_threshold||60}"
+              style="width:72px;padding:9px 10px;background:var(--s);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+          </div>
+        </div>
+        <!-- Interviewer assignment for this round -->
+        <div style="background:rgba(67,97,238,.04);border:1px dashed rgba(67,97,238,.2);border-radius:9px;padding:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">👤 Round Interviewer <span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — candidate sees this person's name in the email)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;">Interviewer Name</div>
+              <input type="text" id="rc-iv-name-${i}" placeholder="e.g. Priya Sharma (HR Manager)"
+                value="${ex.interviewer_name||''}"
+                style="width:100%;padding:8px 11px;background:var(--s);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:5px;">Interviewer Email <span style="color:var(--muted2);">(CC'd on scheduling email)</span></div>
+              <input type="email" id="rc-iv-email-${i}" placeholder="e.g. priya@company.com"
+                value="${ex.interviewer_email||''}"
+                style="width:100%;padding:8px 11px;background:var(--s);border:1px solid var(--border2);border-radius:7px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+  checkVoiceSettingsVisibility();
+}
+
+function checkVoiceSettingsVisibility() {
+  const n = parseInt(document.getElementById('rc-total-rounds').value);
+  let hasAI = false;
+  for (let i = 1; i <= n; i++) {
+    const sel = document.getElementById(`rc-mode-${i}`);
+    if (sel && sel.value === 'ai_interview') { hasAI = true; break; }
+  }
+  const panel = document.getElementById('rc-voice-settings');
+  if (panel) panel.style.display = hasAI ? 'block' : 'none';
+}
+
+function updateVoicePreview() {
+  const gender = document.getElementById('rc-voice-gender')?.value || 'male';
+  const tone   = document.getElementById('rc-voice-tone')?.value   || 'normal';
+  const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
+  const accentLabels = {
+    'en-US':'American English','en-GB':'British English','en-AU':'Australian English',
+    'en-IN':'Indian English','en-CA':'Canadian English','en-IE':'Irish English',
+    'en-ZA':'South African English','en-NZ':'New Zealand English','en-SG':'Singaporean English'
+  };
+  const label = document.getElementById('rc-voice-preview-label');
+  if (label) label.textContent = `${gender==='male'?'👨':'👩'} ${gender.charAt(0).toUpperCase()+gender.slice(1)} · ${tone.charAt(0).toUpperCase()+tone.slice(1)} · ${accentLabels[accent]||accent}`;
+}
+
+function previewAIVoice() {
+  if (!window.speechSynthesis) { showToast('Speech not supported in this browser', 'warn'); return; }
+  speechSynthesis.cancel();
+  const gender = document.getElementById('rc-voice-gender')?.value || 'male';
+  const tone   = document.getElementById('rc-voice-tone')?.value   || 'normal';
+  const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
+  const sampleText = {
+    'en-US': "Hello! I am your AI interviewer. Welcome to your interview session. Are you ready to begin?",
+    'en-GB': "Good day! I shall be your AI interviewer today. Welcome to your interview session.",
+    'en-AU': "G'day! I'm your AI interviewer. Welcome to your interview session today. Ready to begin?",
+    'en-IN': "Namaste! I am your AI interviewer. Welcome to your interview session. Shall we begin?",
+    'en-CA': "Hello! I'm your AI interviewer. Welcome to your interview session. Are you ready to start?",
+    'en-IE': "Hello there! I'll be your AI interviewer today. Welcome to your interview session.",
+    'en-ZA': "Hello! I am your AI interviewer. Welcome to your interview session. Let us begin.",
+    'en-NZ': "Kia ora! I'm your AI interviewer. Welcome to your interview session. Ready to go?",
+    'en-SG': "Hello! I am your AI interviewer. Welcome to your interview session. Shall we get started?"
+  };
+  const text = sampleText[accent] || sampleText['en-US'];
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = accent;
+  switch(tone) {
+    case 'slow':     utt.rate=0.7;  utt.pitch=1.0;  break;
+    case 'fast':     utt.rate=1.3;  utt.pitch=1.0;  break;
+    case 'deep':     utt.rate=0.85; utt.pitch=0.65; break;
+    case 'friendly': utt.rate=1.0;  utt.pitch=1.25; break;
+    default:         utt.rate=0.9;  utt.pitch=1.0;
+  }
+  // Try to find a voice matching the accent language code and gender
+  const loadAndSpeak = () => {
+    const voices = speechSynthesis.getVoices();
+    const accentCode = accent.toLowerCase();
+    const langCode = accent.split('-')[0].toLowerCase();
+    // First try exact accent match
+    let pool = voices.filter(v => v.lang.toLowerCase() === accentCode);
+    // Fallback: same language family
+    if (!pool.length) pool = voices.filter(v => v.lang.toLowerCase().startsWith(langCode));
+    if (pool.length) {
+      const femaleKeywords = /female|woman|girl|zira|susan|samantha|victoria|karen|moira|fiona|tessa|veena|heera|raveena|neerja/i;
+      const maleKeywords   = /male|man|david|daniel|alex|fred|lee|thomas|rishi|lekha/i;
+      const genderMatch = gender === 'female'
+        ? pool.find(v => femaleKeywords.test(v.name))
+        : pool.find(v => maleKeywords.test(v.name));
+      utt.voice = genderMatch || pool[gender==='female'?pool.length-1:0];
+    }
+    speechSynthesis.speak(utt);
+    showToast(`🔊 Playing ${document.querySelector(`#rc-voice-accent option[value="${accent}"]`)?.textContent || accent} voice preview…`);
+  };
+  // Voices may not be loaded yet
+  if (speechSynthesis.getVoices().length) {
+    loadAndSpeak();
+  } else {
+    speechSynthesis.onvoiceschanged = () => { loadAndSpeak(); speechSynthesis.onvoiceschanged=null; };
+  }
+}
+
+async function saveRoundConfig() {
+  const postingId = document.getElementById('rc-posting-select').value;
+  if (!postingId) { showToast('Please select a job posting first', 'error'); return; }
+  const n = parseInt(document.getElementById('rc-total-rounds').value);
+  const rounds = [];
+  for (let i=1; i<=n; i++) {
+    const name = document.getElementById(`rc-name-${i}`)?.value?.trim();
+    if (!name) { showToast(`Please enter a name for Round ${i}`, 'error'); return; }
+    rounds.push({
+      round_number: i,
+      round_name: name,
+      interview_mode: document.getElementById(`rc-mode-${i}`).value,
+      pass_threshold: parseInt(document.getElementById(`rc-pass-${i}`).value) || 60,
+      interviewer_name: document.getElementById(`rc-iv-name-${i}`)?.value?.trim() || '',
+      interviewer_email: document.getElementById(`rc-iv-email-${i}`)?.value?.trim() || '',
+    });
+  }
+  // Collect voice settings (only relevant if any round is ai_interview)
+  const voiceSettings = {
+    gender: document.getElementById('rc-voice-gender')?.value || 'male',
+    tone:   document.getElementById('rc-voice-tone')?.value   || 'normal',
+    accent: document.getElementById('rc-voice-accent')?.value || 'en-US',
+  };
+  const btn = document.getElementById('rc-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ Saving…';
+  try {
+    const data = await fetch('/api/round-config/save', {method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({posting_id: parseInt(postingId), total_rounds: n, rounds, voice_settings: voiceSettings})
+    }).then(r=>r.json());
+    if (data.success) {
+      showToast('✅ Round configuration saved!', 'success');
+      document.getElementById('rc-save-status').textContent = `Saved ${n} rounds at ${new Date().toLocaleTimeString()}`;
+      updateVoicePreview();
+    } else {
+      showToast('Error: ' + (data.message || 'Save failed'), 'error');
+    }
+  } catch(e) {
+    showToast('Network error saving config', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Save Round Configuration';
+  }
+}
+
+// Auto-inject ngrok header for all fetch calls through tunnel
+const _origFetch = window.fetch;
+window.fetch = (url, opts={}) => {
+  opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
+  opts.credentials = opts.credentials || 'same-origin';
+  return _origFetch(url, opts);
+};
+let selectedMode='mcq', schedMode='mcq', lastCreatedSession=null;
+let currentApplicationId=null, allSubmissionsData=[];
+
+let _companyName = '';
+
+async function init() {
+  const auth = await fetch('/api/check-auth').then(r=>r.json());
+  if (!auth.authenticated || (auth.role !== 'recruiter' && auth.role !== 'admin')) { window.location.href='index.html'; return; }
+  // Company-centric display
+  _companyName = auth.company_name || auth.full_name || auth.username;
+  document.getElementById('admin-name').textContent = _companyName;
+  document.getElementById('company-tagline').textContent = auth.full_name ? auth.full_name + ' · Company Account' : 'Company Account';
+  // Logo initials
+  const initials = _companyName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('company-logo-initials').textContent = initials;
+  if (auth.logo_url) {
+    document.getElementById('company-logo-img').src = auth.logo_url;
+    document.getElementById('company-logo-img').style.display = 'block';
+    document.getElementById('company-logo-initials').style.display = 'none';
+  }
+  // Lock company name in job posting form
+  const jpComp = document.getElementById('jp-company');
+  if (jpComp) jpComp.value = _companyName;
+  await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadMyPostings()]);
+}
+
+async function loadJobSections() {
+  const data = await fetch('/api/job-sections').then(r=>r.json());
+  const sel = document.getElementById('jp-section');
+  sel.innerHTML = '<option value="">Select department…</option>' + data.sections.map(s=>`<option>${s}</option>`).join('');
+}
+
+async function loadRoles() {
+  const data = await fetch('/api/job-roles').then(r=>r.json());
+  ['c-role','jp-role'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) s.innerHTML = (id==='jp-role'?'<option value="">Select role…</option>':'') + data.roles.map(r=>`<option>${r}</option>`).join('');
+  });
+}
+
+let _rawStats = {};
+let _rawJpData = [];
+
+async function loadDashboard() {
+  const [stats, jpData] = await Promise.all([
+    fetch('/api/dashboard-stats').then(r=>r.json()).catch(()=>({success:false})),
+    fetch('/api/job-postings/all').then(r=>r.json()).catch(()=>({success:false,postings:[]}))
+  ]);
+  if (!stats.success) return;
+  _rawStats  = stats.stats || {};
+  _rawJpData = (jpData.postings||[]).filter(p=>p.is_active);
+  allSubmissionsData = stats.recent_submissions || [];
+
+  // Populate year dropdown from data
+  _populateYearDropdown();
+  applyOverviewFilters();
+}
+
+function _populateYearDropdown() {
+  const sel = document.getElementById('ov-filter-year');
+  if (!sel) return;
+  const years = [...new Set(allSubmissionsData.map(s => {
+    const d = new Date(s.submitted_at);
+    return isNaN(d) ? null : d.getFullYear();
+  }).filter(Boolean))].sort((a,b)=>b-a);
+  const cur = new Date().getFullYear();
+  if (!years.includes(cur)) years.unshift(cur);
+  sel.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join('');
+}
+
+function _dateMatchesFilter(dateStr) {
+  const period = document.getElementById('ov-filter-period')?.value || 'all';
+  if (period === 'all') return true;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return true;
+  const now = new Date();
+  if (period === 'today') {
+    return d.toDateString() === now.toDateString();
+  }
+  if (period === 'day') {
+    const sel = document.getElementById('ov-filter-date')?.value;
+    if (!sel) return true;
+    return d.toISOString().slice(0,10) === sel;
+  }
+  if (period === 'month') {
+    const m = parseInt(document.getElementById('ov-filter-month')?.value||0);
+    const y = parseInt(document.getElementById('ov-filter-year')?.value||0);
+    return d.getMonth()+1 === m && d.getFullYear() === y;
+  }
+  if (period === 'year') {
+    const y = parseInt(document.getElementById('ov-filter-year')?.value||0);
+    return d.getFullYear() === y;
+  }
+  return true;
+}
+
+async function loadCandidates() {
+  const data = await fetch('/api/candidates').then(r=>r.json());
+  const el = document.getElementById('candidates-table');
+  if (!data.candidates?.length) { el.innerHTML='<div class="empty">No candidates yet</div>'; return; }
+  el.innerHTML = `<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Submissions</th></tr></thead><tbody>
+    ${data.candidates.map(c=>`<tr><td><strong>${c.full_name||c.username}</strong></td><td>${c.username}</td><td>${c.email}</td><td>${c.submissions}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+async function loadMyPostings() {
+  const data = await fetch('/api/job-postings/all').then(r=>r.json()).catch(()=>({success:false,postings:[]}));
+  const active = (data.postings||[]).filter(p=>p.is_active);
+  renderPostingGrid(active);
+  renderPostingList(active);
+}
+
+function renderPostingGrid(postings) {
+  const el = document.getElementById('jobs-grid-wrap');
+  if (!postings.length) { el.innerHTML='<div class="empty">No postings yet. Post your first role above!</div>'; return; }
+  el.innerHTML = `<div class="jobs-grid">${postings.map(p=>`
+    <div class="job-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <span class="job-section-chip">${p.job_section}</span>
+        <button class="btn-sm btn-red" onclick="deletePosting(${p.id})">✕ Close</button>
+      </div>
+      <div class="job-card-role">${p.job_title||p.job_role}</div>
+      <div class="job-card-company">🏢 ${p.company_name}</div>
+      ${p.package?`<div style="font-size:12px;color:#059669;font-weight:600;margin-bottom:4px;">💰 ${p.package}</div>`:''}
+      ${p.experience_required||p.job_type?`<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${[p.experience_required,p.job_type].filter(Boolean).join(' · ')}</div>`:''}
+      ${p.city||p.state?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">📍 ${[p.city,p.state,p.country].filter(Boolean).join(', ')}</div>`:''}
+      ${p.skills_required&&p.skills_required.length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">${p.skills_required.slice(0,4).map(s=>`<span style="font-size:10px;padding:2px 8px;background:rgba(67,97,238,.09);border:1px solid rgba(67,97,238,.18);border-radius:10px;color:var(--accent2);font-weight:600;">${s}</span>`).join('')}${p.skills_required.length>4?`<span style="font-size:10px;color:var(--muted);align-self:center;"> +${p.skills_required.length-4} more</span>`:''}</div>`:''}
+      <div class="job-card-desc">${p.description||'No description'}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+        <span style="font-size:12px;color:var(--muted);">👥 <strong style="color:var(--text)">${p.application_count}</strong> applicant${p.application_count!==1?'s':''}</span>
+        <button class="btn-sm btn-blue" onclick="viewApplicants(${p.id},'${p.job_title||p.job_role} at ${p.company_name}')">View →</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+let _allApplicantPostings = [];
+
+function renderPostingList(postings) {
+  _allApplicantPostings = postings;
+  _renderFilteredPostings(postings);
+}
+
+function filterApplicantPostings(query) {
+  const q = (query||'').toLowerCase().trim();
+  const statusFilter = document.getElementById('apps-status-filter')?.value || '';
+  let filtered = _allApplicantPostings;
+  if (q) {
+    filtered = filtered.filter(p =>
+      p.company_name.toLowerCase().includes(q) ||
+      p.job_role.toLowerCase().includes(q) ||
+      p.job_section.toLowerCase().includes(q) ||
+      (p.job_title||'').toLowerCase().includes(q)
+    );
+  }
+  if (statusFilter === 'active') filtered = filtered.filter(p => p.is_active);
+  else if (statusFilter === 'inactive') filtered = filtered.filter(p => !p.is_active);
+  _renderFilteredPostings(filtered);
+}
+
+function _renderFilteredPostings(postings) {
+  const el = document.getElementById('applicants-posting-list');
+  if (!postings.length) { el.innerHTML='<div class="empty">No postings match your filter. Try a different search.</div>'; return; }
+  el.innerHTML = postings.map(p=>`
+    <div onclick="viewApplicants(${p.id},'${(p.job_title||p.job_role).replace(/'/g,"\\'")} at ${p.company_name.replace(/'/g,"\\'")}')" style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;">${p.job_title||p.job_role}</div>
+        <div style="font-size:12px;color:var(--muted);">🏢 ${p.company_name} · ${p.job_section}</div>
+        ${p.salary_package?`<div style="font-size:11px;color:var(--green);margin-top:2px;">💰 ${p.salary_package}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="badge badge-blue">👥 ${p.application_count} applied</span>
+        <span class="badge ${p.is_active?'badge-green':'badge-red'}" style="font-size:10px;">${p.is_active?'Active':'Inactive'}</span>
+      </div>
+      <span style="color:var(--muted);">→</span>
+    </div>`).join('');
+}
+
+let _allCandidateApps = [];
+
+async function viewApplicants(postingId, title) {
+  document.getElementById('applicants-role-select-card').style.display='none';
+  document.getElementById('applicants-list-card').style.display='block';
+  document.getElementById('applicants-job-title').textContent='👥 '+title;
+  const el=document.getElementById('applicants-list');
+  el.innerHTML='<div class="empty">Loading…</div>';
+  // Clear candidate filter
+  const cf = document.getElementById('apps-candidate-filter');
+  if (cf) cf.value = '';
+  // Switch page
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-applicants').classList.add('active');
+  document.querySelector('[data-page="applicants"]').classList.add('active');
+  const data = await fetch(`/api/job-postings/${postingId}/applications`).then(r=>r.json());
+  _allCandidateApps = data.applications||[];
+  renderCandidateList(_allCandidateApps);
+}
+
+function filterCandidateList(query) {
+  const q = (query||'').toLowerCase().trim();
+  const filtered = q ? _allCandidateApps.filter(a =>
+    a.candidate_name.toLowerCase().includes(q) ||
+    (a.candidate_username||'').toLowerCase().includes(q) ||
+    (a.candidate_email||'').toLowerCase().includes(q) ||
+    (a.status||'').toLowerCase().includes(q)
+  ) : _allCandidateApps;
+  renderCandidateList(filtered);
+}
+
+function renderCandidateList(apps) {
+  const el = document.getElementById('applicants-list');
+  if (!apps.length) { el.innerHTML='<div class="empty">No applicants match your search</div>'; return; }
+  const statusBadge = {applied:'<span class="badge badge-blue">Applied</span>',shortlisted:'<span class="badge badge-yellow">Shortlisted</span>',interview_scheduled:'<span class="badge badge-green">Interview Scheduled</span>',rejected:'<span class="badge badge-red">Rejected</span>'};
+  el.innerHTML = apps.map(a=>`
+    <div class="applicant-card">
+      <div class="applicant-avatar">${(a.candidate_name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:150px;">
+        <div style="font-weight:600;font-size:14px;">${a.candidate_name}</div>
+        <div style="font-size:12px;color:var(--muted);">@${a.candidate_username} · ${a.candidate_email}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">Applied ${a.applied_at.split(' ')[0]}</div>
+        ${a.cover_note?`<div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic;background:var(--s);padding:8px 10px;border-radius:6px;">"${a.cover_note}"</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        ${statusBadge[a.status]||a.status}
+        ${a.status!=='interview_scheduled'?`<button class="btn-sm btn-green" onclick="openScheduleModal(${a.id},'${a.candidate_name.replace(/'/g,"\\'")}','${a.job_role}','${a.company_name.replace(/'/g,"\\'")}',(${a.posting_id||0}))">📅 Schedule</button>`:'<span style="font-size:11px;color:var(--green);">✓ Scheduled</span>'}
+      </div>
+    </div>`).join('');
+}
+
+// ── Job Posting Skills State ────────────────────────────────────────────────
+let jpSkills = [];
+
+function jpAddSkill() {
+  const inp = document.getElementById('jp-skill-input');
+  const skill = inp.value.trim();
+  if (!skill) { jpShowError('Please enter a skill name.'); return; }
+  if (jpSkills.includes(skill)) { jpShowError('That skill is already added.'); return; }
+  jpSkills.push(skill);
+  jpRenderSkills();
+  inp.value = '';
+  inp.focus();
+}
+
+function jpRemoveSkill(idx) {
+  jpSkills.splice(idx, 1);
+  jpRenderSkills();
+}
+
+function jpRenderSkills() {
+  const list = document.getElementById('jp-skills-list');
+  const ph   = document.getElementById('jp-skills-placeholder');
+  if (!jpSkills.length) {
+    list.innerHTML = '<span style="color:var(--muted2);font-size:13px;font-style:italic;align-self:center;" id="jp-skills-placeholder">No skills added yet — type above and press Enter or click Add Skill</span>';
+    return;
+  }
+  list.innerHTML = jpSkills.map((s,i) => `
+    <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.2);border-radius:20px;font-size:13px;font-weight:600;color:var(--accent2);">
+      ${s}
+      <button onclick="jpRemoveSkill(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:0 2px;" title="Remove">×</button>
+    </span>`).join('');
+}
+
+function jpShowSuccess(msg) {
+  const el = document.getElementById('jp-success-alert');
+  const em = document.getElementById('jp-success-msg');
+  document.getElementById('jp-error-alert').style.display='none';
+  if(em) em.textContent = msg || 'Job posted successfully!';
+  el.style.display='flex';
+  setTimeout(()=>{ el.style.display='none'; }, 5000);
+}
+
+function jpShowError(msg) {
+  const el = document.getElementById('jp-error-alert');
+  const em = document.getElementById('jp-error-msg');
+  document.getElementById('jp-success-alert').style.display='none';
+  if(em) em.textContent = msg;
+  el.style.display='flex';
+  setTimeout(()=>{ el.style.display='none'; }, 5000);
+}
+
+function jpResetForm() {
+  if (!confirm('Reset the form? All entered data will be lost.')) return;
+  ['jp-job-title','jp-desc','jp-package'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['jp-section','jp-role','jp-experience','jp-job-type','jp-work-mode'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  // Company name stays locked — re-fill from _companyName
+  const jpComp = document.getElementById('jp-company');
+  if (jpComp) jpComp.value = _companyName;
+  jpSkills = [];
+  jpRenderSkills();
+  document.getElementById('jp-success-alert').style.display='none';
+  document.getElementById('jp-error-alert').style.display='none';
+}
+
+async function createJobPosting() {
+  const section   = document.getElementById('jp-section').value;
+  const role      = document.getElementById('jp-role').value;
+  const jobTitle  = document.getElementById('jp-job-title').value.trim();
+  const company   = _companyName; // always use locked company name
+  const desc      = document.getElementById('jp-desc').value.trim();
+  const experience= document.getElementById('jp-experience').value;
+  const jobType   = document.getElementById('jp-job-type').value;
+  const pkg       = document.getElementById('jp-package')?.value?.trim() || '';
+  const workMode  = document.getElementById('jp-work-mode')?.value || '';
+
+  // Validation
+  if (!section)    { jpShowError('⚠️ Please select a Department / Section.'); return; }
+  if (!role)       { jpShowError('⚠️ Please select a Job Role.'); return; }
+  if (!desc)       { jpShowError('⚠️ Job Description is required.'); return; }
+  if (!jpSkills.length) { jpShowError('⚠️ Please add at least one required skill.'); return; }
+  if (!experience) { jpShowError('⚠️ Please select the experience level required.'); return; }
+  if (!jobType)    { jpShowError('⚠️ Please select a Job Type.'); return; }
+  if (!pkg)        { jpShowError('⚠️ Salary package is required.'); return; }
+
+  const btn = document.querySelector('[onclick="createJobPosting()"]');
+  if (btn) { btn.disabled=true; btn.textContent='Publishing…'; }
+
+  try {
+    const res = await fetch('/api/job-postings', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        job_section: section,
+        job_role: role,
+        job_title: jobTitle || role,
+        company_name: company,
+        description: desc,
+        skills_required: jpSkills,
+        experience_required: experience,
+        job_type: jobType,
+        salary_package: pkg,
+        work_mode: workMode,
+      })
+    });
+    const data = await res.json();
+    if (!data.success) { jpShowError('❌ ' + (data.message || 'Failed to post job.')); return; }
+    jpShowSuccess('✅ Job posted! Candidates can now apply.');
+    jpResetForm();
+    showToast('✅ Job posted successfully!');
+    await loadMyPostings();
+    await loadDashboard();
+  } catch(e) {
+    jpShowError('❌ Network error. Please try again.');
+  } finally {
+    if (btn) { btn.disabled=false; btn.innerHTML='📢 Publish Job Posting'; }
+  }
+}
+
+async function deletePosting(id) {
+  if (!confirm('Close this job posting? Candidates will no longer see it.')) return;
+  const data = await fetch(`/api/job-postings/${id}`,{method:'DELETE'}).then(r=>r.json());
+  if (data.success) { showToast('✅ Posting closed'); await loadMyPostings(); }
+}
+
+function clearApplicantView() {
+  document.getElementById('applicants-role-select-card').style.display='block';
+  document.getElementById('applicants-list-card').style.display='none';
+}
+
+// ── Schedule Modal ─────────────────────────────────────────────────────────────
+let _currentSchedPostingId = null;
+let _schedRoundConfig = null;
+
+function openScheduleModal(applicationId, candidateName, jobRole, company, postingId) {
+  currentApplicationId=applicationId; schedMode='mcq';
+  _currentSchedPostingId = postingId || null;
+  _schedRoundConfig = null;
+  document.querySelectorAll('[id^="sched-mode-"]').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('sched-mode-mcq').classList.add('selected');
+  document.getElementById('schedule-candidate-info').innerHTML=`<strong>👤 ${candidateName}</strong><br><span style="color:var(--muted);">${jobRole} at ${company}</span>`;
+  document.getElementById('sched-result').style.display='none';
+  document.getElementById('sched-round-number').value='1';
+  document.getElementById('sched-round-name').value='Round 1';
+  const dt=new Date(); dt.setDate(dt.getDate()+1); dt.setMinutes(0,0,0);
+  document.getElementById('sched-datetime').value=dt.toISOString().slice(0,16);
+  document.getElementById('schedule-modal').classList.remove('hidden');
+  // Load round config if postingId available
+  if (postingId) {
+    fetch(`/api/round-config/${postingId}`).then(r=>r.json()).then(data => {
+      if (data.success && data.config) {
+        _schedRoundConfig = data.config;
+        // Update round number dropdown to show only configured rounds
+        const sel = document.getElementById('sched-round-number');
+        sel.innerHTML = data.config.rounds.map(r =>
+          `<option value="${r.round_number}">${r.round_name} (Round ${r.round_number})</option>`
+        ).join('');
+        // Auto-fill first round
+        onSchedRoundChange();
+      }
+    }).catch(()=>{});
+  }
+}
+
+function onSchedRoundChange() {
+  const sel = document.getElementById('sched-round-number');
+  const rn = parseInt(sel.value);
+  const ivBox = document.getElementById('sched-interviewer-info');
+  if (_schedRoundConfig) {
+    const r = _schedRoundConfig.rounds.find(r => r.round_number === rn);
+    if (r) {
+      document.getElementById('sched-round-name').value = r.round_name;
+      selectSchedMode(r.interview_mode);
+      if (ivBox) {
+        if (r.interviewer_name || r.interviewer_email) {
+          ivBox.style.display = 'block';
+          ivBox.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">Interviewer for this round</div>
+            <div style="font-size:13px;color:var(--text);font-weight:600;">${r.interviewer_name || ''}</div>
+            ${r.interviewer_email ? `<div style="font-size:12px;color:var(--muted);">${r.interviewer_email} <span style="color:var(--green);">(will be CC&apos;d on email)</span></div>` : ''}`;
+        } else { ivBox.style.display = 'none'; }
+      }
+      return;
+    }
+  }
+  document.getElementById('sched-round-name').value = `Round ${rn}`;
+  if (ivBox) ivBox.style.display = 'none';
+}
+
+function closeScheduleModal() { document.getElementById('schedule-modal').classList.add('hidden'); currentApplicationId=null; }
+function selectSchedMode(mode) {
+  schedMode=mode;
+  document.querySelectorAll('[id^="sched-mode-"]').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('sched-mode-'+mode).classList.add('selected');
+}
+
+function buildICSContent(title, description, location, startISO, durationMinutes) {
+  durationMinutes = durationMinutes || 60;
+  const pad = n => String(n).padStart(2,'0');
+  const toICS = iso => { const d=new Date(iso); return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`; };
+  const end = new Date(new Date(startISO).getTime() + durationMinutes*60000).toISOString();
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//RecruitAI//EN','CALSCALE:GREGORIAN','METHOD:REQUEST',
+    'BEGIN:VEVENT',`UID:recruitai-${Date.now()}@recruitai.app`,
+    `DTSTART:${toICS(startISO)}`,`DTEND:${toICS(end)}`,`SUMMARY:${title}`,
+    `DESCRIPTION:${description.replace(/\n/g,'\\n')}`,`LOCATION:${location}`,
+    'STATUS:CONFIRMED','BEGIN:VALARM','TRIGGER:-PT30M','ACTION:DISPLAY','DESCRIPTION:Interview in 30 minutes',
+    'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+
+function downloadICS(ics, filename) {
+  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+}
+
+function buildGoogleCalLink(title, desc, startISO, mins) {
+  mins=mins||60;
+  const pad=n=>String(n).padStart(2,'0');
+  const fmt=iso=>{const d=new Date(iso);return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;};
+  const end=new Date(new Date(startISO).getTime()+mins*60000).toISOString();
+  return 'https://calendar.google.com/calendar/render?'+new URLSearchParams({action:'TEMPLATE',text:title,dates:`${fmt(startISO)}/${fmt(end)}`,details:desc});
+}
+
+function buildOutlookLink(title, desc, startISO, mins) {
+  mins=mins||60;
+  const end=new Date(new Date(startISO).getTime()+mins*60000).toISOString();
+  return 'https://outlook.live.com/calendar/0/action/compose?'+new URLSearchParams({path:'/calendar/action/compose',rru:'addevent',subject:title,body:desc,startdt:startISO,enddt:end});
+}
+
+async function confirmSchedule() {
+  const dt=document.getElementById('sched-datetime').value;
+  if (!dt) { showToast('Pick a date and time'); return; }
+  const roundNumber = parseInt(document.getElementById('sched-round-number').value) || 1;
+  const roundName   = document.getElementById('sched-round-name').value.trim() || `Round ${roundNumber}`;
+  let interviewerName='', interviewerEmail='';
+  if (_schedRoundConfig) {
+    const r = _schedRoundConfig.rounds.find(r=>r.round_number===roundNumber);
+    if (r) { interviewerName=r.interviewer_name||''; interviewerEmail=r.interviewer_email||''; }
+  }
+  const btn=document.getElementById('sched-confirm-btn');
+  btn.textContent='Scheduling...'; btn.disabled=true;
+  const data=await fetch('/api/schedule-interview',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({application_id:currentApplicationId,scheduled_at:dt,interview_mode:schedMode,
+      round_number:roundNumber,round_name:roundName,interviewer_name:interviewerName,interviewer_email:interviewerEmail,
+    })}).then(r=>r.json());
+  btn.textContent='Schedule & Send Email'; btn.disabled=false;
+  if (!data.success) { showToast('Error: '+data.message); return; }
+  const calTitle = `${roundName} Interview - RecruitAI`;
+  const calDesc  = `Interview via RecruitAI\nRoom Code: ${data.room_code}\nMode: ${schedMode.replace(/_/g,' ')}${interviewerName ? '\nInterviewer: '+interviewerName : ''}`;
+  const gcalLink    = buildGoogleCalLink(calTitle, calDesc, dt);
+  const outlookLink = buildOutlookLink(calTitle, calDesc, dt);
+  const icsContent  = buildICSContent(calTitle, calDesc, 'RecruitAI Platform (Online)', dt);
+  const res=document.getElementById('sched-result');
+  res.style.display='block';
+  res.innerHTML=`
+    <div style="margin-bottom:12px;">
+      <strong>Interview Scheduled!</strong><br>
+      Round: <strong>${roundName}</strong><br>
+      Room Code: <code style="color:var(--accent2);background:var(--s2);padding:3px 8px;border-radius:4px;">${data.room_code}</code>
+      ${interviewerName?`<br>Interviewer: <strong>${interviewerName}</strong>${interviewerEmail?' ('+interviewerEmail+')':''}`:''}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Emails sent to candidate${interviewerEmail?' & interviewer':''}</div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Add to Calendar</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <a href="${gcalLink}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#1a73e8;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">Google Calendar</a>
+      <a href="${outlookLink}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#0078d4;color:#fff;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">Outlook</a>
+      <button onclick="downloadICS(this.getAttribute('data-ics'),'interview-${data.room_code}.ics')" data-ics="${icsContent.replace(/"/g,'&quot;')}" style="padding:8px 14px;background:rgba(67,97,238,.1);border:1.5px solid rgba(67,97,238,.3);color:var(--accent2);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Download .ics</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);">.ics works with Apple Calendar, Outlook desktop, Google Calendar & any calendar app</div>`;
+  showToast('Scheduled! Emails sent.');
+  setTimeout(()=>{ closeScheduleModal(); loadMyPostings(); }, 9000);
+}
+
+let currentMcqSource = 'hardcoded';
+
+function selectMcqSource(source) {
+  currentMcqSource = source;
+  document.getElementById('c-mcq-source').value = source;
+  const hardEl = document.getElementById('mcq-src-hardcoded');
+  const aiEl   = document.getElementById('mcq-src-ai');
+  if (source === 'hardcoded') {
+    hardEl.style.border = '2px solid var(--accent)';
+    hardEl.style.background = 'rgba(67,97,238,.07)';
+    hardEl.querySelector('div:nth-child(2)').style.color = 'var(--accent2)';
+    aiEl.style.border = '2px solid var(--border)';
+    aiEl.style.background = 'var(--s)';
+  } else {
+    aiEl.style.border = '2px solid var(--accent)';
+    aiEl.style.background = 'rgba(67,97,238,.07)';
+    aiEl.querySelector('div:nth-child(2)').style.color = 'var(--accent2)';
+    hardEl.style.border = '2px solid var(--border)';
+    hardEl.style.background = 'var(--s)';
+    hardEl.querySelector('div:nth-child(2)').style.color = 'var(--text)';
+  }
+}
+
+function listAvailableVoices() {
+  const panel = document.getElementById('available-voices-panel');
+  const content = document.getElementById('voices-list-content');
+  if (panel.style.display !== 'none') { panel.style.display='none'; return; }
+  if (!window.speechSynthesis) { showToast('Speech synthesis not available in this browser'); return; }
+  const voices = speechSynthesis.getVoices();
+  const accent = document.getElementById('rc-voice-accent')?.value || 'en-US';
+  const langCode = accent.split('-')[0];
+  const relevant = voices.filter(v => v.lang.startsWith(langCode) || v.lang === accent);
+  const all = voices.filter(v => v.lang.startsWith('en'));
+  if (!voices.length) {
+    content.innerHTML = '<span style="color:var(--muted2);">No voices loaded yet. Try clicking Preview Voice first.</span>';
+  } else {
+    const renderVoice = v => `<div style="padding:4px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <span><strong>${v.name}</strong> <span style="color:var(--muted);">(${v.lang})</span>${v.default?' ⭐':''}</span>
+      <button onclick="testSingleVoice('${v.name.replace(/'/g,"\\'")}')" style="padding:2px 8px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.2);border-radius:5px;color:var(--accent2);font-size:11px;cursor:pointer;">▶ Test</button>
+    </div>`;
+    const relevantHtml = relevant.length
+      ? `<div style="font-size:11px;color:var(--accent2);font-weight:700;margin-bottom:4px;">Matching selected accent (${accent}):</div>${relevant.map(renderVoice).join('')}<div style="margin:8px 0;font-size:11px;color:var(--muted);font-weight:700;">All English voices:</div>${all.map(renderVoice).join('')}`
+      : all.map(renderVoice).join('');
+    content.innerHTML = relevantHtml || '<span style="color:var(--muted2);">No English voices found on this device.</span>';
+  }
+  panel.style.display = 'block';
+}
+
+function testSingleVoice(voiceName) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const voices = speechSynthesis.getVoices();
+  const voice = voices.find(v => v.name === voiceName);
+  if (!voice) return;
+  const utt = new SpeechSynthesisUtterance('Hello, I am your AI interviewer. Welcome!');
+  utt.voice = voice;
+  utt.rate = 0.9;
+  speechSynthesis.speak(utt);
+}
+
+// Auto-hide MCQ source panel when not in MCQ mode
+function selectMode(mode) {
+  selectedMode=mode;
+  document.querySelectorAll('#page-create .mode-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('mode-'+mode).classList.add('selected');
+  document.getElementById('mcq-source-section').style.display = mode==='mcq' ? 'block' : 'none';
+}
+
+
+
+async function onRoleChange() {
+  const role = document.getElementById('c-role').value;
+  const candidateSection = document.getElementById('candidate-section');
+  const candidateLoading = document.getElementById('candidate-loading');
+  const candidateEmpty   = document.getElementById('candidate-empty');
+  const candidateSelect  = document.getElementById('c-candidate-select');
+  const infoCard         = document.getElementById('candidate-info-card');
+  const createBtn        = document.getElementById('create-session-btn');
+
+  // Reset
+  document.getElementById('c-candidate').value = '';
+  candidateSelect.innerHTML = '<option value="">— Select a candidate —</option>';
+  candidateSelect.style.display = 'none';
+  candidateEmpty.style.display  = 'none';
+  infoCard.style.display        = 'none';
+  createBtn.disabled            = true;
+
+  if (!role) { candidateSection.style.display='none'; return; }
+
+  candidateSection.style.display = 'block';
+  candidateLoading.style.display = 'flex';
+
+  try {
+    const data = await fetch(`/api/applicants-by-role?job_role=${encodeURIComponent(role)}`).then(r=>r.json());
+    candidateLoading.style.display = 'none';
+
+    if (!data.success || !data.candidates || data.candidates.length === 0) {
+      candidateEmpty.style.display = 'block';
+      return;
+    }
+
+    // Populate dropdown
+    candidateSelect.innerHTML = '<option value="">— Select a candidate —</option>'
+      + data.candidates.map(c =>
+          `<option value="${c.candidate_username}" data-name="${c.candidate_name}" data-email="${c.candidate_email}" data-status="${c.status}" data-applied="${c.applied_at}">${c.candidate_name} (@${c.candidate_username}) — Applied ${c.applied_at}</option>`
+        ).join('');
+    candidateSelect.style.display = 'block';
+
+    // If only one candidate, auto-select
+    if (data.candidates.length === 1) {
+      candidateSelect.selectedIndex = 1;
+      onCandidateSelect();
+    }
+  } catch(e) {
+    candidateLoading.style.display = 'none';
+    candidateEmpty.style.display   = 'block';
+    console.error('Failed to load applicants', e);
+  }
+}
+
+function onCandidateSelect() {
+  const sel      = document.getElementById('c-candidate-select');
+  const infoCard = document.getElementById('candidate-info-card');
+  const createBtn= document.getElementById('create-session-btn');
+  const opt      = sel.options[sel.selectedIndex];
+
+  if (!sel.value) {
+    document.getElementById('c-candidate').value = '';
+    infoCard.style.display = 'none';
+    createBtn.disabled = true;
+    return;
+  }
+
+  document.getElementById('c-candidate').value = sel.value;
+
+  const name    = opt.dataset.name    || sel.value;
+  const email   = opt.dataset.email   || '';
+  const status  = opt.dataset.status  || 'applied';
+  const applied = opt.dataset.applied || '';
+
+  const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('c-info-avatar').textContent = initials;
+  document.getElementById('c-info-name').textContent   = name;
+  document.getElementById('c-info-meta').textContent   = `@${sel.value}  ·  ${email}  ·  Applied ${applied}`;
+
+  const statusEl = document.getElementById('c-info-status');
+  const statusMap = {
+    applied:              ['Applied',              'background:rgba(79,142,247,.12);color:var(--accent2);border:1px solid rgba(79,142,247,.25)'],
+    shortlisted:          ['Shortlisted',          'background:rgba(217,119,6,.1);color:#92400e;border:1px solid rgba(217,119,6,.25)'],
+    interview_scheduled:  ['Interview Scheduled',  'background:rgba(5,150,105,.1);color:#065f46;border:1px solid rgba(5,150,105,.25)'],
+    rejected:             ['Rejected',             'background:rgba(220,38,38,.1);color:#991b1b;border:1px solid rgba(220,38,38,.25)'],
+  };
+  const [label, style] = statusMap[status] || ['Applied', statusMap.applied[1]];
+  statusEl.textContent  = label;
+  statusEl.style.cssText = style;
+
+  infoCard.style.display = 'flex';
+  createBtn.disabled     = false;
+}
+
+async function createSession() {
+  const candidate = document.getElementById('c-candidate').value.trim();
+  const jobRole   = document.getElementById('c-role').value;
+  if (!candidate) { showToast('⚠️ Please select a candidate'); return; }
+  if (!jobRole)   { showToast('⚠️ Select a job role'); return; }
+
+  const createBtn = document.getElementById('create-session-btn');
+  createBtn.disabled    = true;
+  createBtn.textContent = '⏳ Creating…';
+
+  try {
+    const data = await fetch('/api/create-session', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode, mcq_source: currentMcqSource})
+    }).then(r=>r.json());
+
+    if (!data.success) { showToast('❌ '+(data.message||'Failed')); return; }
+    lastCreatedSession = data.session;
+    document.getElementById('created-code').textContent = data.room_code;
+    document.getElementById('join-url').textContent = `${location.origin}/interview_room.html?room=${data.room_code}`;
+
+    // Google Calendar link
+    const calWrap = document.getElementById('cal-link-wrap');
+    const calLink = document.getElementById('cal-link');
+    if (data.calendar_link) {
+      calLink.href = data.calendar_link;
+      calWrap.style.display = 'block';
+    } else {
+      // Build a calendar link client-side as fallback
+      const now = new Date();
+      const end = new Date(now.getTime() + 60*60*1000);
+      const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      const params = new URLSearchParams({
+        action: 'TEMPLATE',
+        text: `RecruitAI Interview — ${jobRole}`,
+        details: `Candidate: ${candidate}\nJob Role: ${jobRole}\nRoom Code: ${data.room_code}\nJoin: ${location.origin}/interview_room.html?room=${data.room_code}`,
+        dates: `${fmt(now)}/${fmt(end)}`
+      });
+      calLink.href = 'https://calendar.google.com/calendar/render?' + params.toString();
+      calWrap.style.display = 'block';
+    }
+
+    document.getElementById('session-result').style.display = 'block';
+  } finally {
+    createBtn.disabled    = false;
+    createBtn.textContent = '🚀 Create Session';
+  }
+}
+
+function copyCode() { navigator.clipboard.writeText(document.getElementById('created-code').textContent); showToast('✅ Copied!'); }
+function openRecruiterRoom() { if (lastCreatedSession) window.open(`/recruiter_room.html?room=${lastCreatedSession.room_code}`,'_blank'); }
+function resetCreateForm() {
+  document.getElementById('session-result').style.display = 'none';
+  document.getElementById('cal-link-wrap').style.display  = 'none';
+  document.getElementById('c-role').value = '';
+  document.getElementById('c-candidate').value = '';
+  document.getElementById('candidate-section').style.display = 'none';
+  document.getElementById('candidate-info-card').style.display = 'none';
+  document.getElementById('create-session-btn').disabled = true;
+  lastCreatedSession = null;
+}
+
+// ── Date filter UI helpers ────────────────────────────────────────────────────
+function onPeriodFilterChange() {
+  const period = document.getElementById('ov-filter-period')?.value || 'all';
+  const dateEl  = document.getElementById('ov-filter-date');
+  const monthEl = document.getElementById('ov-filter-month');
+  const yearEl  = document.getElementById('ov-filter-year');
+  const resetBtn= document.getElementById('ov-reset-btn');
+  const badge   = document.getElementById('ov-filter-badge');
+
+  // Set today as default for day picker
+  if (period === 'day' && dateEl && !dateEl.value) {
+    dateEl.value = new Date().toISOString().slice(0,10);
+  }
+  // Set current month/year as default
+  if ((period === 'month' || period === 'year') && yearEl) {
+    const cur = new Date();
+    if (!yearEl.value || yearEl.value === '') yearEl.value = cur.getFullYear();
+    if (monthEl && !monthEl.value) monthEl.value = cur.getMonth()+1;
+  }
+
+  dateEl.style.display  = period==='day'   ? 'block' : 'none';
+  monthEl.style.display = period==='month' ? 'block' : 'none';
+  yearEl.style.display  = (period==='month'||period==='year') ? 'block' : 'none';
+  resetBtn.style.display = period!=='all'  ? 'block' : 'none';
+  badge.style.display   = 'none';
+
+  applyOverviewFilters();
+}
+
+function resetDateFilter() {
+  document.getElementById('ov-filter-period').value = 'all';
+  onPeriodFilterChange();
+}
+
+// ── Pagination state ──────────────────────────────────────────────────────────
+let _ovCurrentPage = 1;
+const OV_PAGE_SIZE = 10;
+
+function changeOvPage(delta) {
+  _ovCurrentPage += delta;
+  applyOverviewFilters(false); // don't reset page
+}
+
+// ── Filters & Tables ──────────────────────────────────────────────────────────
+function applyOverviewFilters(resetPage=true) {
+  if (resetPage) _ovCurrentPage = 1;
+  const name = (document.getElementById('ov-filter-name')?.value||'').toLowerCase();
+
+  // Filter by name + date
+  const filtered = allSubmissionsData.filter(s => {
+    const n = (s.full_name||s.username||'').toLowerCase();
+    return (!name || n.includes(name)) && _dateMatchesFilter(s.submitted_at);
+  });
+
+  // Update stats based on filtered data
+  _updateFilteredStats(filtered);
+
+  // Pagination
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / OV_PAGE_SIZE));
+  _ovCurrentPage = Math.min(_ovCurrentPage, totalPages);
+  const start = (_ovCurrentPage-1)*OV_PAGE_SIZE;
+  const pageData = filtered.slice(start, start+OV_PAGE_SIZE);
+
+  renderSessionsTable(pageData, 'recent-table');
+  _renderPagination(total, totalPages);
+
+  // Update badge
+  const period = document.getElementById('ov-filter-period')?.value||'all';
+  const badge = document.getElementById('ov-filter-badge');
+  if (period !== 'all' && badge) {
+    badge.style.display='block';
+    badge.textContent = `${total} result${total!==1?'s':''}`;
+  } else if (badge) { badge.style.display='none'; }
+}
+
+function _updateFilteredStats(filtered) {
+  const period = document.getElementById('ov-filter-period')?.value||'all';
+  if (period === 'all') {
+    // Use raw API stats
+    document.getElementById('s-candidates').textContent = _rawStats.total_candidates ?? '—';
+    document.getElementById('s-submissions').textContent = _rawStats.total_submissions ?? '—';
+    document.getElementById('s-violations').textContent = _rawStats.total_violations ?? '—';
+    document.getElementById('s-active').textContent = _rawStats.active_sessions ?? '—';
+    document.getElementById('s-jobs').textContent = _rawJpData.length ?? '—';
+  } else {
+    // Derive from filtered submissions
+    const candidates = new Set(filtered.map(s=>s.username||s.full_name)).size;
+    const violations = filtered.reduce((acc,s)=>acc+(s.total_violations||0),0);
+    const active = filtered.filter(s=>!s.passed && s.credibility_score===100).length;
+    document.getElementById('s-candidates').textContent = candidates;
+    document.getElementById('s-submissions').textContent = filtered.length;
+    document.getElementById('s-violations').textContent = violations;
+    document.getElementById('s-active').textContent = _rawStats.active_sessions ?? '—';
+    document.getElementById('s-jobs').textContent = _rawJpData.length ?? '—';
+  }
+}
+
+function _renderPagination(total, totalPages) {
+  const pg = document.getElementById('ov-pagination');
+  if (!pg) return;
+  if (total === 0) { pg.style.display='none'; return; }
+  pg.style.display = 'flex';
+  const start = (_ovCurrentPage-1)*OV_PAGE_SIZE+1;
+  const end = Math.min(_ovCurrentPage*OV_PAGE_SIZE, total);
+  document.getElementById('ov-page-info').textContent = `Showing ${start}–${end} of ${total} sessions`;
+
+  const prevBtn = document.getElementById('ov-prev-btn');
+  const nextBtn = document.getElementById('ov-next-btn');
+  prevBtn.disabled = _ovCurrentPage <= 1;
+  prevBtn.style.opacity = _ovCurrentPage<=1 ? '0.4' : '1';
+  nextBtn.disabled = _ovCurrentPage >= totalPages;
+  nextBtn.style.opacity = _ovCurrentPage>=totalPages ? '0.4' : '1';
+
+  // Page number buttons (show max 5 around current)
+  const btns = document.getElementById('ov-page-btns');
+  let pages = [];
+  for (let i=1;i<=totalPages;i++) {
+    if (i===1||i===totalPages||Math.abs(i-_ovCurrentPage)<=1) pages.push(i);
+    else if (pages[pages.length-1]!=='…') pages.push('…');
+  }
+  btns.innerHTML = pages.map(p => p==='…'
+    ? `<span style="padding:6px 4px;font-size:12px;color:var(--muted);">…</span>`
+    : `<button onclick="_ovCurrentPage=${p};applyOverviewFilters(false)" style="padding:6px 11px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${p===_ovCurrentPage?'var(--accent)':'var(--border)'};background:${p===_ovCurrentPage?'var(--accent)':'var(--s2)'};color:${p===_ovCurrentPage?'#fff':'var(--text)'};">${p}</button>`
+  ).join('');
+}
+
+function renderSessionsTable(subs, containerId) {
+  const el=document.getElementById(containerId);
+  if (!subs?.length) { el.innerHTML='<div class="empty">No sessions found</div>'; return; }
+  el.innerHTML=`<div style="overflow-x:auto;"><table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+    ${subs.map(s=>`<tr><td><strong>${s.full_name||s.username}</strong></td><td>${s.job_role||'—'}</td>
+    <td><span class="badge badge-blue">${(s.mode||'mcq').replace('_',' ')}</span></td>
+    <td><strong style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</strong></td>
+    <td><strong>${s.interview_score||0}</strong></td>
+    <td>${s.passed?'<span class="badge badge-green">PASSED</span>':'<span class="badge badge-red">FAILED</span>'}</td>
+    <td style="color:var(--muted);font-size:12px;">${s.submitted_at}</td>
+
+    </tr>`).join('')}
+  </tbody></table></div>`;
+}
+function downloadSessionsExcel() {
+  // Export ALL data matching current name + date filter (not just current page)
+  const name = (document.getElementById('ov-filter-name')?.value||'').toLowerCase();
+  const exportData = allSubmissionsData.filter(s => {
+    const n = (s.full_name||s.username||'').toLowerCase();
+    return (!name || n.includes(name)) && _dateMatchesFilter(s.submitted_at);
+  });
+  if (!exportData.length) { showToast('No data to export for current filter'); return; }
+  const h=['#','Candidate','Username','Role','Mode','Credibility Score','Interview Score','Status','Violations','Date'];
+  const rows=exportData.map((s,i)=>[
+    i+1,
+    s.full_name||s.username,
+    s.username||'',
+    s.job_role||'',
+    (s.mode||'mcq').replace(/_/g,' '),
+    s.credibility_score,
+    s.interview_score||0,
+    s.passed?'PASSED':'FAILED',
+    s.total_violations||0,
+    s.submitted_at
+  ]);
+  const tsv=[h,...rows].map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join('\t')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+tsv],{type:'application/vnd.ms-excel'}));
+  const period = document.getElementById('ov-filter-period')?.value||'all';
+  const suffix = period!=='all' ? `_${period}` : '';
+  a.download=`RecruitAI_Sessions${suffix}_${new Date().toISOString().slice(0,10)}.xls`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast(`✅ Exported ${exportData.length} sessions`);
+}
+
+function scoreColor(s) { return s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e'; }
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg = document.getElementById('page-'+name);
+  if (pg) pg.classList.add('active');
+  if (el) el.classList.add('active');
+  if (name==='overview'||name==='sessions') loadDashboard();
+  if (name==='jobs'||name==='applicants') loadMyPostings();
+  if (name==='emailsettings') loadEmailSettings();
+  if (name==='roundconfig') { loadRoundConfigPage(); updateVoicePreview(); }
+  if (name==='scheduled') loadScheduled();
+  if (name==='interviewers') loadInterviewersPage();
+  if (name==='profile') loadCompanyProfile();
+}
+function showToast(msg,dur=3500) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),dur); }
+
+// ── Scheduled Interviews (tabbed) ──────────────────────────────────────────────
+let _schedAllData = [];
+let _currentSchedTab = 'upcoming';
+
+function setSchedTab(tab) {
+  _currentSchedTab = tab;
+  // Update tab button styles
+  ['upcoming','live','completed'].forEach(t => {
+    const btn = document.getElementById('sched-tab-'+t);
+    if (!btn) return;
+    if (t === tab) {
+      btn.style.background = t==='live' ? '#dc2626' : 'var(--accent)';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--muted)';
+    }
+  });
+  const labels = { upcoming:'🗓️ Upcoming Interviews', live:'🔴 Live / Active Interviews', completed:'✅ Completed Interviews' };
+  const lbl = document.getElementById('sched-tab-label');
+  if (lbl) lbl.textContent = labels[tab];
+  renderScheduledTab();
+}
+
+function renderScheduledTab() {
+  const el = document.getElementById('scheduled-table');
+  if (!el) return;
+  const now = new Date();
+  let filtered = [];
+  if (_currentSchedTab === 'upcoming') {
+    filtered = _schedAllData.filter(s => {
+      const st = s.session_status || 'pending';
+      return st !== 'completed' && st !== 'abandoned' && st !== 'active';
+    });
+  } else if (_currentSchedTab === 'live') {
+    filtered = _schedAllData.filter(s => (s.session_status || '') === 'active');
+  } else {
+    filtered = _schedAllData.filter(s => {
+      const st = s.session_status || '';
+      return st === 'completed' || st === 'abandoned';
+    });
+  }
+
+  if (!filtered.length) {
+    const emptyMsgs = { upcoming:'No upcoming interviews scheduled', live:'No live sessions right now', completed:'No completed interviews yet' };
+    el.innerHTML = `<div class="empty">${emptyMsgs[_currentSchedTab]}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(s => {
+    const st = s.session_status || 'pending';
+    const isLive = (s.interview_mode || '') === 'live_recruiter';
+    const isDone = st === 'completed' || st === 'abandoned';
+    const isActive = st === 'active';
+    const modeLabel = (s.interview_mode || 'mcq').replace(/_/g,' ').toUpperCase();
+    const modeColors = {'mcq':'rgba(67,97,238,.1);color:var(--accent2)','ai interview':'rgba(124,58,237,.1);color:#7c3aed','live recruiter':'rgba(5,150,105,.1);color:#059669'};
+    const modeColor = modeColors[(s.interview_mode||'mcq').replace(/_/g,' ')] || 'rgba(67,97,238,.1);color:var(--accent2)';
+    let actionBtn = '';
+    if (!s.room_code) {
+      actionBtn = '<span style="color:var(--muted);font-size:12px;">No room</span>';
+    } else if (isDone) {
+      actionBtn = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Session ended</div>
+        <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;width:100%;">📋 View Results</button>`;
+    } else if (isActive) {
+      const lbl = isLive ? '🎥 Rejoin Session' : '👁 Monitor Live';
+      actionBtn = `<div style="font-size:11px;color:#059669;margin-bottom:4px;font-weight:600;">● In progress</div>
+        <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(5,150,105,.12);color:#059669;border:1px solid rgba(5,150,105,.3);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
+    } else {
+      const lbl = isLive ? '🎥 Join Session' : '👁 Monitor';
+      actionBtn = `<button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;width:100%;">${lbl}</button>`;
+    }
+    return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
+      <div style="min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.candidate_name||'—'}</div>
+          <span style="background:${modeColor};padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;">${modeLabel}</span>
+          ${isDone?`<span style="background:rgba(100,116,139,.1);color:var(--muted);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">${st==='abandoned'?'⚠ ABANDONED':'✅ COMPLETED'}</span>`:isActive?`<span style="background:rgba(5,150,105,.1);color:#059669;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;">● LIVE</span>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">💼 ${s.job_role||'—'} &nbsp;·&nbsp; 🏢 ${s.company_name||''} &nbsp;·&nbsp; 🗓️ ${(s.scheduled_at||'—').split(' ')[0]}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <code style="background:var(--bg2);color:var(--accent2);padding:2px 8px;border-radius:5px;font-size:12px;font-weight:700;letter-spacing:1px;">${s.room_code||'—'}</code>
+          ${s.room_code?`<button onclick="navigator.clipboard.writeText('${s.room_code}');showToast('Room code copied!')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;" title="Copy">📋</button>`:''}
+          ${s.round_name?`<span style="font-size:11px;color:var(--muted);">Round: <strong>${s.round_name}</strong></span>`:''}
+          ${isDone && s.session_score!=null?`<span style="font-size:11px;font-weight:700;color:${s.session_score>=60?'#059669':'#dc2626'};">Score: ${s.session_score}%</span>`:''}
+          ${isDone && s.session_credibility!=null?`<span style="font-size:11px;color:var(--muted);">Credibility: <strong>${s.session_credibility}</strong></span>`:''}
+        </div>
+      </div>
+      <div style="min-width:130px;text-align:right;">
+        ${actionBtn}
+        ${s.calendar_link?`<a href="${s.calendar_link}" target="_blank" style="display:inline-block;margin-top:6px;font-size:11px;color:var(--accent2);text-decoration:none;">📅 Calendar</a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadScheduled() {
+  const el = document.getElementById('scheduled-table');
+  if (!el) return;
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const data = await fetch('/api/my-scheduled-interviews').then(r=>r.json());
+    _schedAllData = (data.success && data.scheduled) ? data.scheduled : [];
+    renderScheduledTab();
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Failed to load scheduled interviews</div>';
+  }
+}
+
+// ── Outlook Settings ──────────────────────────────────────────────────────────
+function updateOutlookPreview() {
+  const email = (document.getElementById('ol-email')?.value||'').trim();
+  const preview = document.getElementById('outlook-preview');
+  const addr = document.getElementById('outlook-preview-addr');
+  if (preview && addr) {
+    if (email.includes('@')) { preview.style.display='block'; addr.textContent=email; }
+    else { preview.style.display='none'; }
+  }
+}
+
+function toggleOutlookPassVis() {
+  const inp = document.getElementById('ol-pass');
+  if (inp) inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+function showOutlookBanner(type, html) {
+  const b = document.getElementById('outlook-status-banner');
+  if (!b) return;
+  b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.gap = '10px';
+  if (type==='success') { b.style.background='rgba(5,150,105,.08)'; b.style.border='1.5px solid rgba(5,150,105,.25)'; b.style.color='#065f46'; }
+  else if (type==='warn') { b.style.background='rgba(0,120,212,.08)'; b.style.border='1.5px solid rgba(0,120,212,.25)'; b.style.color='#0078d4'; }
+  else { b.style.background='rgba(220,38,38,.07)'; b.style.border='1.5px solid rgba(220,38,38,.2)'; b.style.color='#991b1b'; }
+  b.innerHTML = html;
+}
+
+async function saveOutlookSettings() {
+  const email = document.getElementById('ol-email').value.trim();
+  const pass  = document.getElementById('ol-pass').value.replace(/ /g,'').trim();
+  if (!email) { showOutlookBanner('error','<span>❌</span> Please enter your Outlook email'); return; }
+  const validDomains = ['@outlook.com','@hotmail.com','@live.com','@microsoft.com'];
+  const isValid = validDomains.some(d=>email.endsWith(d)) || email.includes('@');
+  if (!isValid) { showOutlookBanner('warn','<span>⚠️</span> Please enter a valid Outlook/Microsoft email'); return; }
+  const btn = document.getElementById('ol-save-btn');
+  btn.disabled=true; btn.textContent='⏳ Testing connection…';
+  try {
+    const data = await fetch('/api/recruiter/outlook-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({smtp_email:email,smtp_app_password:pass,smtp_provider:'outlook'})}).then(r=>r.json());
+    if (data.success) {
+      showOutlookBanner('success',`<span style="font-size:20px;">✅</span> <div><strong>Outlook connected!</strong><br><span style="font-weight:400;font-size:13px;">Emails will send from ${email}</span></div>`);
+      document.getElementById('ol-pass').value='';
+      document.getElementById('ol-pass').placeholder='✓ Password saved';
+      showToast('✅ Outlook connected!');
+    } else {
+      showOutlookBanner('error',`<span>❌</span> ${data.message||'Connection failed — check your app password'}`);
+    }
+  } catch(e) { showOutlookBanner('error','<span>❌</span> Network error — please try again'); }
+  finally { btn.disabled=false; btn.innerHTML='💾 Save &amp; Test Outlook'; }
+}
+
+async function clearOutlookSettings() {
+  if (!confirm('Disconnect Outlook? Emails will not be sent until you reconnect.')) return;
+  await fetch('/api/recruiter/outlook-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({smtp_email:'',smtp_app_password:'',smtp_provider:'outlook'})});
+  document.getElementById('ol-email').value='';
+  document.getElementById('ol-pass').value='';
+  document.getElementById('ol-pass').placeholder='App password from Microsoft account';
+  document.getElementById('outlook-preview').style.display='none';
+  showOutlookBanner('warn','<span>⚠️</span> <div><strong>Outlook disconnected</strong><br><span style="font-weight:400;font-size:13px;">Reconnect to resume email notifications</span></div>');
+  showToast('Outlook disconnected');
+}
+
+// ── Company Profile Functions ──────────────────────────────────────────────────
+async function loadCompanyProfile() {
+  try {
+    const data = await fetch('/api/recruiter/profile').then(r=>r.json());
+    if (!data.success) return;
+    const p = data.profile || data; // API returns fields at top level
+    const setVal = (id,val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
+    setVal('prof-company-name', p.company_name || _companyName);
+    setVal('prof-firstname', p.first_name);
+    setVal('prof-lastname', p.last_name);
+    setVal('prof-email', p.email);
+    setVal('prof-industry', p.industry);
+    setVal('prof-size', p.company_size);
+    setVal('prof-website', p.website);
+    setVal('prof-about', p.about);
+    document.getElementById('profile-company-display').textContent = p.company_name || _companyName;
+    document.getElementById('profile-logo-letter').textContent = (p.company_name||_companyName||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    if (p.logo_url) {
+      document.getElementById('profile-logo-img').src = p.logo_url;
+      document.getElementById('profile-logo-img').style.display = 'block';
+      document.getElementById('profile-logo-letter').style.display = 'none';
+    }
+  } catch(e) { console.error('Profile load failed',e); }
+}
+
+function previewLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2*1024*1024) { showToast('⚠️ Logo must be under 2MB'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('profile-logo-img');
+    const letter = document.getElementById('profile-logo-letter');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    letter.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function checkPassStrength(val) {
+  const bar = document.getElementById('pass-strength-bar');
+  const lbl = document.getElementById('pass-strength-label');
+  if (!bar || !lbl) return;
+  if (!val) { bar.style.width='0'; bar.style.background='var(--border)'; lbl.textContent=''; return; }
+  let score = 0;
+  if (val.length >= 8)  score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [{w:'25%',c:'#ef4444',t:'Weak'},{w:'50%',c:'#f59e0b',t:'Fair'},{w:'75%',c:'#3b82f6',t:'Good'},{w:'100%',c:'#10b981',t:'Strong'}];
+  const l = levels[score-1] || levels[0];
+  bar.style.width = l.w; bar.style.background = l.c;
+  lbl.textContent = l.t; lbl.style.color = l.c;
+}
+
+function toggleProfPassVis(fieldId) {
+  const inp = document.getElementById(fieldId);
+  if (inp) inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+function showProfileBanner(type, msg) {
+  const b = document.getElementById('profile-save-banner');
+  if (!b) return;
+  b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.gap = '10px';
+  if (type==='success') { b.style.background='rgba(5,150,105,.08)'; b.style.border='1.5px solid rgba(5,150,105,.25)'; b.style.color='#065f46'; }
+  else { b.style.background='rgba(220,38,38,.07)'; b.style.border='1.5px solid rgba(220,38,38,.2)'; b.style.color='#991b1b'; }
+  b.innerHTML = msg;
+  setTimeout(()=>{ b.style.display='none'; }, 6000);
+}
+
+async function saveCompanyProfile() {
+  const companyName = document.getElementById('prof-company-name')?.value?.trim();
+  const firstName   = document.getElementById('prof-firstname')?.value?.trim();
+  const lastName    = document.getElementById('prof-lastname')?.value?.trim();
+  const curPass     = document.getElementById('prof-cur-pass')?.value;
+  const newPass     = document.getElementById('prof-new-pass')?.value;
+  const confPass    = document.getElementById('prof-conf-pass')?.value;
+
+  if (!companyName) { showProfileBanner('error','<span>❌</span> Company name is required.'); return; }
+
+  // Password change validation (only if filled)
+  if (newPass || confPass || curPass) {
+    if (!curPass) { showProfileBanner('error','<span>❌</span> Please enter your current password to change it.'); return; }
+    if (newPass !== confPass) { showProfileBanner('error','<span>❌</span> New passwords do not match.'); return; }
+    if (newPass.length < 8) { showProfileBanner('error','<span>❌</span> New password must be at least 8 characters.'); return; }
+  }
+
+  // Upload logo if changed
+  let logoUrl = null;
+  const logoInput = document.getElementById('profile-logo-input');
+  if (logoInput?.files?.length) {
+    const formData = new FormData();
+    formData.append('logo', logoInput.files[0]);
+    try {
+      const uploadRes = await fetch('/api/recruiter/upload-logo', { method:'POST', body: formData }).then(r=>r.json());
+      if (uploadRes.url) logoUrl = uploadRes.url;
+    } catch(e) { console.warn('Logo upload failed:', e); }
+  }
+
+  const payload = {
+    company_name: companyName,
+    first_name: firstName,
+    last_name: lastName,
+    industry: document.getElementById('prof-industry')?.value || '',
+    company_size: document.getElementById('prof-size')?.value || '',
+    website: document.getElementById('prof-website')?.value?.trim() || '',
+    about: document.getElementById('prof-about')?.value?.trim() || '',
+    ...(logoUrl ? { logo_url: logoUrl } : {}),
+    ...(newPass ? { current_password: curPass, new_password: newPass } : {}),
+  };
+
+  try {
+    const data = await fetch('/api/recruiter/profile', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
+    if (data.success) {
+      _companyName = companyName;
+      document.getElementById('admin-name').textContent = companyName;
+      document.getElementById('profile-company-display').textContent = companyName;
+      const jpComp = document.getElementById('jp-company');
+      if (jpComp) jpComp.value = companyName;
+      // Clear password fields
+      ['prof-cur-pass','prof-new-pass','prof-conf-pass'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      showProfileBanner('success','<span style="font-size:20px;">✅</span> <div><strong>Profile saved!</strong><br><span style="font-weight:400;">Your company details have been updated.</span></div>');
+      showToast('✅ Company profile saved!');
+    } else {
+      showProfileBanner('error','<span>❌</span> ' + (data.message||'Failed to save profile.'));
+    }
+  } catch(e) { showProfileBanner('error','<span>❌</span> Network error. Please try again.'); }
+}
+
+// ── Interviewers Page ─────────────────────────────────────────────────────────
+async function loadInterviewersPage() {
+  const el = document.getElementById('interviewers-table');
+  if (!el) return;
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const data = await fetch('/api/my-interviewer-assignments').then(r=>r.json());
+    if (!data.success || !data.assignments || !data.assignments.length) {
+      el.innerHTML = `<div class="empty" style="padding:40px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">🎙️</div>
+        <div style="font-weight:700;margin-bottom:6px;">No interviewers assigned yet</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Go to <strong>Round Config</strong>, add an interviewer name &amp; email to a round, then schedule an interview — they'll automatically receive an email with a portal link.</div>
+      </div>`;
+      return;
+    }
+    const statusStyle = {
+      assigned: 'background:rgba(67,97,238,.1);color:var(--accent2);border:1px solid rgba(67,97,238,.2);',
+      seen:     'background:rgba(217,119,6,.1);color:#d97706;border:1px solid rgba(217,119,6,.2);',
+      completed:'background:rgba(5,150,105,.1);color:#047857;border:1px solid rgba(5,150,105,.25);'
+    };
+    const statusLabel = { assigned:'📨 Assigned', seen:'👀 Seen', completed:'✅ Completed' };
+    el.innerHTML = data.assignments.map(a => {
+      const ss = statusStyle[a.status] || statusStyle.assigned;
+      const sl = statusLabel[a.status] || a.status;
+      const scoreHtml = a.interviewer_score != null
+        ? `<div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:800;color:${a.interviewer_score>=80?'#059669':a.interviewer_score>=60?'#d97706':'#dc2626'};">${a.interviewer_score}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Score</div>`
+        : `<div style="font-size:12px;color:var(--muted2);font-style:italic;">Awaiting<br>evaluation</div>`;
+      const portalUrl = `${location.origin}/interviewer_portal.html?assignment=${a.id}&email=${encodeURIComponent(a.interviewer_email)}`;
+      return `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+            <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;">${a.interviewer_name}</div>
+            <span style="${ss}padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;">${sl}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">📧 ${a.interviewer_email}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">👤 Candidate: <strong style="color:var(--text);">${a.candidate_name||'—'}</strong></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">💼 ${a.job_role||'—'} &nbsp;·&nbsp; 🔄 ${a.round_name||'Round 1'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:3px;">📅 Assigned: ${a.created_at||'—'}</div>
+          ${a.room_code ? `<div style="font-size:12px;color:var(--muted);margin-bottom:${a.interviewer_feedback?'10':'0'}px;">🔑 <code style="background:var(--bg2);color:var(--accent2);padding:1px 7px;border-radius:4px;font-size:11px;letter-spacing:.5px;">${a.room_code}</code></div>` : ''}
+          ${a.interviewer_feedback ? `<div style="padding:10px 12px;background:var(--s);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;font-style:italic;">"${a.interviewer_feedback}"</div>` : ''}
+        </div>
+        <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:110px;">
+          ${scoreHtml}
+          <button onclick="navigator.clipboard.writeText('${portalUrl}');showToast('Portal link copied!')" class="btn-sm btn-blue" style="width:100%;">📋 Copy Link</button>
+          <button onclick="deleteInterviewerAssignment(${a.id},this)" class="btn-sm btn-red" style="width:100%;">🗑 Remove</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Failed to load. Please refresh.</div>';
+  }
+}
+
+async function deleteInterviewerAssignment(id, btn) {
+  if (!confirm('Remove this interviewer assignment?')) return;
+  btn.disabled = true;
+  const d = await fetch(`/api/delete-interviewer-assignment/${id}`, {method:'DELETE'}).then(r=>r.json());
+  if (d.success) { loadInterviewersPage(); showToast('Assignment removed.'); }
+  else { showToast('Error: ' + d.message); btn.disabled = false; }
+}
+
+// ── Email Settings ─────────────────────────────────────────────────────────────
+async function loadEmailSettings() {
+  try {
+    const data = await fetch('/api/recruiter/email-settings').then(r=>r.json());
+    if (!data.success) return;
+    if (data.smtp_email) {
+      document.getElementById('es-email').value = data.smtp_email;
+      updateEmailPreview();
+      showEmailBanner('success', `<span style="font-size:20px;">✅</span>&nbsp; <div><strong>Gmail connected!</strong><br><span style="font-weight:400;font-size:13px;">Sending from: ${data.smtp_email}</span></div>`);
+    } else {
+      showEmailBanner('warn', '<span style="font-size:20px;">⚠️</span>&nbsp; <div><strong>No Gmail connected yet</strong><br><span style="font-weight:400;font-size:13px;">Follow the 3 steps above and click Save & Test</span></div>');
+    }
+  } catch(e) { console.error('Email settings load failed', e); }
+}
+
+function updateEmailPreview() {
+  const email = (document.getElementById('es-email')?.value || '').trim();
+  const preview = document.getElementById('email-preview');
+  const addr = document.getElementById('preview-addr');
+  if (preview && addr) {
+    if (email.includes('@')) { preview.style.display='block'; addr.textContent=email; }
+    else { preview.style.display='none'; }
+  }
+}
+
+function showEmailBanner(type, html) {
+  const b = document.getElementById('email-status-banner');
+  if (!b) return;
+  b.style.display = 'flex';
+  b.style.alignItems = 'center';
+  b.style.gap = '10px';
+  if (type==='success') { b.style.background='rgba(5,150,105,.08)'; b.style.border='1.5px solid rgba(5,150,105,.25)'; b.style.color='#065f46'; }
+  else if (type==='warn') { b.style.background='rgba(217,119,6,.08)'; b.style.border='1.5px solid rgba(217,119,6,.25)'; b.style.color='#92400e'; }
+  else { b.style.background='rgba(220,38,38,.07)'; b.style.border='1.5px solid rgba(220,38,38,.2)'; b.style.color='#991b1b'; }
+  b.innerHTML = html;
+}
+
+function togglePassVis() {
+  const inp = document.getElementById('es-pass');
+  if (inp) inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+async function saveEmailSettings() {
+  const email = document.getElementById('es-email').value.trim();
+  const pass  = document.getElementById('es-pass').value.replace(/ /g,'').trim();
+  if (!email) { showEmailBanner('error','<span>❌</span> Please enter your Gmail address'); return; }
+  if (!email.endsWith('@gmail.com')) { showEmailBanner('warn','<span>⚠️</span> Only Gmail addresses work (must end in @gmail.com)'); return; }
+  const btn = document.getElementById('es-save-btn');
+  btn.disabled=true; btn.textContent='⏳ Testing connection…';
+  try {
+    const data = await fetch('/api/recruiter/email-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({smtp_email:email,smtp_app_password:pass})}).then(r=>r.json());
+    if (data.verified===false) {
+      showEmailBanner('error',`<span style="font-size:18px;">❌</span> <div><strong>Connection failed</strong><br><span style="font-weight:400;font-size:13px;">${data.message} — make sure you copied the App Password correctly</span></div>`);
+    } else if (data.success) {
+      showEmailBanner('success',`<span style="font-size:20px;">✅</span> <div><strong>Gmail connected!</strong><br><span style="font-weight:400;font-size:13px;">Emails will now send automatically from ${email}</span></div>`);
+      document.getElementById('es-pass').value='';
+      document.getElementById('es-pass').placeholder='✓ Password saved';
+      showToast('✅ Gmail connected!');
+    } else {
+      showEmailBanner('error',`<span>❌</span> ${data.message||'Failed to save'}`);
+    }
+  } catch(e) { showEmailBanner('error','<span>❌</span> Network error — please try again'); }
+  finally { btn.disabled=false; btn.innerHTML='💾 Save & Test Connection'; }
+}
+
+async function clearEmailSettings() {
+  if (!confirm('Disconnect your Gmail? Emails will not be sent until you reconnect.')) return;
+  await fetch('/api/recruiter/email-settings',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({smtp_email:'',smtp_app_password:''})});
+  document.getElementById('es-email').value='';
+  document.getElementById('es-pass').value='';
+  document.getElementById('es-pass').placeholder='abcd efgh ijkl mnop';
+  document.getElementById('email-preview').style.display='none';
+  showEmailBanner('warn','<span style="font-size:20px;">⚠️</span> <div><strong>Gmail disconnected</strong><br><span style="font-weight:400;font-size:13px;">Reconnect to resume email notifications</span></div>');
+  showToast('Gmail disconnected');
+}
+
+init();
+</script>
+</body>
+</html>

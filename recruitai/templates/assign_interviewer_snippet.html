@@ -1,0 +1,193 @@
+<!--
+  ══════════════════════════════════════════════════════════════════════════════
+  ASSIGN INTERVIEWER — Modal + JS snippet
+  Copy the CSS block into your <style> tag in recruiter_dashboard.html
+  Copy the modal HTML anywhere in <body>
+  Copy the <script> block before </body>
+  Then call: openAssignInterviewer(sessionId, roundNumber, roundName, scheduledId)
+  ══════════════════════════════════════════════════════════════════════════════
+-->
+
+<!-- ── CSS: paste inside existing <style> ── -->
+<style id="COPY-THIS-CSS">
+/* Assign Interviewer Modal */
+#aim-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+#aim-overlay.hidden{display:none;}
+.aim-card{background:var(--s);border:1px solid var(--border);border-radius:18px;padding:32px;width:100%;max-width:540px;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:aimIn .25s cubic-bezier(.34,1.3,.64,1);}
+@keyframes aimIn{from{opacity:0;transform:scale(.94) translateY(14px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.aim-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.aim-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;}
+.aim-close{background:transparent;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;transition:all .15s;}
+.aim-close:hover{background:var(--bg2);color:var(--text);}
+.aim-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.aim-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.aim-fg label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600;}
+.aim-fg input,.aim-fg textarea{width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.aim-fg textarea{resize:vertical;min-height:76px;}
+.aim-fg input:focus,.aim-fg textarea:focus{border-color:var(--accent);}
+.aim-fg input::placeholder,.aim-fg textarea::placeholder{color:var(--muted2);}
+.aim-fg{margin-bottom:14px;}
+.aim-submit{width:100%;padding:12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:4px;}
+.aim-submit:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,142,247,0.3);}
+.aim-submit:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+.aim-msg{font-size:13px;margin-top:12px;padding:10px 14px;border-radius:8px;display:none;}
+.aim-msg.success{background:rgba(5,150,105,.1);color:#047857;border:1px solid rgba(5,150,105,.25);display:block;}
+.aim-msg.error{background:rgba(220,38,38,.08);color:#dc2626;border:1px solid rgba(220,38,38,.2);display:block;}
+/* Assigned list */
+.aim-assigned-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:20px 0 10px;padding-top:16px;border-top:1px solid var(--border);}
+.aim-irow{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:8px;}
+.aim-av{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#162d50);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;}
+.aim-iname{font-size:13px;font-weight:600;}
+.aim-iemail{font-size:11px;color:var(--muted);}
+.aim-copy{font-size:10px;color:var(--accent2);cursor:pointer;text-decoration:underline;margin-top:2px;display:inline-block;}
+.aim-status-badge{margin-left:auto;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;}
+.aim-status-badge.assigned{background:rgba(79,142,247,.12);color:var(--accent2);}
+.aim-status-badge.seen{background:rgba(217,119,6,.1);color:#d97706;}
+.aim-status-badge.completed{background:rgba(5,150,105,.1);color:#047857;}
+.aim-del{background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:15px;padding:4px;border-radius:5px;transition:color .15s;}
+.aim-del:hover{color:#dc2626;}
+</style>
+
+<!-- ── HTML: paste anywhere inside <body> ── -->
+<div id="aim-overlay" class="hidden">
+  <div class="aim-card">
+    <div class="aim-header">
+      <div class="aim-title">🎙 Assign Interviewer</div>
+      <button class="aim-close" onclick="closeAIM()">✕</button>
+    </div>
+    <div class="aim-sub">
+      Assign an interviewer for <strong id="aim-round-label">this round</strong>. They'll receive an email with a direct join link to the interview room.
+    </div>
+
+    <div class="aim-form-row">
+      <div class="aim-fg">
+        <label>Interviewer Name *</label>
+        <input id="aim-iname" type="text" placeholder="e.g. Rahul Sharma">
+      </div>
+      <div class="aim-fg">
+        <label>Interviewer Email *</label>
+        <input id="aim-iemail" type="email" placeholder="rahul@company.com">
+      </div>
+    </div>
+
+    <div class="aim-fg">
+      <label>Notes for Interviewer (optional)</label>
+      <textarea id="aim-notes" placeholder="Focus areas, evaluation criteria, any special instructions…"></textarea>
+    </div>
+
+    <button class="aim-submit" id="aim-submit-btn" onclick="submitAIM()">📧 Assign &amp; Send Email</button>
+    <div class="aim-msg" id="aim-msg"></div>
+
+    <div id="aim-existing-wrap" style="display:none;">
+      <div class="aim-assigned-lbl">Already Assigned</div>
+      <div id="aim-existing-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── JS: paste before </body> ── -->
+<script id="COPY-THIS-JS">
+let _aimSession = null, _aimRoundNum = 1, _aimRoundName = 'Round 1', _aimScheduled = null;
+
+function openAIM(sessionId, roundNumber, roundName, scheduledId) {
+  _aimSession   = sessionId;
+  _aimRoundNum  = roundNumber || 1;
+  _aimRoundName = roundName  || `Round ${_aimRoundNum}`;
+  _aimScheduled = scheduledId || null;
+  document.getElementById('aim-round-label').textContent = _aimRoundName;
+  document.getElementById('aim-iname').value  = '';
+  document.getElementById('aim-iemail').value = '';
+  document.getElementById('aim-notes').value  = '';
+  const m = document.getElementById('aim-msg');
+  m.className = 'aim-msg'; m.textContent = '';
+  document.getElementById('aim-overlay').classList.remove('hidden');
+  loadAIMExisting();
+}
+// Keep old name working too
+function openAssignInterviewer(s,r,rn,sid){ openAIM(s,r,rn,sid); }
+
+function closeAIM() { document.getElementById('aim-overlay').classList.add('hidden'); }
+
+document.getElementById('aim-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeAIM();
+});
+
+async function loadAIMExisting() {
+  if(!_aimSession) return;
+  try {
+    const res  = await fetch(`/api/interviewer-assignments/${_aimSession}`);
+    const data = await res.json();
+    const wrap = document.getElementById('aim-existing-wrap');
+    if(!data.success || !data.assignments.length){ wrap.style.display='none'; return; }
+    wrap.style.display = 'block';
+    document.getElementById('aim-existing-list').innerHTML = data.assignments.map(a=>`
+      <div class="aim-irow" id="aim-row-${a.id}">
+        <div class="aim-av">${a.interviewer_name.charAt(0).toUpperCase()}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="aim-iname">${a.interviewer_name}</div>
+          <div class="aim-iemail">${a.interviewer_email}</div>
+          <span class="aim-copy" onclick="copyAIMLink(${a.id},'${a.interviewer_email}')">📋 Copy portal link</span>
+        </div>
+        <span class="aim-status-badge ${a.status}">${a.status}</span>
+        <button class="aim-del" title="Remove" onclick="deleteAIM(${a.id})">🗑</button>
+      </div>
+    `).join('');
+  } catch(e) { /* ignore */ }
+}
+
+async function submitAIM() {
+  const name   = document.getElementById('aim-iname').value.trim();
+  const email  = document.getElementById('aim-iemail').value.trim().toLowerCase();
+  const notes  = document.getElementById('aim-notes').value.trim();
+  const msgEl  = document.getElementById('aim-msg');
+  const btn    = document.getElementById('aim-submit-btn');
+  msgEl.className = 'aim-msg'; msgEl.textContent = '';
+
+  if(!name || !email){
+    msgEl.className='aim-msg error'; msgEl.textContent='Name and email are required.'; return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    msgEl.className='aim-msg error'; msgEl.textContent='Please enter a valid email address.'; return;
+  }
+  btn.disabled = true; btn.textContent = '⏳ Assigning…';
+
+  try {
+    const res  = await fetch('/api/assign-interviewer', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        session_id: _aimSession, scheduled_id: _aimScheduled,
+        interviewer_name: name, interviewer_email: email,
+        round_number: _aimRoundNum, round_name: _aimRoundName, notes,
+      }),
+    });
+    const data = await res.json();
+    if(data.success){
+      msgEl.className = 'aim-msg success';
+      msgEl.textContent = `✅ ${name} assigned! Notification email sent.`;
+      document.getElementById('aim-iname').value  = '';
+      document.getElementById('aim-iemail').value = '';
+      document.getElementById('aim-notes').value  = '';
+      loadAIMExisting();
+    } else {
+      msgEl.className = 'aim-msg error';
+      msgEl.textContent = data.message || 'Failed to assign. Please try again.';
+    }
+  } catch(e) {
+    msgEl.className = 'aim-msg error'; msgEl.textContent = 'Network error. Try again.';
+  } finally {
+    btn.disabled = false; btn.textContent = '📧 Assign & Send Email';
+  }
+}
+
+async function deleteAIM(id) {
+  if(!confirm('Remove this interviewer assignment?')) return;
+  const res  = await fetch(`/api/delete-interviewer-assignment/${id}`, { method:'DELETE' });
+  const data = await res.json();
+  if(data.success){ const row = document.getElementById(`aim-row-${id}`); if(row) row.remove(); }
+}
+
+function copyAIMLink(assignmentId, email) {
+  const link = `${location.origin}/interviewer_portal.html?assignment=${assignmentId}&email=${encodeURIComponent(email)}`;
+  navigator.clipboard.writeText(link).then(()=>{ showToast('Portal link copied to clipboard!'); });
+}
+</script>

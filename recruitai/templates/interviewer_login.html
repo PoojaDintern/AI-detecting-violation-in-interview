@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interviewer Login — RecruitAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 20px 60px;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 25%, rgba(67,97,238,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 75%, rgba(79,142,247,0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* ─── Topbar ─── */
+.topbar {
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 0 0;
+  position: relative;
+  z-index: 1;
+}
+.brand {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent2);
+}
+.role-badge {
+  background: rgba(5,150,105,0.1);
+  border: 1px solid rgba(5,150,105,0.25);
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);} }
+@keyframes spin { to{transform:rotate(360deg);} }
+@keyframes bounceIn { from{transform:scale(0.5);opacity:0;} to{transform:scale(1);opacity:1;} }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.5;} }
+@keyframes slideIn { from{opacity:0;transform:translateX(-12px);} to{opacity:1;transform:translateX(0);} }
+
+/* ─── Login Screen ─── */
+#login-screen {
+  position: relative;
+  z-index: 1;
+  margin-top: 60px;
+  width: 100%;
+  max-width: 460px;
+  animation: fadeUp .45s ease both;
+}
+
+.login-card {
+  background: var(--s);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 44px 40px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), #6d83f3, #4361ee);
+}
+
+.login-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--accent), #162d50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin: 0 auto 22px;
+  box-shadow: 0 8px 24px rgba(67,97,238,0.3);
+}
+
+.login-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.login-sub {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.65;
+  margin-bottom: 30px;
+}
+
+.fg {
+  margin-bottom: 16px;
+}
+.fg label {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.fg input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.fg input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(67,97,238,0.08);
+}
+.fg input::placeholder { color: var(--muted2); }
+
+.btn-verify {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 5px 18px rgba(67,97,238,0.25);
+  margin-top: 4px;
+}
+.btn-verify:hover { transform: translateY(-1px); box-shadow: 0 9px 26px rgba(67,97,238,0.35); }
+.btn-verify:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.login-msg {
+  margin-top: 14px;
+  padding: 11px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+  display: none;
+  line-height: 1.5;
+}
+.login-msg.error { background: rgba(220,38,38,.07); color: var(--red); border: 1px solid rgba(220,38,38,.18); display: block; }
+.login-msg.success { background: rgba(5,150,105,.08); color: #047857; border: 1px solid rgba(5,150,105,.2); display: block; }
+
+.security-note {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ─── Loading State ─── */
+#loading-screen {
+  position: relative;
+  z-index: 1;
+  margin-top: 100px;
+  text-align: center;
+  display: none;
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+/* ─── Dashboard ─── */
+#dashboard-screen {
+  width: 100%;
+  max-width: 860px;
+  position: relative;
+  z-index: 1;
+  margin-top: 28px;
+  display: none;
+  animation: fadeUp .4s ease both;
+}
+
+/* Welcome banner */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--accent) 0%, #2d4fd4 100%);
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 8px 32px rgba(67,97,238,0.3);
+  flex-wrap: wrap;
+}
+.welcome-left h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.welcome-left p { color: rgba(255,255,255,0.75); font-size: 13px; }
+.welcome-avatar {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.3);
+}
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+@media(max-width:560px){ .stats-row{grid-template-columns:1fr 1fr;} }
+.stat-card {
+  background: var(--s);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--accent2);
+  margin-bottom: 2px;
+}
+.stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+
+/* Section heading */
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Assignment card */
+.assignment-card {
+  background: var(--s);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px 28px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .2s, border-color .2s, transform .2s;
+  position: relative;
+  overflow: hidden;
+  animation: slideIn .35s ease both;
+}
+.assignment-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border2);
+  transform: translateY(-1px);
+}
+.assignment-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 3px;
+}
+.assignment-card.status-assigned::before { background: var(--accent); }
+.assignment-card.status-seen::before { background: var(--yellow); }
+.assignment-card.status-completed::before { background: var(--green); }
+
+.acard-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.acard-candidate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.candidate-av {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #162d50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  flex-shrink: 0;
+}
+.candidate-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+.candidate-role { font-size: 12px; color: var(--muted); }
+
+.status-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  flex-shrink: 0;
+}
+.status-pill.assigned { background: rgba(67,97,238,.1); color: var(--accent2); border: 1px solid rgba(67,97,238,.2); }
+.status-pill.seen { background: rgba(217,119,6,.1); color: var(--yellow); border: 1px solid rgba(217,119,6,.2); }
+.status-pill.completed { background: rgba(5,150,105,.1); color: var(--green); border: 1px solid rgba(5,150,105,.2); }
+
+.acard-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+@media(max-width:520px){ .acard-meta{grid-template-columns:1fr 1fr;} }
+.meta-item {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 12px;
+}
+.meta-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 3px; }
+.meta-val { font-size: 13px; font-weight: 600; color: var(--text2); line-height: 1.3; }
+.meta-val.code {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--accent2);
+  background: var(--accent-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: .06em;
+}
+
+.acard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recruiter-note {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.recruiter-note strong { color: var(--text2); }
+
+.btn-join {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all .2s;
+  box-shadow: 0 4px 14px rgba(67,97,238,0.25);
+}
+.btn-join:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(67,97,238,0.35); }
+.btn-join.completed-btn {
+  background: transparent;
+  color: var(--green);
+  border: 1px solid rgba(5,150,105,.3);
+  box-shadow: none;
+}
+.btn-join.completed-btn:hover { background: rgba(5,150,105,.06); box-shadow: none; transform: none; }
+
+/* Notes snippet */
+.notes-snip {
+  background: rgba(217,119,6,.06);
+  border: 1px solid rgba(217,119,6,.2);
+  border-radius: 8px;
+  padding: 9px 13px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.6;
+  display: flex;
+  gap: 7px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--s);
+  border: 1px dashed var(--border2);
+  border-radius: 18px;
+}
+.empty-icon { font-size: 48px; margin-bottom: 14px; }
+.empty-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.empty-sub { color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+/* Logout btn */
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+/* Filter tabs */
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ftab {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 13px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .15s;
+  letter-spacing: .04em;
+}
+.ftab.active, .ftab:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">🤖 RecruitAI</div>
+  <div class="role-badge">🎙 Interviewer Portal</div>
+</div>
+
+<!-- ─── Login Screen ─── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">🎙</div>
+    <div class="login-title">Interviewer Access</div>
+    <div class="login-sub">Enter your work email address to view your assigned interviews. Only verified interviewers can access this portal.</div>
+
+    <div class="fg">
+      <label>Your Work Email</label>
+      <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email"
+        onkeydown="if(event.key==='Enter') verifyEmail()">
+    </div>
+
+    <button class="btn-verify" id="verify-btn" onclick="verifyEmail()">
+      <span>🔐</span> <span id="verify-btn-text">Verify &amp; View My Interviews</span>
+    </button>
+
+    <div class="login-msg" id="login-msg"></div>
+
+    <div class="security-note">
+      🔒 Your email is matched against recruiter-assigned interviews only. No registration required.
+    </div>
+  </div>
+</div>
+
+<!-- ─── Loading Screen ─── -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:14px;">Loading your assignments…</div>
+</div>
+
+<!-- ─── Dashboard Screen ─── -->
+<div id="dashboard-screen">
+
+  <div class="welcome-banner">
+    <div class="welcome-left">
+      <h2>Welcome back, <span id="dash-first-name">Interviewer</span>! 👋</h2>
+      <p id="dash-email-display">Loading your interview assignments…</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="welcome-avatar" id="dash-avatar">?</div>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-total">—</div>
+      <div class="stat-lbl">Total Assigned</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-pending" style="color:#d97706;">—</div>
+      <div class="stat-lbl">Pending</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-done" style="color:#059669;">—</div>
+      <div class="stat-lbl">Completed</div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div class="section-title">📋 Your Interview Assignments</div>
+    <div class="filter-tabs">
+      <button class="ftab active" onclick="filterCards('all', this)">All</button>
+      <button class="ftab" onclick="filterCards('assigned', this)">Pending</button>
+      <button class="ftab" onclick="filterCards('completed', this)">Completed</button>
+    </div>
+  </div>
+
+  <div id="assignments-list"></div>
+
+</div>
+
+<script>
+let _assignments = [];
+let _currentEmail = '';
+
+// ── Verify Email ──────────────────────────────────────────────────────────────
+async function verifyEmail() {
+  const emailInput = document.getElementById('login-email');
+  const email = emailInput.value.trim().toLowerCase();
+  const msgEl = document.getElementById('login-msg');
+  const btn = document.getElementById('verify-btn');
+  const btnText = document.getElementById('verify-btn-text');
+
+  msgEl.className = 'login-msg';
+  msgEl.textContent = '';
+
+  if (!email) {
+    msgEl.className = 'login-msg error';
+    msgEl.textContent = '⚠️ Please enter your email address.';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msgEl.className = 'login-msg error';
+    msgEl.textContent = '⚠️ Please enter a valid email address.';
+    return;
+  }
+
+  btn.disabled = true;
+  btnText.textContent = 'Verifying…';
+
+  try {
+    const res = await fetch(`/api/interviewer-assignments-by-email?email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      msgEl.className = 'login-msg error';
+      msgEl.textContent = data.message || '❌ No interviews found for this email. Please check with your recruiter.';
+      btn.disabled = false;
+      btnText.textContent = 'Verify & View My Interviews';
+      return;
+    }
+
+    _currentEmail = email;
+    _assignments = data.assignments || [];
+    showDashboard(data);
+
+  } catch (err) {
+    msgEl.className = 'login-msg error';
+    msgEl.textContent = '❌ Network error. Please try again.';
+    btn.disabled = false;
+    btnText.textContent = 'Verify & View My Interviews';
+  }
+}
+
+// ── Show Dashboard ─────────────────────────────────────────────────────────────
+function showDashboard(data) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard-screen').style.display = 'block';
+
+  const firstName = data.interviewer_name
+    ? data.interviewer_name.split(' ')[0]
+    : _currentEmail.split('@')[0];
+  const initials = firstName.charAt(0).toUpperCase();
+
+  document.getElementById('dash-first-name').textContent = firstName;
+  document.getElementById('dash-email-display').textContent = `Signed in as ${_currentEmail}`;
+  document.getElementById('dash-avatar').textContent = initials;
+
+  const total = _assignments.length;
+  const done = _assignments.filter(a => a.status === 'completed').length;
+  const pending = total - done;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-done').textContent = done;
+
+  renderCards(_assignments);
+}
+
+// ── Render Assignment Cards ───────────────────────────────────────────────────
+function renderCards(list) {
+  const container = document.getElementById('assignments-list');
+  if (!list.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">No assignments found</div>
+        <div class="empty-sub">No interviews match this filter. Check back later or contact your recruiter.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = list.map((a, i) => {
+    const initials = (a.candidate_name || 'C').charAt(0).toUpperCase();
+    const statusClass = a.status || 'assigned';
+    const isCompleted = a.status === 'completed';
+
+    const notesHtml = a.notes && a.notes.trim() ? `
+      <div class="notes-snip">
+        <span>📋</span>
+        <span><strong style="color:var(--yellow);">Recruiter Note:</strong> ${escHtml(a.notes)}</span>
+      </div>` : '';
+
+    const portalUrl = `interviewer_portal.html?assignment=${a.id}&email=${encodeURIComponent(_currentEmail)}`;
+    // Direct link to recruiter_room — no login needed, uses interviewer token
+    const roomDirectUrl = a.room_code
+      ? `recruiter_room.html?room=${encodeURIComponent(a.room_code)}&interviewer=${a.id}&email=${encodeURIComponent(_currentEmail)}`
+      : portalUrl;
+    const joinUrl = roomDirectUrl;
+
+    const joinBtn = isCompleted
+      ? `<a href="${portalUrl}" class="btn-join completed-btn" target="_blank">✅ View Evaluation</a>`
+      : `<a href="${joinUrl}" class="btn-join" onclick="markSeen(${a.id})" target="_blank">🚀 Join Interview Room</a>
+         <a href="${portalUrl}" target="_blank" style="display:block;text-align:center;margin-top:8px;font-size:11.5px;color:var(--muted);text-decoration:none;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📋 View Assignment Portal</a>`;
+
+    const scheduledAt = a.scheduled_at || a.created_at || '—';
+
+    return `
+      <div class="assignment-card status-${statusClass}" id="acard-${a.id}" style="animation-delay:${i * 0.06}s">
+        <div class="acard-top">
+          <div class="acard-candidate">
+            <div class="candidate-av">${initials}</div>
+            <div>
+              <div class="candidate-name">${escHtml(a.candidate_name || 'Candidate')}</div>
+              <div class="candidate-role">💼 ${escHtml(a.job_role || 'Interview')}</div>
+            </div>
+          </div>
+          <div class="status-pill ${statusClass}">${statusLabel(a.status)}</div>
+        </div>
+
+        <div class="acard-meta">
+          <div class="meta-item">
+            <div class="meta-label">Round</div>
+            <div class="meta-val">${escHtml(a.round_name || `Round ${a.round_number || 1}`)}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Room Code</div>
+            <div class="meta-val code">${escHtml(a.room_code || '—')}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Scheduled</div>
+            <div class="meta-val">${escHtml(scheduledAt)}</div>
+          </div>
+        </div>
+
+        ${notesHtml}
+
+        <div class="acard-footer">
+          <div class="recruiter-note">🏢 Assigned by <strong>${escHtml(a.recruiter_name || 'Recruiter')}</strong></div>
+          ${joinBtn}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Filter Cards ──────────────────────────────────────────────────────────────
+function filterCards(status, btn) {
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  const filtered = status === 'all'
+    ? _assignments
+    : _assignments.filter(a => {
+        if (status === 'assigned') return a.status !== 'completed';
+        return a.status === status;
+      });
+
+  renderCards(filtered);
+}
+
+// ── Mark Seen ─────────────────────────────────────────────────────────────────
+async function markSeen(id) {
+  try {
+    await fetch(`/api/interviewer-mark-seen/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: _currentEmail })
+    });
+  } catch(e) { /* silent */ }
+}
+
+// ── Logout ────────────────────────────────────────────────────────────────────
+function logout() {
+  _assignments = [];
+  _currentEmail = '';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-msg').className = 'login-msg';
+  document.getElementById('verify-btn').disabled = false;
+  document.getElementById('verify-btn-text').textContent = 'Verify & View My Interviews';
+  document.getElementById('dashboard-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'block';
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function statusLabel(s) {
+  if (s === 'completed') return '✅ Completed';
+  if (s === 'seen') return '👁 Seen';
+  return '🕐 Pending';
+}
+
+// ── Auto-login from URL params (e.g. ?email=xxx from email link) ──────────────
+(function autoLogin() {
+  const params = new URLSearchParams(location.search);
+  const emailParam = params.get('email');
+  if (emailParam) {
+    document.getElementById('login-email').value = emailParam;
+    verifyEmail();
+  }
+})();
+</script>
+</body>
+</html>

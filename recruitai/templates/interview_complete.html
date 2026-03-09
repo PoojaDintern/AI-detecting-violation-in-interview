@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Complete — RecruitAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f7ff;
+  --bg2: #eef1fb;
+  --s: #ffffff;
+  --s2: #f0f3fd;
+  --border: #dde3f4;
+  --border2: #c8d1ee;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --accent-light: rgba(67,97,238,0.09);
+  --accent-glow: rgba(67,97,238,0.18);
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #0f172a;
+  --text2: #1e293b;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+  --shadow-sm: 0 1px 3px rgba(67,97,238,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 14px rgba(67,97,238,0.1), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 20px 60px rgba(67,97,238,0.14), 0 8px 24px rgba(0,0,0,0.06);
+  --shadow: 0 2px 8px rgba(67,97,238,0.09), 0 4px 16px rgba(0,0,0,0.05);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 20px;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(16,185,129,0.06) 0%,transparent 60%);pointer-events:none;}
+.complete-card{background:var(--s);border:1px solid var(--border);border-radius:24px;padding:48px;max-width:640px;width:100%;text-align:center;position:relative;z-index:1;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
+.complete-icon{font-size:72px;margin-bottom:16px;animation:bounceIn .6s ease;}
+@keyframes bounceIn{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.complete-title{font-family:'Playfair Display',serif;font-size:32px;font-weight:800;margin-bottom:8px;}
+.complete-sub{color:var(--muted);font-size:15px;margin-bottom:32px;line-height:1.6;}
+/* Scheduled time info */
+.scheduled-box{background:linear-gradient(135deg,rgba(67,97,238,.07),rgba(67,97,238,.03));border:1px solid rgba(67,97,238,.2);border-radius:14px;padding:20px;margin-bottom:28px;text-align:left;}
+.scheduled-label{font-size:11px;color:var(--accent2);text-transform:uppercase;letter-spacing:.07em;font-weight:700;margin-bottom:12px;}
+.scheduled-detail{display:flex;align-items:center;gap:10px;font-size:14px;margin-bottom:8px;}
+.scheduled-detail:last-child{margin-bottom:0;}
+/* Scores */
+.scores-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
+.score-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center;}
+.score-value{font-family:'Playfair Display',serif;font-size:52px;font-weight:800;margin-bottom:4px;}
+.score-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.score-sub{font-size:12px;margin-top:6px;}
+/* Status */
+.status-badge{display:inline-block;padding:10px 28px;border-radius:30px;font-size:16px;font-weight:700;margin-bottom:28px;}
+.status-badge.passed{background:rgba(5,150,105,.1);color:#059669;border:1px solid rgba(5,150,105,.25);}
+.status-badge.failed{background:rgba(220,38,38,.1);color:#991b1b;border:1px solid rgba(220,38,38,.25);}
+/* Actions */
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px;}
+.btn-primary{padding:12px 28px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(79,142,247,0.3);}
+.btn-secondary{padding:12px 24px;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent2);}
+.brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:var(--accent2);margin-bottom:40px;display:block;}
+</style>
+</head>
+<body>
+<span class="brand">🤖 RecruitAI</span>
+
+<div class="complete-card" id="complete-card">
+  <div class="complete-icon">⏳</div>
+  <div class="complete-title" style="font-size:22px;color:var(--muted);">Loading results…</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const sessionId = params.get('session');
+const subId     = params.get('sub');
+
+async function init() {
+  try {
+    const [sessionData, subData] = await Promise.all([
+      sessionId ? fetch(`/api/interview-complete/${sessionId}`).then(r=>r.json()) : Promise.resolve(null),
+      subId     ? fetch(`/api/results/${subId}`).then(r=>r.json())               : Promise.resolve(null)
+    ]);
+
+    const card = document.getElementById('complete-card');
+
+    const sess   = sessionData?.session;
+    const sched  = sessionData?.scheduled;
+    const sub    = subData?.submission || sessionData?.submission;
+
+    const interviewScore  = sub?.interview_score  ?? sess?.interview_score  ?? 0;
+    const credScore       = sub?.credibility_score ?? sess?.credibility_score ?? 100;
+    const passed          = sub?.passed ?? (credScore >= 60);
+    const jobRole         = sess?.job_role || sub?.job_role || 'Interview';
+    const mode            = sess?.mode    || sub?.mode    || 'mcq';
+
+    let schedHtml = '';
+    if (sched) {
+      schedHtml = `
+      <div class="scheduled-box">
+        <div class="scheduled-label">📅 Your Scheduled Interview Details</div>
+        <div class="scheduled-detail">🏢 <strong>${sched.company_name}</strong></div>
+        <div class="scheduled-detail">💼 ${sched.job_role}</div>
+        <div class="scheduled-detail">👤 Recruiter: ${sched.recruiter_name}</div>
+        <div class="scheduled-detail">🗓️ Scheduled at: <strong>${sched.scheduled_at}</strong></div>
+        ${sched.calendar_link?`<div class="scheduled-detail"><a href="${sched.calendar_link}" target="_blank" style="color:var(--accent2);">📅 View in Google Calendar</a></div>`:''}
+      </div>`;
+    }
+
+    const scoreColor = s => s>=80?'#10b981':s>=60?'#f59e0b':'#f43f5e';
+
+    card.innerHTML = `
+      <div class="complete-icon">${passed?'🎉':'📋'}</div>
+      <div class="complete-title">${passed?'Interview Complete!':'Interview Submitted'}</div>
+      <div class="complete-sub">
+        Your <strong>${(mode).replace('_',' ')}</strong> interview for <strong>${jobRole}</strong> has been completed.
+        ${passed?'Great effort!':'Your results have been recorded.'}
+      </div>
+
+      ${schedHtml}
+
+      <div class="scores-row">
+        <div class="score-card">
+          <div class="score-value" style="color:${scoreColor(interviewScore)}">${interviewScore}</div>
+          <div class="score-label">Interview Score</div>
+          <div class="score-sub" style="color:${scoreColor(interviewScore)}">${interviewScore>=80?'Excellent':interviewScore>=60?'Good':'Needs Improvement'}</div>
+        </div>
+        <div class="score-card">
+          <div class="score-value" style="color:${scoreColor(credScore)}">${credScore}</div>
+          <div class="score-label">Credibility Score</div>
+          <div class="score-sub" style="color:${scoreColor(credScore)}">${credScore>=80?'Highly Trustworthy':credScore>=60?'Acceptable':'Low Integrity'}</div>
+        </div>
+      </div>
+
+      <div class="${passed?'status-badge passed':'status-badge failed'}">
+        ${passed?'✅ PASSED':'❌ NEEDS REVIEW'}
+      </div>
+
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.7;">
+        Your recruiter will review your results and get back to you. 
+        ${sched?`This interview was scheduled for <strong>${sched.scheduled_at}</strong>.`:''}
+      </p>
+
+      <div class="actions">
+        ${subId?`<a href="results.html?id=${subId}" class="btn-primary">📄 View Full Report</a>`:''}
+        <a href="test.html" class="btn-secondary">↩ Back to Portal</a>
+        ${sched?.calendar_link?`<a href="${sched.calendar_link}" target="_blank" class="btn-secondary">📅 Calendar</a>`:''}
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('complete-card').innerHTML = `
+      <div class="complete-icon">✅</div>
+      <div class="complete-title">Interview Submitted!</div>
+      <div class="complete-sub">Your interview has been recorded. Your recruiter will review and contact you soon.</div>
+      <div class="actions" style="margin-top:24px;">
+        <a href="test.html" class="btn-primary">↩ Back to Portal</a>
+      </div>
+    `;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
