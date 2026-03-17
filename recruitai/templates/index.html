@@ -148,8 +148,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;displ
 #pass-strength-fill{height:100%;border-radius:99px;width:0%;transition:all .3s;}
 @media(max-width:768px){.wrapper{grid-template-columns:1fr;}.left{padding:36px 28px;}.right{padding:28px 22px;max-height:none;}.left h1{font-size:26px;}.deco1,.deco2{display:none;}.social-row{grid-template-columns:1fr;}}
 
-  .form-section-label{font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin:16px 0 10px;padding:0 0 6px;border-bottom:1.5px solid var(--accent-light);display:flex;align-items:center;gap:6px;}
-  .form-section-label::before{content:'';display:inline-block;width:3px;height:12px;background:var(--accent);border-radius:2px;}
   .hint-text{font-size:11px;color:var(--muted2);margin-top:3px;line-height:1.4;}
 </style>
 </head>
@@ -221,13 +219,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;displ
       </div>
       <div class="divider-row"><div class="divider-line"></div><span>or create with email</span><div class="divider-line"></div></div>
 
-      <div class="form-section-label">Step 1 — Who are you?</div>
       <div class="role-grid">
         <div class="role-card active" id="rb-candidate" onclick="selectRole('candidate')"><div class="rc-icon">🎓</div><div class="rc-label">Candidate</div><div class="rc-sub">I'm applying for jobs &amp; taking interviews</div></div>
         <div class="role-card" id="rb-recruiter" onclick="selectRole('recruiter')"><div class="rc-icon">🏢</div><div class="rc-label">Recruiter / Company</div><div class="rc-sub">I'm hiring &amp; conducting interviews</div></div>
       </div>
-      <div class="form-section-label">Step 2 — Your personal details</div>
-
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px;">
         <div class="form-group" style="margin-bottom:0;"><label>First Name <span style="color:var(--red)">*</span></label><input type="text" id="s-firstname" placeholder="e.g. Pooja"><div class="field-err" id="err-firstname"></div></div>
         <div class="form-group" style="margin-bottom:0;"><label>Last Name</label><input type="text" id="s-lastname" placeholder="e.g. Sharma (optional)"></div>
@@ -255,7 +250,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;displ
         <div class="field-err" id="err-phone"></div>
       </div>
 
-      <div class="form-section-label">Step 3 — Create your login</div>
       <div class="form-group">
         <label>Username <span style="color:var(--red)">*</span></label>
         <input type="text" id="s-username" placeholder="e.g. pooja_sharma (letters, numbers, _ only)" autocomplete="username">

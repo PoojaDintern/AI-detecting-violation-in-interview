@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from extensions import db
@@ -134,6 +135,9 @@ def get_recruiter_profile():
         'company_size': current_user.company_size or '',
         'website': current_user.company_website or '',
         'about': current_user.company_about or '',
+        'smtp_email': current_user.smtp_email or '',
+        'has_smtp': bool(current_user.smtp_email and current_user.smtp_app_password),
+        'system_email_configured': bool(os.environ.get('EMAIL_USER') and os.environ.get('EMAIL_PASS')),
     })
 
 
@@ -188,12 +192,13 @@ def save_recruiter_profile():
 @recruiter_bp.route('/api/recruiter/email-settings', methods=['GET'])
 @login_required
 def get_email_settings():
-    if not current_user.is_admin:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     return jsonify({
         'success': True,
         'smtp_email': current_user.smtp_email or '',
         'has_password': bool(current_user.smtp_app_password),
+        'system_email_configured': bool(os.environ.get('EMAIL_USER') and os.environ.get('EMAIL_PASS')),
     })
 
 

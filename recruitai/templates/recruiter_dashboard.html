@@ -1262,15 +1262,19 @@ async function init() {
 }
 
 function checkEmailConfig() {
-  fetch('/api/recruiter/profile').then(r=>r.json()).then(data => {
+  fetch('/api/recruiter/email-settings').then(r=>r.json()).then(data => {
     const banner = document.getElementById('email-config-topbanner');
     if (!banner) return;
-    if (!data.smtp_email) {
-      banner.style.display = 'flex';
-    } else {
+    if (data.smtp_email || data.system_email_configured) {
       banner.style.display = 'none';
+    } else {
+      banner.style.display = 'flex';
     }
-  }).catch(()=>{});
+  }).catch(()=>{ 
+    // If endpoint fails hide banner anyway to avoid false alarm
+    const banner = document.getElementById('email-config-topbanner');
+    if (banner) banner.style.display = 'none';
+  });
 }
 
 async function loadJobSections() {
@@ -2602,6 +2606,9 @@ async function loadEmailSettings() {
       document.getElementById('es-email').value = data.smtp_email;
       updateEmailPreview();
       showEmailBanner('success', `<span style="font-size:20px;">✅</span>&nbsp; <div><strong>Gmail connected!</strong><br><span style="font-weight:400;font-size:13px;">Sending from: ${data.smtp_email}</span></div>`);
+      // Hide the top warning banner — email IS configured
+      const topBanner = document.getElementById('email-config-topbanner');
+      if (topBanner) topBanner.style.display = 'none';
     } else {
       showEmailBanner('warn', '<span style="font-size:20px;">⚠️</span>&nbsp; <div><strong>No Gmail connected yet</strong><br><span style="font-weight:400;font-size:13px;">Follow the 3 steps above and click Save & Test</span></div>');
     }
@@ -2652,6 +2659,9 @@ async function saveEmailSettings() {
       document.getElementById('es-pass').value='';
       document.getElementById('es-pass').placeholder='✓ Password saved';
       showToast('✅ Gmail connected!');
+      // Hide the top banner since email is now configured
+      const topBanner = document.getElementById('email-config-topbanner');
+      if (topBanner) topBanner.style.display = 'none';
     } else {
       showEmailBanner('error',`<span>❌</span> ${data.message||'Failed to save'}`);
     }
