@@ -21,6 +21,7 @@ def get_violation_info(vtype):
         'phone_detected':   {'severity': 3, 'description': 'Phone/device detected'},
         'device_detected':  {'severity': 3, 'description': 'Unauthorized device detected'},
         'second_screen':    {'severity': 3, 'description': 'Second screen detected'},
+        'identity_mismatch': {'severity': 3, 'description': 'Face did not match profile photo'},
     }.get(vtype, {'severity': 1, 'description': 'Unknown violation'})
 
 

@@ -459,6 +459,14 @@ def submit_test():
         db_sess.ended_at = datetime.utcnow()
         db_sess.credibility_score = cred_score
         db_sess.interview_score   = interview_score
+        # Link ScheduledInterview to this session so completed tab works
+        from models import ScheduledInterview
+        sched_link = ScheduledInterview.query.filter(
+            ScheduledInterview.room_code == db_sess.room_code,
+            ScheduledInterview.session_id == None
+        ).first()
+        if sched_link:
+            sched_link.session_id = session_id
     db.session.commit()
 
     next_round_unlocked = False
@@ -544,3 +552,23 @@ def interview_complete_info(session_id):
         'scheduled': sched.to_dict() if sched else None,
         'submission': sub.to_dict() if sub else None,
     })
+
+@sessions_bp.route('/api/force-end-session', methods=['POST'])
+@login_required
+def force_end_session():
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json() or {}
+    session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({'success': False, 'message': 'session_id required'}), 400
+    sess = db.session.get(InterviewSession, session_id)
+    if not sess:
+        return jsonify({'success': False, 'message': 'Session not found'}), 404
+    if sess.recruiter_id != current_user.id and not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    sess.status = 'completed'
+    sess.ended_at = datetime.utcnow()
+    db.session.commit()
+    socketio.emit('session_force_ended', {'session_id': session_id}, room=sess.room_code)
+    return jsonify({'success': True})

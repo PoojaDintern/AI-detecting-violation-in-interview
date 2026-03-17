@@ -53,7 +53,7 @@ def list_all_job_postings():
 @jobs_bp.route('/api/job-postings', methods=['POST'])
 @login_required
 def create_job_posting():
-    if not current_user.is_admin:
+    if not current_user.is_admin and not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data = request.get_json() or {}
     if not all([data.get('job_section'), data.get('job_role'), data.get('company_name')]):
@@ -75,6 +75,7 @@ def create_job_posting():
         job_type=data.get('job_type', ''),
         salary_package=data.get('salary_package', ''),
         work_mode=data.get('work_mode', ''),
+        max_openings=int(data.get('max_openings', 0) or 0),
     )
     db.session.add(p)
     db.session.commit()
@@ -84,7 +85,7 @@ def create_job_posting():
 @jobs_bp.route('/api/job-postings/<int:posting_id>', methods=['DELETE'])
 @login_required
 def delete_job_posting(posting_id):
-    if not current_user.is_admin:
+    if not current_user.is_admin and not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     p = db.session.get(JobPosting, posting_id)
     if not p or p.recruiter_id != current_user.id:
@@ -97,7 +98,7 @@ def delete_job_posting(posting_id):
 @jobs_bp.route('/api/job-postings/<int:posting_id>/applications', methods=['GET'])
 @login_required
 def get_applications_for_posting(posting_id):
-    if not current_user.is_admin:
+    if not current_user.is_admin and not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     p = db.session.get(JobPosting, posting_id)
     if not p or p.recruiter_id != current_user.id:
@@ -109,7 +110,7 @@ def get_applications_for_posting(posting_id):
 @jobs_bp.route('/api/applicants-by-role', methods=['GET'])
 @login_required
 def get_applicants_by_role():
-    if not current_user.is_admin:
+    if not current_user.is_admin and not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     job_role = request.args.get('job_role', '').strip()
     if not job_role:
@@ -156,6 +157,12 @@ def apply_for_job():
     existing = JobApplication.query.filter_by(posting_id=posting_id, candidate_id=current_user.id).first()
     if existing:
         return jsonify({'success': False, 'message': 'Already applied for this position'}), 400
+    # Check max openings
+    posting_obj = db.session.get(JobPosting, posting_id)
+    if posting_obj and posting_obj.max_openings and posting_obj.max_openings > 0:
+        current_count = JobApplication.query.filter_by(posting_id=posting_id).count()
+        if current_count >= posting_obj.max_openings:
+            return jsonify({'success': False, 'message': 'No openings available — all positions are filled.'}), 400
     app_obj = JobApplication(
         posting_id=posting_id,
         candidate_id=current_user.id,
@@ -193,7 +200,7 @@ def my_scheduled_interviews():
 @jobs_bp.route('/api/schedule-interview', methods=['POST'])
 @login_required
 def schedule_interview():
-    if not current_user.is_admin:
+    if not current_user.is_admin and not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data = request.get_json() or {}
     application_id    = data.get('application_id')
@@ -226,6 +233,11 @@ def schedule_interview():
         if detail:
             interview_mode = detail.interview_mode
             round_name     = detail.round_name
+            # Auto-fill interviewer from round config if not explicitly passed
+            if not interviewer_name and detail.interviewer_name:
+                interviewer_name = detail.interviewer_name
+            if not interviewer_email and detail.interviewer_email:
+                interviewer_email = detail.interviewer_email
 
     question_ids = []
     if interview_mode == 'mcq':

@@ -1,39 +1,40 @@
-# Flask Core
-Flask==3.0.0
-Flask-SQLAlchemy==3.1.1
+# ================================================================
+# RecruitAI — Python Dependencies
+# Python 3.10 compatible
+# Install with: pip install -r requirements.txt
+# ================================================================
+
+# ── Core Flask ────────────────────────────────────────────────────
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# ── Flask Extensions ──────────────────────────────────────────────
 Flask-Login==0.6.3
+Flask-SQLAlchemy==3.1.1
 Flask-SocketIO==5.3.6
 Flask-CORS==4.0.0
 
-# Database Drivers
-psycopg2-binary==2.9.9
-pyodbc==5.0.1
+# ── Database ──────────────────────────────────────────────────────
 SQLAlchemy==2.0.23
+psycopg2-binary==2.9.9
 
-# Password Hashing & Security
-Werkzeug==3.0.1
+# ── WebSocket / Async ─────────────────────────────────────────────
+eventlet==0.33.3
+python-engineio==4.8.0
+python-socketio==5.10.0
 
-# PDF Generation
+# ── AI — Google Gemini ────────────────────────────────────────────
+google-generativeai==0.3.2
+
+# ── Computer Vision — Proctoring ─────────────────────────────────
+opencv-python==4.8.1.78
+numpy==1.26.2
+
+# ── PDF Generation ────────────────────────────────────────────────
 reportlab==4.0.7
 
-# Image Processing & Computer Vision
-opencv-python==4.10.0.84
-numpy==1.26.2
-Pillow==10.1.0
-
-# WebSocket Support
-python-socketio==5.10.0
-python-engineio==4.8.0
-
-# Event-driven networking (for SocketIO)
-eventlet==0.33.3
-greenlet==3.0.1
-
-# AI - Gemini
-google-generativeai==0.7.2
-
-# Email via Resend (no per-user SMTP setup needed)w
-resend==2.0.0
-
-# Additional utilities
+# ── Environment Variables ─────────────────────────────────────────
 python-dotenv==1.0.0
+
+# ── HTTP Requests (OAuth) ─────────────────────────────────────────
+requests==2.31.0

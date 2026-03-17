@@ -22,6 +22,7 @@ class User(UserMixin, db.Model):
     logo_url          = db.Column(db.Text)
     smtp_email        = db.Column(db.String(120))
     smtp_app_password = db.Column(db.String(256))
+    photo_url         = db.Column(db.Text)  # base64 or URL of candidate profile photo
 
     violations  = db.relationship('Violation',      backref='user', lazy='dynamic', cascade='all,delete-orphan')
     submissions = db.relationship('TestSubmission', backref='user', lazy='dynamic', cascade='all,delete-orphan')

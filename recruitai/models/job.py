@@ -17,6 +17,7 @@ class JobPosting(db.Model):
     job_type            = db.Column(db.String(50))
     salary_package      = db.Column(db.String(100))
     work_mode           = db.Column(db.String(30))
+    max_openings        = db.Column(db.Integer, default=0)  # 0 = unlimited
     is_active           = db.Column(db.Boolean, default=True)
     created_at          = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -38,6 +39,8 @@ class JobPosting(db.Model):
             'job_type': self.job_type or '',
             'salary_package': self.salary_package or '',
             'work_mode': self.work_mode or '',
+            'max_openings': self.max_openings or 0,
+            'applications_count': JobApplication.query.filter_by(posting_id=self.id).count(),
             'is_active': self.is_active,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'application_count': self.applications.count(),
@@ -117,6 +120,8 @@ class ScheduledInterview(db.Model):
             'session_status': sess.status if sess else 'pending',
             'session_score': sess.interview_score if sess else None,
             'session_credibility': sess.credibility_score if sess else None,
+            'total_violations': __import__('models.violation', fromlist=['Violation']).Violation.query.filter_by(session_id=sess.id).count() if sess else 0,
+            'passed': (lambda sub: sub.passed if sub else None)(__import__('models.submission', fromlist=['TestSubmission']).TestSubmission.query.filter_by(session_id=sess.id).order_by(__import__('models.submission', fromlist=['TestSubmission']).TestSubmission.submitted_at.desc()).first()) if sess else None,
             'round_number': self.round_number or 1,
             'round_name': self.round_name or 'Round 1',
         }

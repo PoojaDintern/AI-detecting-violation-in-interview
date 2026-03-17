@@ -1,0 +1,43 @@
+# ================================================================
+# RecruitAI — .gitignore
+# ================================================================
+
+# ── Secrets — NEVER commit these ─────────────────────────────────
+.env
+
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual environments ──────────────────────────────────────────
+venv/
+env/
+.venv/
+.env/
+
+# ── IDE / editor ─────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Logs & local data ─────────────────────────────────────────────
+*.log
+*.sqlite
+*.db
+
+# ── AI / CV model files (large, download on first run) ────────────
+*.caffemodel
+*.prototxt
+deploy.prototxt
+res10_300x300_ssd_iter_140000.caffemodel
+haarcascade_*.xml

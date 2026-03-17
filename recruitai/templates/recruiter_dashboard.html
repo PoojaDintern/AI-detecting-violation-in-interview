@@ -50,16 +50,30 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .page-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:6px;}
 .page-sub{color:var(--muted);font-size:14px;margin-bottom:28px;}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px;}
-.stat{background:var(--s);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;}
-.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-.stat.blue::before{background:linear-gradient(90deg,#4361ee,#6d83f3);}
-.stat.green::before{background:linear-gradient(90deg,#059669,#10b981);}
-.stat.yellow::before{background:linear-gradient(90deg,#d97706,#f59e0b);}
-.stat.red::before{background:linear-gradient(90deg,#dc2626,#ef4444);}
-.stat.purple::before{background:linear-gradient(90deg,#7c3aed,#a78bfa);}
-.stat-val{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;margin-bottom:4px;}
-.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:32px;}
+.stat{
+  border-radius:20px;padding:30px 28px 26px;position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,0.22);
+  cursor:default;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1), box-shadow .22s ease;
+}
+.stat:hover{
+  transform:translateY(-5px) scale(1.02);
+}
+/* muted, deep tones — no bubbles */
+.stat.blue{background:linear-gradient(135deg,#0ea5e9,#2563eb,#4f46e5);}
+.stat.blue:hover{box-shadow:0 20px 48px rgba(37,99,235,0.55);}
+.stat.green{background:linear-gradient(135deg,#22c55e,#16a34a,#15803d);}
+.stat.green:hover{box-shadow:0 20px 48px rgba(34,197,94,0.55);}
+.stat.yellow{background:linear-gradient(135deg,#a855f7,#7c3aed,#6d28d9);}
+.stat.yellow:hover{box-shadow:0 20px 48px rgba(124,58,237,0.55);}
+.stat.red{background:linear-gradient(135deg,#f43f5e,#e11d48,#be123c);}
+.stat.red:hover{box-shadow:0 20px 48px rgba(225,29,72,0.55);}
+.stat.purple{background:linear-gradient(135deg,#10b981,#059669,#047857);}
+.stat.purple:hover{box-shadow:0 20px 48px rgba(5,150,105,0.55);}
+.stat-val{font-family:'Playfair Display',serif;font-size:46px;font-weight:800;margin-bottom:6px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.3);line-height:1;}
+.stat-lbl{font-size:11px;color:rgba(255,255,255,0.9);text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
+.stat-icon{font-size:26px;margin-bottom:10px;display:block;opacity:0.85;}
 .card{background:var(--s);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px;}
 .card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
@@ -117,8 +131,19 @@ tr:hover td{background:rgba(79,142,247,0.03);}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
+<!-- Email config banner — shown when SMTP not set up -->
+<div id="email-config-topbanner" style="display:none;align-items:center;gap:12px;background:#fffbeb;border-bottom:1.5px solid #fcd34d;padding:10px 24px;font-size:13px;position:sticky;top:0;z-index:9000;">
+  <span style="font-size:18px;">⚠️</span>
+  <div style="flex:1;">
+    <strong style="color:#92400e;">Email not configured</strong>
+    <span style="color:#a16207;margin-left:6px;">— Interview invitation emails will NOT be sent to candidates until you connect your Gmail.</span>
+  </div>
+  <button onclick="showPage('settings',document.querySelector('[data-page=settings]'));document.getElementById('email-config-topbanner').style.display='none';" style="background:#d97706;color:white;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">⚙️ Set up Gmail →</button>
+  <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#a16207;padding:0 4px;" title="Dismiss">✕</button>
+</div>
 <div class="topbar">
   <div class="brand">🤖 RecruitAI</div>
   <div class="topbar-right">
@@ -157,7 +182,7 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       <div class="page-sub">Real-time recruiting intelligence</div>
 
       <!-- Date Filter Bar -->
-      <div style="background:var(--s);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="background:var(--s);border:1px solid var(--border);border-radius:14px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
         <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">🗓 Filter By</span>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <select id="ov-filter-period" onchange="onPeriodFilterChange()"
@@ -182,30 +207,46 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       </div>
 
       <div class="stats">
-        <div class="stat blue"><div class="stat-val" id="s-candidates">—</div><div class="stat-lbl">Candidates</div></div>
-        <div class="stat green"><div class="stat-val" id="s-submissions">—</div><div class="stat-lbl">Submissions</div></div>
-        <div class="stat yellow"><div class="stat-val" id="s-violations">—</div><div class="stat-lbl">Violations</div></div>
-        <div class="stat red"><div class="stat-val" id="s-active">—</div><div class="stat-lbl">Active Sessions</div></div>
-        <div class="stat purple"><div class="stat-val" id="s-jobs">—</div><div class="stat-lbl">Job Postings</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title" style="flex-wrap:wrap;gap:12px;">
-          <span>📋 Recent Sessions</span>
-          <div style="display:flex;gap:10px;margin-left:auto;align-items:center;flex-wrap:wrap;">
-            <input id="ov-filter-name" type="text" placeholder="Search…" oninput="applyOverviewFilters()"
-              style="padding:7px 12px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;width:130px;outline:none;">
-            <button onclick="downloadSessionsExcel()" style="padding:7px 14px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:8px;color:#059669;font-size:12px;font-weight:600;cursor:pointer;">⬇ Export All</button>
-          </div>
+        <div class="stat blue">
+          <span class="stat-icon">👥</span>
+          <div class="stat-val" id="s-candidates">—</div>
+          <div class="stat-lbl">Total Candidates</div>
         </div>
-        <div id="recent-table"><div class="empty">Loading…</div></div>
-        <!-- Pagination -->
-        <div id="ov-pagination" style="display:none;padding:14px 0 2px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <span id="ov-page-info" style="font-size:12px;color:var(--muted);"></span>
-          <div style="display:flex;gap:6px;">
-            <button id="ov-prev-btn" onclick="changeOvPage(-1)" style="padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);">← Prev</button>
-            <div id="ov-page-btns" style="display:flex;gap:4px;"></div>
-            <button id="ov-next-btn" onclick="changeOvPage(1)" style="padding:6px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);">Next →</button>
-          </div>
+        <div class="stat green">
+          <span class="stat-icon">📝</span>
+          <div class="stat-val" id="s-submissions">—</div>
+          <div class="stat-lbl">Submissions</div>
+        </div>
+        <div class="stat red">
+          <span class="stat-icon">⚡</span>
+          <div class="stat-val" id="s-active">—</div>
+          <div class="stat-lbl">Active Sessions</div>
+        </div>
+        <div class="stat yellow">
+          <span class="stat-icon">💼</span>
+          <div class="stat-val" id="s-jobs">—</div>
+          <div class="stat-lbl">Job Postings</div>
+        </div>
+      </div>
+      <!-- Charts: 2 per row, fixed height -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+        <div class="card">
+          <div class="card-title">📊 Submissions by Job Role</div>
+          <div style="position:relative;height:240px;"><canvas id="chart-submissions"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏆 Pass vs Fail Rate</div>
+          <div style="position:relative;height:240px;"><canvas id="chart-passrate"></canvas></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="card">
+          <div class="card-title">📅 Submissions by Day</div>
+          <div style="position:relative;height:240px;"><canvas id="chart-timeline"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🟢 Active Job Openings</div>
+          <div id="active-jobs-overview" style="max-height:240px;overflow-y:auto;"><div class="empty">Loading…</div></div>
         </div>
       </div>
     </div>
@@ -306,6 +347,14 @@ tr:hover td{background:rgba(79,142,247,0.03);}
               <option value="Hybrid">Hybrid</option>
             </select>
           </div>
+        </div>
+        <div class="form-row">
+          <div class="fg">
+            <label>Max Openings <span style="color:var(--red)">*</span></label>
+            <input type="number" id="jp-max-openings" placeholder="e.g., 5" min="1" max="500" style="width:100%;">
+            <div style="font-size:11px;color:var(--muted2);margin-top:4px;">🔒 Job auto-closes once this many candidates apply</div>
+          </div>
+          <div class="fg"></div>
         </div>
       </div>
 
@@ -472,19 +521,28 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       <div class="page-sub">Track all interviews by status — upcoming, live, or completed</div>
 
       <!-- Tab bar -->
-      <div style="display:flex;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:5px;margin-bottom:24px;width:fit-content;">
+      <div style="display:flex;gap:4px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:5px;margin-bottom:24px;width:fit-content;flex-wrap:wrap;">
         <button id="sched-tab-upcoming" onclick="setSchedTab('upcoming')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--accent);color:#fff;">🗓️ Upcoming</button>
         <button id="sched-tab-live" onclick="setSchedTab('live')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);">🔴 Live</button>
         <button id="sched-tab-completed" onclick="setSchedTab('completed')" style="padding:9px 20px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);">✅ Completed</button>
+
       </div>
 
       <div class="card" style="padding:0;overflow:hidden;">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div style="font-weight:700;font-size:14px;" id="sched-tab-label">🗓️ Upcoming Interviews</div>
-          <button onclick="loadScheduled()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🔄 Refresh</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input id="completed-search" type="text" placeholder="Search candidate…" oninput="renderScheduledTab()" style="display:none;padding:6px 11px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;width:160px;outline:none;">
+            <button id="completed-export-btn" onclick="exportCompletedExcel()" style="display:none;padding:6px 14px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:8px;color:#059669;font-size:12px;font-weight:600;cursor:pointer;">⬇ Export Excel</button>
+            <button onclick="loadScheduled()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">🔄 Refresh</button>
+          </div>
         </div>
         <div id="scheduled-table" style="max-height:520px;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;">
           <div class="empty">Loading…</div>
+        </div>
+        <div id="completed-pagination" style="display:none;padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span id="completed-page-info" style="font-size:12px;color:var(--muted);"></span>
+          <div id="completed-page-btns" style="display:flex;gap:4px;"></div>
         </div>
       </div>
     </div>
@@ -887,104 +945,8 @@ tr:hover td{background:rgba(79,142,247,0.03);}
 </div><!-- /.layout -->
 
 <!-- FOOTER -->
-<footer style="background:#0a0f1e;position:relative;z-index:1;overflow:hidden;">
-  <!-- Subtle gradient overlay -->
-  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(67,97,238,0.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(79,142,247,0.05) 0%,transparent 50%);pointer-events:none;"></div>
-
-  <!-- Top divider line with gradient -->
-  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(67,97,238,0.5),rgba(79,142,247,0.6),rgba(67,97,238,0.5),transparent);"></div>
-
-  <div style="max-width:1200px;margin:0 auto;padding:56px 48px 40px;position:relative;">
-
-    <!-- Main grid -->
-    <div style="display:grid;grid-template-columns:2.2fr 1fr 1fr 1fr;gap:48px;align-items:start;margin-bottom:48px;">
-
-      <!-- Brand column -->
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <div style="width:38px;height:38px;background:linear-gradient(135deg,#4361ee,#1e3a8a);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 14px rgba(67,97,238,0.4);">🤖</div>
-          <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#6d83f3,#a5b4fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">RecruitAI</span>
-        </div>
-        <p style="font-size:13px;color:#94a3b8;line-height:1.8;max-width:270px;margin-bottom:24px;">The AI-powered hiring platform built for modern teams. Automate interviews, proctoring, and candidate evaluation — all in one intelligent workspace.</p>
-        <!-- Status pill -->
-        <div style="display:inline-flex;align-items:center;gap:8px;padding:7px 14px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:30px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 6px rgba(16,185,129,0.6);animation:pulseDot 2s infinite;"></span>
-          <span style="font-size:12px;color:#34d399;font-weight:600;letter-spacing:.02em;">All systems operational</span>
-        </div>
-        <!-- Tech badges -->
-        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;">
-          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(67,97,238,0.1);border:1px solid rgba(67,97,238,0.2);color:#818cf8;letter-spacing:.05em;">GEMINI AI</span>
-          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.18);color:#fbbf24;letter-spacing:.05em;">WEBRTC</span>
-          <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.18);color:#34d399;letter-spacing:.05em;">SUPABASE</span>
-        </div>
-      </div>
-
-      <!-- Platform column -->
-      <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Platform</div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <a onclick="showPage('overview',document.querySelector('[data-page=overview]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Dashboard</a>
-          <a onclick="showPage('jobs',document.querySelector('[data-page=jobs]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Job Postings</a>
-          <a onclick="showPage('applicants',document.querySelector('[data-page=applicants]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Applicants</a>
-          <a onclick="showPage('scheduled',document.querySelector('[data-page=scheduled]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Scheduled Interviews</a>
-          <a onclick="showPage('interviewers',document.querySelector('[data-page=interviewers]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Interviewers</a>
-          <a onclick="showPage('create',document.querySelector('[data-page=create]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Create Interview</a>
-        </div>
-      </div>
-
-      <!-- Configuration column -->
-      <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Configuration</div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <a onclick="showPage('roundconfig',document.querySelector('[data-page=roundconfig]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Round Config</a>
-          <a onclick="showPage('emailsettings',document.querySelector('[data-page=emailsettings]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Email Settings</a>
-          <a onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="font-size:13px;color:#94a3b8;text-decoration:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;" onmouseover="this.style.color='#a5b4fc';this.style.paddingLeft='4px'" onmouseout="this.style.color='#94a3b8';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Company Profile</a>
-          <a href="/logout" style="font-size:13px;color:#f87171;text-decoration:none;transition:all .2s;display:flex;align-items:center;gap:8px;margin-top:4px;" onmouseover="this.style.color='#fca5a5';this.style.paddingLeft='4px'" onmouseout="this.style.color='#f87171';this.style.paddingLeft='0'"><span style="opacity:.5;">›</span> Logout</a>
-        </div>
-      </div>
-
-      <!-- Trust & Security column -->
-      <div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#475569;margin-bottom:20px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06);">Security & Trust</div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:28px;height:28px;background:rgba(67,97,238,0.12);border:1px solid rgba(67,97,238,0.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🔒</span>
-            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">SSL Encrypted</div><div style="font-size:11px;color:#475569;">End-to-end secure</div></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:28px;height:28px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🧠</span>
-            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">AI Proctoring</div><div style="font-size:11px;color:#475569;">Real-time monitoring</div></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:28px;height:28px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.18);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">🛡️</span>
-            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">GDPR Compliant</div><div style="font-size:11px;color:#475569;">Data privacy first</div></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="width:28px;height:28px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.15);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">📊</span>
-            <div><div style="font-size:12px;color:#cbd5e1;font-weight:600;">Data Analytics</div><div style="font-size:11px;color:#475569;">Insights at a glance</div></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Bottom bar -->
-    <div style="padding-top:28px;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-        <span style="font-size:12px;color:#334155;">© 2026 RecruitAI. All rights reserved.</span>
-        <span style="width:1px;height:14px;background:#1e293b;display:inline-block;"></span>
-        <span style="font-size:12px;color:#334155;">Powered by <span style="color:#6d83f3;font-weight:600;">Gemini AI</span></span>
-        <span style="width:1px;height:14px;background:#1e293b;display:inline-block;"></span>
-        <span style="font-size:12px;color:#334155;">Built for modern hiring</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Privacy Policy</span>
-        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Terms of Service</span>
-        <span style="font-size:12px;color:#334155;cursor:pointer;padding:5px 12px;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#334155'">Support</span>
-      </div>
-    </div>
-
-  </div>
+<footer style="position:sticky;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,#0a0f1e,#0d1528,#0a0f1e);border-top:1px solid rgba(67,97,238,0.3);padding:10px 24px;display:flex;align-items:center;justify-content:center;box-shadow:0 -4px 24px rgba(0,0,0,0.4);">
+  <span style="font-size:12px;font-weight:600;background:linear-gradient(90deg,#6d83f3,#a5b4fc,#6d83f3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.04em;">© 2026 RecruitAI — All rights reserved</span>
 </footer>
 
 <!-- Schedule Interview Modal -->
@@ -995,6 +957,16 @@ tr:hover td{background:rgba(79,142,247,0.03);}
       <button onclick="closeScheduleModal()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>
     </div>
     <div id="schedule-candidate-info" style="background:var(--s2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;border:1px solid var(--border);"></div>
+
+    <!-- Email not configured warning -->
+    <div id="sched-email-warn" style="display:none;align-items:flex-start;gap:12px;background:#fefce8;border:1.5px solid #fbbf24;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;">
+      <span style="font-size:20px;flex-shrink:0;">⚠️</span>
+      <div>
+        <div style="font-weight:700;color:#92400e;margin-bottom:3px;">Email not configured — invite won't be sent</div>
+        <div style="color:#a16207;font-size:12px;line-height:1.5;">The candidate will NOT receive an email invitation because your Gmail is not connected. The interview will still be scheduled but you'll need to share the room code manually.</div>
+        <a href="#" onclick="closeScheduleModal();showPage('settings',document.querySelector('[data-page=settings]'));return false;" style="display:inline-block;margin-top:6px;font-size:12px;font-weight:700;color:#d97706;text-decoration:underline;">→ Set up Gmail now</a>
+      </div>
+    </div>
 
     <!-- Interviewer info (auto-filled from round config) -->
     <div id="sched-interviewer-info" style="display:none;background:rgba(67,97,238,.05);border:1px solid rgba(67,97,238,.18);border-radius:9px;padding:12px;margin-bottom:16px;font-size:13px;"></div>
@@ -1285,6 +1257,20 @@ async function init() {
   const jpComp = document.getElementById('jp-company');
   if (jpComp) jpComp.value = _companyName;
   await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadMyPostings()]);
+  // Check if email is configured — show persistent top banner if not
+  checkEmailConfig();
+}
+
+function checkEmailConfig() {
+  fetch('/api/recruiter/profile').then(r=>r.json()).then(data => {
+    const banner = document.getElementById('email-config-topbanner');
+    if (!banner) return;
+    if (!data.smtp_email) {
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  }).catch(()=>{});
 }
 
 async function loadJobSections() {
@@ -1317,6 +1303,7 @@ async function loadDashboard() {
   // Populate year dropdown from data
   _populateYearDropdown();
   applyOverviewFilters();
+  renderOverviewCharts();
 }
 
 function _populateYearDropdown() {
@@ -1566,8 +1553,9 @@ async function createJobPosting() {
   const desc      = document.getElementById('jp-desc').value.trim();
   const experience= document.getElementById('jp-experience').value;
   const jobType   = document.getElementById('jp-job-type').value;
-  const pkg       = document.getElementById('jp-package')?.value?.trim() || '';
-  const workMode  = document.getElementById('jp-work-mode')?.value || '';
+  const pkg         = document.getElementById('jp-package')?.value?.trim() || '';
+  const workMode    = document.getElementById('jp-work-mode')?.value || '';
+  const maxOpenings = parseInt(document.getElementById('jp-max-openings')?.value || 0);
 
   // Validation
   if (!section)    { jpShowError('⚠️ Please select a Department / Section.'); return; }
@@ -1577,6 +1565,7 @@ async function createJobPosting() {
   if (!experience) { jpShowError('⚠️ Please select the experience level required.'); return; }
   if (!jobType)    { jpShowError('⚠️ Please select a Job Type.'); return; }
   if (!pkg)        { jpShowError('⚠️ Salary package is required.'); return; }
+  if (!maxOpenings || maxOpenings < 1) { jpShowError('⚠️ Please enter the number of openings.'); return; }
 
   const btn = document.querySelector('[onclick="createJobPosting()"]');
   if (btn) { btn.disabled=true; btn.textContent='Publishing…'; }
@@ -1596,6 +1585,7 @@ async function createJobPosting() {
         job_type: jobType,
         salary_package: pkg,
         work_mode: workMode,
+        max_openings: maxOpenings,
       })
     });
     const data = await res.json();
@@ -1629,6 +1619,17 @@ let _schedRoundConfig = null;
 
 function openScheduleModal(applicationId, candidateName, jobRole, company, postingId) {
   currentApplicationId=applicationId; schedMode='mcq';
+  // Show email config warning if SMTP not set up
+  const emailWarn = document.getElementById('sched-email-warn');
+  if (emailWarn) {
+    fetch('/api/recruiter/profile').then(r=>r.json()).then(d => {
+      if (!d.smtp_email) {
+        emailWarn.style.display = 'flex';
+      } else {
+        emailWarn.style.display = 'none';
+      }
+    }).catch(()=>{});
+  }
   _currentSchedPostingId = postingId || null;
   _schedRoundConfig = null;
   document.querySelectorAll('[id^="sched-mode-"]').forEach(e=>e.classList.remove('selected'));
@@ -2053,7 +2054,8 @@ function applyOverviewFilters(resetPage=true) {
   const start = (_ovCurrentPage-1)*OV_PAGE_SIZE;
   const pageData = filtered.slice(start, start+OV_PAGE_SIZE);
 
-  renderSessionsTable(pageData, 'recent-table');
+  // Re-render charts with filtered data
+  renderOverviewCharts(filtered);
   _renderPagination(total, totalPages);
 
   // Update badge
@@ -2071,7 +2073,6 @@ function _updateFilteredStats(filtered) {
     // Use raw API stats
     document.getElementById('s-candidates').textContent = _rawStats.total_candidates ?? '—';
     document.getElementById('s-submissions').textContent = _rawStats.total_submissions ?? '—';
-    document.getElementById('s-violations').textContent = _rawStats.total_violations ?? '—';
     document.getElementById('s-active').textContent = _rawStats.active_sessions ?? '—';
     document.getElementById('s-jobs').textContent = _rawJpData.length ?? '—';
   } else {
@@ -2081,7 +2082,6 @@ function _updateFilteredStats(filtered) {
     const active = filtered.filter(s=>!s.passed && s.credibility_score===100).length;
     document.getElementById('s-candidates').textContent = candidates;
     document.getElementById('s-submissions').textContent = filtered.length;
-    document.getElementById('s-violations').textContent = violations;
     document.getElementById('s-active').textContent = _rawStats.active_sessions ?? '—';
     document.getElementById('s-jobs').textContent = _rawJpData.length ?? '—';
   }
@@ -2118,6 +2118,7 @@ function _renderPagination(total, totalPages) {
 
 function renderSessionsTable(subs, containerId) {
   const el=document.getElementById(containerId);
+  if (!el) return;
   if (!subs?.length) { el.innerHTML='<div class="empty">No sessions found</div>'; return; }
   el.innerHTML=`<div style="overflow-x:auto;"><table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
     ${subs.map(s=>`<tr><td><strong>${s.full_name||s.username}</strong></td><td>${s.job_role||'—'}</td>
@@ -2182,9 +2183,12 @@ function showToast(msg,dur=3500) { const t=document.getElementById('toast'); t.t
 let _schedAllData = [];
 let _currentSchedTab = 'upcoming';
 
+let _completedPage = 1;
+const COMPLETED_PAGE_SIZE = 10;
+
 function setSchedTab(tab) {
   _currentSchedTab = tab;
-  // Update tab button styles
+  _completedPage = 1;
   ['upcoming','live','completed'].forEach(t => {
     const btn = document.getElementById('sched-tab-'+t);
     if (!btn) return;
@@ -2198,14 +2202,19 @@ function setSchedTab(tab) {
   });
   const labels = { upcoming:'🗓️ Upcoming Interviews', live:'🔴 Live / Active Interviews', completed:'✅ Completed Interviews' };
   const lbl = document.getElementById('sched-tab-label');
-  if (lbl) lbl.textContent = labels[tab];
+  if (lbl) lbl.textContent = labels[tab] || tab;
+  const search = document.getElementById('completed-search');
+  const expBtn = document.getElementById('completed-export-btn');
+  const pag    = document.getElementById('completed-pagination');
+  if (search) search.style.display = tab==='completed' ? 'block' : 'none';
+  if (expBtn) expBtn.style.display = tab==='completed' ? 'block' : 'none';
+  if (pag)    pag.style.display    = tab==='completed' ? 'flex'  : 'none';
   renderScheduledTab();
 }
 
 function renderScheduledTab() {
   const el = document.getElementById('scheduled-table');
   if (!el) return;
-  const now = new Date();
   let filtered = [];
   if (_currentSchedTab === 'upcoming') {
     filtered = _schedAllData.filter(s => {
@@ -2219,6 +2228,22 @@ function renderScheduledTab() {
       const st = s.session_status || '';
       return st === 'completed' || st === 'abandoned';
     });
+    // Apply search filter
+    const q = (document.getElementById('completed-search')?.value || '').toLowerCase().trim();
+    if (q) filtered = filtered.filter(s => (s.candidate_name||'').toLowerCase().includes(q) || (s.job_role||'').toLowerCase().includes(q));
+    // Pagination
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / COMPLETED_PAGE_SIZE));
+    _completedPage = Math.min(_completedPage, totalPages);
+    const start = (_completedPage - 1) * COMPLETED_PAGE_SIZE;
+    // Render pagination
+    const info = document.getElementById('completed-page-info');
+    const btns = document.getElementById('completed-page-btns');
+    if (info) info.textContent = `Showing ${Math.min(start+1,total)}–${Math.min(start+COMPLETED_PAGE_SIZE,total)} of ${total}`;
+    if (btns) btns.innerHTML = Array.from({length:totalPages},(_,i)=>i+1).map(p=>
+      `<button onclick="_completedPage=${p};renderScheduledTab()" style="padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ${p===_completedPage?'var(--accent)':'var(--border)'};background:${p===_completedPage?'var(--accent)':'var(--s2)'};color:${p===_completedPage?'#fff':'var(--text)'};">${p}</button>`
+    ).join('');
+    filtered = filtered.slice(start, start + COMPLETED_PAGE_SIZE);
   }
 
   if (!filtered.length) {
@@ -2238,8 +2263,7 @@ function renderScheduledTab() {
     if (!s.room_code) {
       actionBtn = '<span style="color:var(--muted);font-size:12px;">No room</span>';
     } else if (isDone) {
-      actionBtn = `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Session ended</div>
-        <button onclick="window.open('/recruiter_room.html?room=${s.room_code}','_blank')" style="padding:6px 12px;background:rgba(100,116,139,.1);color:var(--muted);border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;width:100%;">📋 View Results</button>`;
+      actionBtn = `<div style="font-size:12px;color:var(--muted);font-style:italic;">Session ended</div>`;
     } else if (isActive) {
       const lbl = isLive ? '🎥 Rejoin Session' : '👁 Monitor Live';
       actionBtn = `<div style="font-size:11px;color:#059669;margin-bottom:4px;font-weight:600;">● In progress</div>
@@ -2262,6 +2286,9 @@ function renderScheduledTab() {
           ${s.round_name?`<span style="font-size:11px;color:var(--muted);">Round: <strong>${s.round_name}</strong></span>`:''}
           ${isDone && s.session_score!=null?`<span style="font-size:11px;font-weight:700;color:${s.session_score>=60?'#059669':'#dc2626'};">Score: ${s.session_score}%</span>`:''}
           ${isDone && s.session_credibility!=null?`<span style="font-size:11px;color:var(--muted);">Credibility: <strong>${s.session_credibility}</strong></span>`:''}
+          ${isDone && s.total_violations!=null?`<span style="font-size:11px;color:#dc2626;font-weight:600;">⚠ ${s.total_violations} Violation(s)</span>`:''}
+          ${isDone && s.passed!=null?`<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;background:${s.passed?'rgba(5,150,105,.1)':'rgba(220,38,38,.1)'};color:${s.passed?'#059669':'#dc2626'};">${s.passed?'✅ Passed':'❌ Failed'}</span>`:''}
+
         </div>
       </div>
       <div style="min-width:130px;text-align:right;">
@@ -2270,6 +2297,33 @@ function renderScheduledTab() {
       </div>
     </div>`;
   }).join('');
+}
+
+
+function exportCompletedExcel() {
+  const completed = _schedAllData.filter(s => {
+    const st = s.session_status || '';
+    return st === 'completed' || st === 'abandoned';
+  });
+  if (!completed.length) { showToast('No completed sessions to export'); return; }
+  const rows = [['Candidate','Email','Job Role','Mode','Score','Credibility','Violations','Passed','Status','Date']];
+  completed.forEach(s => {
+    rows.push([
+      s.candidate_name||'', s.candidate_email||'', s.job_role||'',
+      (s.interview_mode||'').replace(/_/g,' '),
+      s.session_score??'', s.session_credibility??'',
+      s.total_violations??'',
+      s.passed===true?'Yes':s.passed===false?'No':'',
+      s.session_status||'', (s.scheduled_at||'').split(' ')[0]
+    ]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'completed_interviews.csv';
+  a.click();
+  showToast('✅ Exported successfully!');
 }
 
 async function loadScheduled() {
@@ -2617,7 +2671,158 @@ async function clearEmailSettings() {
   showToast('Gmail disconnected');
 }
 
+
+// ── Chart instances ────────────────────────────────────────────────────────────
+let _chartSubmissions = null, _chartPassrate = null, _chartTimeline = null;
+
+function renderOverviewCharts(filteredSubs) {
+  const subs = filteredSubs !== undefined ? filteredSubs : (allSubmissionsData || []);
+  const postings = _rawJpData || [];
+
+  // ── Chart 1: Submissions by Job Posting ────────────────────────────────────
+  const postingMap = {};
+  subs.forEach(s => {
+    const label = s.job_role || 'Unknown';
+    postingMap[label] = (postingMap[label] || 0) + 1;
+  });
+  const labels1 = Object.keys(postingMap).slice(0,8);
+  const vals1   = labels1.map(k => postingMap[k]);
+  const ctx1 = document.getElementById('chart-submissions');
+  if (ctx1) {
+    if (_chartSubmissions) _chartSubmissions.destroy();
+    _chartSubmissions = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: labels1.length ? labels1 : ['No data'],
+        datasets: [{ label: 'Submissions', data: labels1.length ? vals1 : [0],
+          backgroundColor: 'rgba(67,97,238,0.7)', borderRadius: 8, borderSkipped: false }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+        scales:{ x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'}},
+                 y:{ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,0.05)'}, beginAtZero:true} } }
+    });
+  }
+
+  // ── Chart 2: Pass vs Fail ──────────────────────────────────────────────────
+  const passed = subs.filter(s=>s.passed).length;
+  const failed = subs.length - passed;
+  const ctx2 = document.getElementById('chart-passrate');
+  if (ctx2) {
+    if (_chartPassrate) _chartPassrate.destroy();
+    _chartPassrate = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Passed','Failed'],
+        datasets: [{ data: [passed||0, failed||0],
+          backgroundColor: ['rgba(5,150,105,0.8)','rgba(220,38,38,0.7)'],
+          borderWidth: 0, hoverOffset: 6 }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#94a3b8',font:{size:12}} } } }
+    });
+  }
+
+  // ── Chart 3: Submissions Over Time (last 14 days) ─────────────────────────
+  const dayMap = {};
+  const today = new Date();
+  for (let i=13;i>=0;i--) {
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    dayMap[d.toISOString().slice(0,10)] = 0;
+  }
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayCounts = [0,0,0,0,0,0,0];
+  subs.forEach(s => {
+    const d = s.submitted_at ? new Date(s.submitted_at) : null;
+    if (d && !isNaN(d)) dayCounts[d.getDay()]++;
+  });
+  // Rotate to start from Mon
+  const rotatedLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const rotatedData   = [dayCounts[1],dayCounts[2],dayCounts[3],dayCounts[4],dayCounts[5],dayCounts[6],dayCounts[0]];
+  const ctx3 = document.getElementById('chart-timeline');
+  if (ctx3) {
+    if (_chartTimeline) _chartTimeline.destroy();
+    _chartTimeline = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: rotatedLabels,
+        datasets: [{ label:'Submissions', data: rotatedData,
+          backgroundColor:'rgba(79,142,247,0.75)', borderRadius:6, borderSkipped:false }]
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+        scales:{ x:{ticks:{color:'#94a3b8',font:{size:11}},grid:{display:false}},
+                 y:{ticks:{color:'#94a3b8',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true,precision:0} } }
+    });
+  }
+
+  // ── Active job openings card ───────────────────────────────────────────────
+  const el = document.getElementById('active-jobs-overview');
+  if (el) {
+    if (!postings.length) { el.innerHTML='<div class="empty">No active job postings</div>'; }
+    else {
+      el.innerHTML = postings.slice(0,6).map(p => {
+        const pct = p.max_openings ? Math.min(100, Math.round((p.applications_count||0)/p.max_openings*100)) : null;
+        const full = p.max_openings && (p.applications_count||0) >= p.max_openings;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${p.job_title||p.job_role}</div>
+            <div style="font-size:11px;color:var(--muted);">${p.job_section} · ${p.job_type||''}</div>
+            ${p.max_openings ? `<div style="margin-top:5px;height:4px;background:var(--s2);border-radius:4px;width:140px;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:${full?'#dc2626':'#4361ee'};border-radius:4px;transition:width .4s;"></div>
+            </div>` : ''}
+          </div>
+          <div style="text-align:right;">
+            ${p.max_openings ? `<div style="font-size:12px;font-weight:700;color:${full?'#dc2626':'#059669'};">${full?'🔒 Full':'🟢 Open'}</div>
+              <div style="font-size:11px;color:var(--muted);">${p.applications_count||0} / ${p.max_openings}</div>` 
+            : `<span style="font-size:11px;color:#059669;font-weight:600;">🟢 Open</span>`}
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+// ── Submissions tab rendering ─────────────────────────────────────────────────
+function renderSubmissionsTab() {
+  const el = document.getElementById('scheduled-table');
+  if (!el) return;
+  const subs = allSubmissionsData || [];
+  if (!subs.length) { el.innerHTML='<div class="empty">No submissions yet</div>'; return; }
+  el.innerHTML = subs.slice(0,30).map(s => {
+    const passed = s.passed;
+    const score  = s.interview_score || 0;
+    const cred   = s.credibility_score || 100;
+    return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <div style="font-weight:700;font-size:14px;">${s.full_name||s.username||'—'}</div>
+          <span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:${passed?'rgba(5,150,105,.1);':'rgba(220,38,38,.1);'};color:${passed?'#059669':'#dc2626'};">${passed?'✅ PASSED':'❌ FAILED'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);">💼 ${s.job_role||'—'} &nbsp;·&nbsp; 🎯 ${(s.mode||'mcq').replace(/_/g,' ').toUpperCase()} &nbsp;·&nbsp; 🗓️ ${(s.submitted_at||'—').slice(0,10)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:13px;font-weight:700;color:${score>=60?'#059669':'#dc2626'};">Score: ${score}%</div>
+        <div style="font-size:11px;color:var(--muted);">Credibility: ${cred}</div>
+        <div style="font-size:11px;color:var(--muted);">Round ${s.round_number||1}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 init();
 </script>
-</body>
-</html>
+
+
+
+
+<!-- Stale Session Checker -->
+<div id="stale-session-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:none;align-items:center;justify-content:center;">
+  <div style="background:#1e2a3a;border:1px solid rgba(255,100,100,0.3);border-radius:18px;padding:32px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+    <div style="font-size:32px;text-align:center;margin-bottom:12px;">⏰</div>
+    <div style="font-size:18px;font-weight:700;color:#fff;text-align:center;margin-bottom:8px;">Session Still Active!</div>
+    <div id="stale-session-msg" style="font-size:14px;color:#94a3b8;text-align:center;margin-bottom:24px;line-height:1.6;"></div>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button onclick="handleStaleSession('end')" style="padding:11px 28px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">🛑 End Session</button>
+      <button onclick="handleStaleSession('extend')" style="padding:11px 28px;background:linear-gradient(135deg,#4361ee,#3a56d4);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">⏱ Extend 30min</button>
+      <button onclick="handleStaleSession('dismiss')" style="padding:11px 20px;background:rgba(255,255,255,0.08);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-size:14px;cursor:pointer;">Dismiss</button>
+    </div>
+  </div>
+</div>

@@ -49,11 +49,13 @@ def save_round_config():
 
         for r in rounds_data:
             detail = RoundConfigDetail(
-                config_id      = config.id,
-                round_number   = r.get('round_number'),
-                round_name     = r.get('round_name', f"Round {r.get('round_number')}"),
-                interview_mode = r.get('interview_mode', 'mcq'),
-                pass_threshold = r.get('pass_threshold', 60),
+                config_id         = config.id,
+                round_number      = r.get('round_number'),
+                round_name        = r.get('round_name', f"Round {r.get('round_number')}"),
+                interview_mode    = r.get('interview_mode', 'mcq'),
+                pass_threshold    = r.get('pass_threshold', 60),
+                interviewer_name  = (r.get('interviewer_name') or '').strip() or None,
+                interviewer_email = (r.get('interviewer_email') or '').strip().lower() or None,
             )
             db.session.add(detail)
 

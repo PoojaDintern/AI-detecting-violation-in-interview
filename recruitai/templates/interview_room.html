@@ -345,6 +345,35 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #rules-cta-btn-main { opacity:0.38; pointer-events:none; transition: all 0.25s; }
 #rules-cta-btn-main.enabled { opacity:1; pointer-events:auto; }
 
+
+/* ── Scan direction arrow ── */
+.scan-direction-arrow {
+  display:none;position:absolute;inset:0;align-items:center;justify-content:center;
+  pointer-events:none;z-index:10;
+}
+.scan-direction-arrow.show { display:flex; }
+.arrow-anim {
+  font-size:52px;opacity:0.9;
+  animation: arrowPulse 0.7s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 8px rgba(67,97,238,0.6));
+}
+@keyframes arrowPulse {
+  from { transform: scale(1) translateX(0); opacity:0.7; }
+  to   { transform: scale(1.15) translateX(6px); opacity:1; }
+}
+.arrow-anim.left  { animation-name: arrowLeft; }
+.arrow-anim.right { animation-name: arrowRight; }
+.arrow-anim.down  { animation-name: arrowDown; }
+@keyframes arrowLeft  { from{transform:translateX(0) scale(1);opacity:.7} to{transform:translateX(-10px) scale(1.1);opacity:1} }
+@keyframes arrowRight { from{transform:translateX(0) scale(1);opacity:.7} to{transform:translateX(10px) scale(1.1);opacity:1} }
+@keyframes arrowDown  { from{transform:translateY(0) scale(1);opacity:.7} to{transform:translateY(8px) scale(1.1);opacity:1} }
+/* Pose hold indicator */
+.pose-hold-bar { display:none;margin-top:6px;height:5px;background:#e2e8f0;border-radius:99px;overflow:hidden; }
+.pose-hold-bar.show { display:block; }
+.pose-hold-fill { height:100%;border-radius:99px;background:#4361ee;width:0%;transition:width .1s linear; }
+.pose-hold-label { font-size:11px;color:#4361ee;font-weight:700;margin-top:3px;display:none; }
+.pose-hold-label.show { display:block; }
+
 </style>
 </head>
 <body>
@@ -460,6 +489,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="scan-multiface-banner" id="scan-multiface-banner">
           👥 Multiple faces detected — only you should be in frame!
         </div>
+        <!-- Direction arrow overlay -->
+        <div class="scan-direction-arrow" id="scan-dir-arrow">
+          <span class="arrow-anim" id="scan-arrow-icon">➡️</span>
+        </div>
         <div class="scan-arc">
           <svg viewBox="0 0 100 100" fill="none">
             <circle cx="50" cy="50" r="44" stroke="rgba(67,97,238,0.12)" stroke-width="3"/>
@@ -475,6 +508,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="scan-instruction-box">
         <div class="scan-instruction-label">Current instruction</div>
         <div class="scan-instruction-text" id="scan-instruction">📷 Position your face in the camera, then press Start Scan above</div>
+        <div class="pose-hold-bar" id="pose-hold-bar"><div class="pose-hold-fill" id="pose-hold-fill"></div></div>
+        <div class="pose-hold-label" id="pose-hold-label">Hold this position…</div>
       </div>
 
       <!-- Progress bar -->
@@ -895,13 +930,76 @@ async function quickLogin() {
 }
 
 async function startCamera() {
+  const statusEl = document.getElementById('cam-status');
+
+  // Browser blocks camera on plain HTTP (except localhost)
+  const isHTTPS = location.protocol === 'https:';
+  const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+  if (!isHTTPS && !isLocalhost) {
+    statusEl.textContent = '⚠ Camera blocked — needs HTTPS';
+    statusEl.classList.add('bad');
+    showCameraBlockedBanner('http');
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    statusEl.textContent = '⚠ Camera not supported';
+    statusEl.classList.add('bad');
+    showCameraBlockedBanner('unsupported');
+    return;
+  }
+
   try {
     const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:false});
     document.getElementById('cam-video').srcObject = stream;
+    statusEl.textContent = '● Camera Active';
   } catch(e) {
-    document.getElementById('cam-status').textContent = '⚠ Camera error';
-    document.getElementById('cam-status').classList.add('bad');
+    console.error('Camera error', e);
+    statusEl.textContent = '⚠ Camera denied';
+    statusEl.classList.add('bad');
+    if (e.name === 'NotAllowedError') {
+      showCameraBlockedBanner('denied');
+    } else if (e.name === 'NotFoundError') {
+      showCameraBlockedBanner('notfound');
+    } else {
+      showCameraBlockedBanner('other');
+    }
   }
+}
+
+function showCameraBlockedBanner(reason) {
+  // Remove existing banner if any
+  const existing = document.getElementById('camera-blocked-banner');
+  if (existing) existing.remove();
+
+  const messages = {
+    http:        { title: '🔒 Camera blocked — HTTPS required', body: 'Your browser only allows camera access on secure (HTTPS) connections.<br><br><strong>Fix:</strong> Open your <code>start_recruitai.bat</code> to start ngrok, then use the <strong>https://xxxx.ngrok-free.app</strong> URL instead of localhost.' },
+    denied:      { title: '📷 Camera permission denied', body: 'You blocked camera access. To fix this:<br><br>1. Click the 🔒 or 📷 icon in your browser address bar<br>2. Set Camera to <strong>Allow</strong><br>3. Refresh the page' },
+    notfound:    { title: '📷 No camera found', body: 'No camera was detected on your device. Make sure your webcam is connected and not being used by another app.' },
+    unsupported: { title: '📷 Camera not supported', body: 'Your browser does not support camera access. Please use Chrome, Firefox or Edge.' },
+    other:       { title: '📷 Camera error', body: 'Could not access your camera. Make sure no other app is using it, then refresh the page.' },
+  };
+
+  const { title, body } = messages[reason] || messages.other;
+
+  const banner = document.createElement('div');
+  banner.id = 'camera-blocked-banner';
+  banner.style.cssText = `
+    position:fixed; top:70px; left:50%; transform:translateX(-50%);
+    background:#1a0a0a; border:1.5px solid #f43f5e; border-radius:12px;
+    padding:18px 24px; max-width:480px; width:90%; z-index:9999;
+    box-shadow:0 8px 32px rgba(244,63,94,0.3); font-family:inherit;
+  `;
+  banner.innerHTML = `
+    <div style="color:#fb7185;font-weight:800;font-size:15px;margin-bottom:8px;">${title}</div>
+    <div style="color:#8b949e;font-size:13px;line-height:1.7;">${body}</div>
+    <button onclick="this.parentElement.remove()" style="
+      margin-top:14px; background:#f43f5e; border:none; color:white;
+      padding:7px 18px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:700;
+    ">Got it</button>
+  `;
+  document.body.appendChild(banner);
 }
 
 async function startSession() {
@@ -927,12 +1025,12 @@ function startTimer() {
 // 360° ROOM SCAN — with head pose verification
 // ══════════════════════════════════════════════════════════════════════════════
 const SCAN_STEPS = [
-  { label: '📷 Face the camera directly — look straight ahead', duration: 4000, stepIdx: 0, poseRequired: 'center' },
-  { label: '⬅️ Slowly rotate LEFT — turn your head & body to show your left side', duration: 6000, stepIdx: 1, poseRequired: 'left' },
-  { label: '↩️ Return to center — face the camera again', duration: 3000, stepIdx: 2, poseRequired: 'center' },
-  { label: '➡️ Slowly rotate RIGHT — turn your head & body to show your right side', duration: 6000, stepIdx: 3, poseRequired: 'right' },
-  { label: '⬇️ Tilt down — show your desk and keyboard area', duration: 3000, stepIdx: 4, poseRequired: 'down' },
-  { label: '✅ Hold still — completing scan…', duration: 2000, stepIdx: 5, poseRequired: null },
+  { label: '📷 Look straight at the camera — keep your face centred in frame', duration: 4000, stepIdx: 0, poseRequired: 'center', arrow: null,    arrowClass: '' },
+  { label: '⬅️ Slowly turn LEFT — rotate your head and shoulders to the left', duration: 6000, stepIdx: 1, poseRequired: 'left',   arrow: '⬅️', arrowClass: 'left' },
+  { label: '↩️ Return to CENTER — face the camera straight again', duration: 3000, stepIdx: 2, poseRequired: 'center', arrow: '↩️', arrowClass: '' },
+  { label: '➡️ Slowly turn RIGHT — rotate your head and shoulders to the right', duration: 6000, stepIdx: 3, poseRequired: 'right',  arrow: '➡️', arrowClass: 'right' },
+  { label: '⬇️ Tilt DOWN — show your desk, hands and keyboard area clearly', duration: 3000, stepIdx: 4, poseRequired: 'down',   arrow: '⬇️', arrowClass: 'down' },
+  { label: '✅ Hold still — scan completing…', duration: 2000, stepIdx: 5, poseRequired: null, arrow: null, arrowClass: '' },
 ];
 const TOTAL_SCAN_MS = SCAN_STEPS.reduce((a, s) => a + s.duration, 0);
 const SCAN_STEP_IDS = ['sstep-0','sstep-1','sstep-2','sstep-3','sstep-4','sstep-5'];
@@ -1048,11 +1146,39 @@ async function startRoomScan() {
   btn.textContent = '🔴 Scanning…';
 
   // Add live instruction panel for pose guidance
-  const instrEl = document.getElementById('scan-instruction');
+  const instrEl    = document.getElementById('scan-instruction');
+  const arrowEl    = document.getElementById('scan-dir-arrow');
+  const arrowIcon  = document.getElementById('scan-arrow-icon');
+  const holdBar    = document.getElementById('pose-hold-bar');
+  const holdFill   = document.getElementById('pose-hold-fill');
+  const holdLabel  = document.getElementById('pose-hold-label');
+
+  function showArrow(step) {
+    if (step.arrow) {
+      arrowIcon.textContent = step.arrow;
+      arrowIcon.className   = 'arrow-anim ' + (step.arrowClass || '');
+      arrowEl.classList.add('show');
+    } else {
+      arrowEl.classList.remove('show');
+    }
+  }
+  function hideArrow() { arrowEl.classList.remove('show'); }
+
+  function showHoldBar(pct) {
+    holdBar.classList.add('show');
+    holdLabel.classList.add('show');
+    holdFill.style.width = (pct * 100).toFixed(0) + '%';
+  }
+  function hideHoldBar() {
+    holdBar.classList.remove('show');
+    holdLabel.classList.remove('show');
+    holdFill.style.width = '0%';
+  }
+
   const poseWarnEl = document.getElementById('scan-pose-warn') || (() => {
     const d = document.createElement('div');
     d.id = 'scan-pose-warn';
-    d.style.cssText = 'display:none;margin-top:8px;padding:10px 14px;background:rgba(220,38,38,.09);border:1.5px solid rgba(220,38,38,.25);border-radius:8px;font-size:13px;color:#991b1b;font-weight:600;text-align:center;';
+    d.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:rgba(220,38,38,.09);border:1.5px solid rgba(220,38,38,.25);border-radius:8px;font-size:12px;color:#991b1b;font-weight:600;text-align:center;';
     instrEl.parentNode.insertBefore(d, instrEl.nextSibling);
     return d;
   })();
@@ -1061,6 +1187,8 @@ async function startRoomScan() {
     const step = SCAN_STEPS[i];
     instrEl.textContent = step.label;
     poseWarnEl.style.display = 'none';
+    showArrow(step);
+    hideHoldBar();
 
     // Update step indicators
     SCAN_STEP_IDS.forEach((id, idx) => {
@@ -1071,8 +1199,10 @@ async function startRoomScan() {
       else el.className = 'scan-step';
     });
 
-    // Track pose confirmation
-    let poseConfirmed = !step.poseRequired;
+    // Track pose confirmation + hold timer
+    let poseConfirmed  = !step.poseRequired;
+    let poseHoldMs     = 0;  // how long pose has been held
+    const POSE_HOLD_REQ = 1500; // must hold pose for 1.5s before capturing
 
     // Capture a frame, save thumbnail, and check pose
     const doCapture = async () => {
@@ -1090,16 +1220,18 @@ async function startRoomScan() {
         if (ok) {
           poseConfirmed = true;
           poseWarnEl.style.display = 'none';
+          hideArrow();
+          hideHoldBar();
         }
       }
     };
 
-    // ── Phase 1: Run step timer, capturing every 1.5s ──────────────────────
-    await doCapture();
+    // ── Phase 1: Run step timer — show hold bar, capture only after pose held ──
     await new Promise(res => {
-      let elapsed = 0;
-      const interval = 80;
-      let lastCapture = 0;
+      let elapsed     = 0;
+      let holdStart   = null;  // when current pose hold started
+      let captured    = false;
+      const interval  = 80;
       const tick = setInterval(async () => {
         elapsed += interval;
         const stepPct = Math.min(elapsed / step.duration, 1);
@@ -1109,10 +1241,19 @@ async function startRoomScan() {
           'stroke-dashoffset', (circ * (1 - pct)).toFixed(2)
         );
         document.getElementById('scan-progress-fill').style.width = (pct * 100).toFixed(1) + '%';
-        if (elapsed - lastCapture >= 1500 && !poseConfirmed) {
-          lastCapture = elapsed;
-          doCapture(); // async — fire and forget during step
+
+        // Show hold progress bar while waiting for pose
+        if (step.poseRequired && !poseConfirmed) {
+          if (!holdStart) holdStart = elapsed;
+          const held = elapsed - holdStart;
+          showHoldBar(Math.min(held / POSE_HOLD_REQ, 1));
+          // Capture after pose held for 1.5s
+          if (held >= POSE_HOLD_REQ && !captured) {
+            captured = true;
+            doCapture();
+          }
         }
+
         if (elapsed >= step.duration) {
           clearInterval(tick);
           res();
@@ -1122,24 +1263,26 @@ async function startRoomScan() {
 
     // ── Phase 2: If pose still not confirmed, give up to 3 extra chances ──
     if (step.poseRequired && !poseConfirmed) {
-      const poseLabels = { left: 'turn further LEFT ⬅️', right: 'turn further RIGHT ➡️', down: 'tilt DOWN ⬇️', center: 'face the camera ⬆️' };
+      const poseLabels = { left: 'turn further LEFT ⬅️', right: 'turn further RIGHT ➡️', down: 'tilt DOWN ⬇️', center: 'face the camera directly ⬆️' };
       const poseLabel = poseLabels[step.poseRequired] || step.poseRequired;
 
       for (let attempt = 0; attempt < 3 && !poseConfirmed; attempt++) {
         poseWarnEl.style.display = 'block';
-        poseWarnEl.innerHTML = `📷 Couldn't confirm your pose. Please <strong>${poseLabel}</strong> and hold for 3 seconds… (attempt ${attempt + 1}/3)`;
-
-        // Wait up to 5 seconds, checking every 1 second
+        poseWarnEl.innerHTML = `📷 Not detected. Please <strong>${poseLabel}</strong> and hold still for 2 seconds… (${attempt + 1}/3)`;
+        hideHoldBar();
+        let holdMs = 0;
+        // Wait up to 5 seconds, checking every 500ms
         await new Promise(res => {
           let waited = 0;
           const retryTick = setInterval(async () => {
-            waited += 1000;
-            if (!poseConfirmed) await doCapture();
+            waited += 500; holdMs += 500;
+            showHoldBar(Math.min(holdMs / 2000, 1));
+            if (holdMs >= 2000) { holdMs = 0; doCapture(); }
             if (poseConfirmed || waited >= 5000) {
               clearInterval(retryTick);
               res();
             }
-          }, 1000);
+          }, 500);
         });
       }
 
@@ -1237,7 +1380,102 @@ async function submitScanFrames() {
 
 function completeScan() {
   stopScanFaceMonitor();
+  // Hide arrow and hold bar
+  const arrowEl = document.getElementById('scan-dir-arrow');
+  if (arrowEl) arrowEl.classList.remove('show');
+  const holdBar = document.getElementById('pose-hold-bar');
+  if (holdBar) holdBar.classList.remove('show');
   document.getElementById('room-scan-overlay').style.display = 'none';
+  // Show face verification before allowing exam to start
+  showFaceVerify();
+}
+
+// ── Face Identity Verification ─────────────────────────────────────────────
+let _faceVerifyAttempts = 0;
+
+function showFaceVerify() {
+  const overlay = document.getElementById('face-verify-overlay');
+  overlay.style.display = 'flex';
+  runFaceVerify();
+}
+
+async function runFaceVerify() {
+  _faceVerifyAttempts++;
+  // Reset UI
+  document.getElementById('fv-spinner').style.display = 'block';
+  document.getElementById('fv-result').style.display  = 'none';
+  document.getElementById('fv-retry-btn').style.display   = 'none';
+  document.getElementById('fv-proceed-btn').style.display = 'none';
+  document.getElementById('fv-icon').textContent  = '🔍';
+  document.getElementById('fv-title').textContent = 'Verifying Identity…';
+  document.getElementById('fv-msg').textContent   = 'Please look directly at the camera.';
+
+  // Capture a frame from the live camera
+  let liveFrame = null;
+  try {
+    const vid = document.getElementById('cam-video');
+    const canvas = document.createElement('canvas');
+    canvas.width  = vid.videoWidth  || 320;
+    canvas.height = vid.videoHeight || 240;
+    canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
+    liveFrame = canvas.toDataURL('image/jpeg', 0.7);
+  } catch(e) {
+    console.warn('Could not capture frame:', e);
+  }
+
+  try {
+    const res = await fetch('/api/verify-face', {
+      method: 'POST', credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({live_frame: liveFrame})
+    }).then(r => r.json());
+
+    document.getElementById('fv-spinner').style.display = 'none';
+
+    if (res.match) {
+      // Verified!
+      document.getElementById('fv-icon').textContent  = '✅';
+      document.getElementById('fv-title').textContent = 'Identity Verified';
+      document.getElementById('fv-msg').textContent   = 'Your face matches your profile photo. You may proceed.';
+      const resultEl = document.getElementById('fv-result');
+      resultEl.textContent = 'Face matched successfully';
+      resultEl.style.background = '#dcfce7';
+      resultEl.style.color      = '#166534';
+      resultEl.style.display    = 'block';
+      document.getElementById('fv-proceed-btn').style.display = 'block';
+    } else {
+      // No match
+      document.getElementById('fv-icon').textContent  = '❌';
+      document.getElementById('fv-title').textContent = 'Identity Mismatch';
+      document.getElementById('fv-msg').textContent   = res.message || 'Your face does not match your profile photo.';
+      const resultEl = document.getElementById('fv-result');
+      resultEl.textContent = _faceVerifyAttempts >= 3
+        ? 'Maximum attempts reached. Please contact your recruiter.'
+        : `Face did not match. Attempt ${_faceVerifyAttempts}/3.`;
+      resultEl.style.background = '#fee2e2';
+      resultEl.style.color      = '#991b1b';
+      resultEl.style.display    = 'block';
+
+      if (_faceVerifyAttempts < 3) {
+        document.getElementById('fv-retry-btn').style.display = 'block';
+      } else {
+        // 3 failed attempts — log violation and block
+        logViolation('identity_mismatch');
+      }
+    }
+  } catch(e) {
+    // Network error — allow through with warning
+    console.warn('Face verify network error:', e);
+    document.getElementById('fv-spinner').style.display = 'none';
+    document.getElementById('fv-icon').textContent  = '⚠️';
+    document.getElementById('fv-title').textContent = 'Verification Unavailable';
+    document.getElementById('fv-msg').textContent   = 'Could not connect to verification service. You may proceed.';
+    document.getElementById('fv-proceed-btn').style.display = 'block';
+  }
+}
+
+function proceedAfterVerify() {
+  document.getElementById('face-verify-overlay').style.display = 'none';
   if (window._scanResolve) { window._scanResolve(); window._scanResolve = null; }
 }
 
@@ -1495,6 +1733,7 @@ function renderQuestion() {
 
 function selectOpt(key) {
   answers[currentQ] = key;
+  answers[`q${currentQ + 1}`] = key;
   renderQuestion();
 }
 function nextQ() { if (currentQ<questions.length-1) { currentQ++; renderQuestion(); } }
@@ -1513,19 +1752,48 @@ function showSubmitConfirm() {
 // ── AI Interview ───────────────────────────────────────────────────────────────
 async function loadAI() {
   document.getElementById('ai-q-text').textContent = 'Generating your interview questions…';
-  // Attach typing tracker once AI mode loads
   attachTypingTracker();
-  try {
-    const data = await fetch('/api/ai-generate-questions', {method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({job_role:sessionData.job_role})}).then(r=>r.json());
-    aiQuestions = data.questions || [];
-    aiCurrentQ = 0;
-    resetAnswerTracking();
-    displayAIQuestion();
-  } catch(e) {
-    document.getElementById('ai-q-text').textContent = 'Error loading questions. Please leave and rejoin.';
+
+  // Retry up to 3 times with timeout
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout    = setTimeout(() => controller.abort(), 25000); // 25s timeout
+      const data = await fetch('/api/ai-generate-questions', {
+        method:'POST', signal: controller.signal,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({job_role: sessionData.job_role})
+      }).then(r => r.json());
+      clearTimeout(timeout);
+
+      if (data.questions && data.questions.length > 0) {
+        aiQuestions = data.questions;
+        aiCurrentQ  = 0;
+        resetAnswerTracking();
+        displayAIQuestion();
+        return;
+      }
+    } catch(e) {
+      console.warn(`AI questions attempt ${attempt} failed:`, e.message);
+      if (attempt < 3) {
+        document.getElementById('ai-q-text').textContent = `Loading questions… (attempt ${attempt+1}/3)`;
+        await new Promise(r => setTimeout(r, 2000)); // wait 2s before retry
+      }
+    }
   }
+
+  // All retries failed — use hardcoded fallback questions so exam can still proceed
+  console.warn('Using fallback questions');
+  aiQuestions = [
+    {id:1, question:`Tell me about your experience as a ${sessionData.job_role}.`, expected_keywords:[], type:'general'},
+    {id:2, question:`What are the key skills required for a ${sessionData.job_role}?`, expected_keywords:[], type:'technical'},
+    {id:3, question:'Describe a challenging problem you solved in your previous role.', expected_keywords:[], type:'behavioral'},
+    {id:4, question:'How do you keep your technical skills up to date?', expected_keywords:[], type:'general'},
+    {id:5, question:'Where do you see yourself in the next 3 years?', expected_keywords:[], type:'behavioral'},
+  ];
+  aiCurrentQ = 0;
+  resetAnswerTracking();
+  displayAIQuestion();
 }
 
 function displayAIQuestion() {
@@ -2021,20 +2289,38 @@ async function submitInterview(reason='manual') {
     }
     // Get final AI evaluation
     try {
+      // If transcript is empty (Gemini didnt score answers yet), build fallback from answer features
+      const transcriptToSend = aiTranscript.length > 0 ? aiTranscript :
+        _answerFeatures.map(f => ({ question: f.question, answer: '', score: Math.round((f.confidence_score + f.communication_score) / 20) }));
+
       const finalEval = await fetch('/api/ai-final-evaluation', {method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({transcript:aiTranscript, job_role:sessionData.job_role,
+        body:JSON.stringify({transcript:transcriptToSend, job_role:sessionData.job_role,
           confidence_score: payload.confidence_score,
           communication_score: payload.communication_score,
           ai_prompt_likelihood: payload.ai_prompt_likelihood})}).then(r=>r.json());
-      payload.ai_overall_score = finalEval.overall_score || 0;
+
+      // If overall_score still 0 or missing, calculate from confidence + communication
+      let overallScore = finalEval.overall_score || 0;
+      if (overallScore === 0 && _answerFeatures.length > 0) {
+        overallScore = Math.round((payload.confidence_score + payload.communication_score) / 2);
+      }
+      payload.ai_overall_score = overallScore;
       payload.ai_feedback = { ...finalEval,
+        overall_score: overallScore,
         confidence_score: payload.confidence_score,
         communication_score: payload.communication_score,
         ai_prompt_likelihood: payload.ai_prompt_likelihood,
         voice_used_count: payload.voice_used_count || 0,
         answer_features: _answerFeatures };
-    } catch(e) { payload.ai_overall_score=0; payload.ai_feedback={}; }
+    } catch(e) {
+      // Full fallback — calculate from answer features
+      const fallbackScore = _answerFeatures.length > 0
+        ? Math.round(_answerFeatures.reduce((s,f) => s + f.confidence_score + f.communication_score, 0) / (_answerFeatures.length * 2))
+        : 50;
+      payload.ai_overall_score = fallbackScore;
+      payload.ai_feedback = { overall_score: fallbackScore };
+    }
   }
 
   try {
@@ -2213,5 +2499,20 @@ function showRecruiterMessage(text) {
 
 init();
 </script>
+
+<!-- ── Face Verification Overlay ───────────────────────────────────── -->
+<div id="face-verify-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:20px;padding:32px;width:380px;max-width:95vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+    <div id="fv-icon" style="font-size:52px;margin-bottom:12px;">🔍</div>
+    <h2 id="fv-title" style="margin:0 0 8px;font-size:20px;color:#1e293b;">Verifying Identity</h2>
+    <p id="fv-msg" style="color:#64748b;font-size:13px;margin:0 0 20px;">Please look directly at the camera. We are matching your face with your profile photo.</p>
+    <div id="fv-spinner" style="margin:0 auto 16px;width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#4361ee;border-radius:50%;animation:fv-spin 0.8s linear infinite;"></div>
+    <div id="fv-result" style="display:none;padding:12px;border-radius:10px;font-weight:700;font-size:14px;margin-bottom:16px;"></div>
+    <button id="fv-retry-btn" onclick="runFaceVerify()" style="display:none;background:#4361ee;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;margin-bottom:8px;width:100%;">Try Again</button>
+    <button id="fv-proceed-btn" onclick="proceedAfterVerify()" style="display:none;background:#059669;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;width:100%;">Continue to Interview →</button>
+  </div>
+</div>
+<style>@keyframes fv-spin{to{transform:rotate(360deg)}}</style>
+
 </body>
 </html>
