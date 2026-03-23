@@ -11,7 +11,7 @@ recruiter_bp = Blueprint('recruiter', __name__)
 @recruiter_bp.route('/api/dashboard-stats')
 @login_required
 def dashboard_stats():
-    if not current_user.is_admin:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
 
     rid = current_user.id
@@ -76,7 +76,7 @@ def dashboard_stats():
 @recruiter_bp.route('/api/candidates')
 @login_required
 def get_candidates():
-    if not current_user.is_admin:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
 
     rid = current_user.id
@@ -205,7 +205,7 @@ def get_email_settings():
 @recruiter_bp.route('/api/recruiter/email-settings', methods=['POST'])
 @login_required
 def save_email_settings():
-    if not current_user.is_admin:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data       = request.get_json() or {}
     smtp_email = data.get('smtp_email', '').strip()
@@ -234,3 +234,153 @@ def save_email_settings():
                 'message': f'⚠️ Settings saved but Gmail test failed: {str(e)}. Check your App Password.'})
 
     return jsonify({'success': True, 'message': 'Email settings saved.'})
+
+
+# ── System Config API ─────────────────────────────────────────────────────────
+@recruiter_bp.route('/api/system-config', methods=['GET'])
+@login_required
+def get_system_config():
+    """Return current system configuration status."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    return jsonify({
+        'success': True,
+        'gemini_configured': bool(os.environ.get('GEMINI_API_KEY')),
+        'email_configured':  bool(os.environ.get('EMAIL_USER') and os.environ.get('EMAIL_PASS')),
+        'google_oauth':      bool(os.environ.get('GOOGLE_CLIENT_ID')),
+        'github_oauth':      bool(os.environ.get('GITHUB_CLIENT_ID')),
+        'plugin_key':        bool(os.environ.get('PLUGIN_API_KEY')),
+        'base_url_set':      bool(os.environ.get('BASE_URL', '').startswith('http')),
+        'base_url':          os.environ.get('BASE_URL', 'Not set'),
+        'otp_email':         current_user.smtp_email or os.environ.get('EMAIL_USER', ''),
+    })
+
+
+@recruiter_bp.route('/api/system-config', methods=['POST'])
+@login_required
+def save_system_config():
+    """Save OTP email configuration — stored in recruiter's account."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    import smtplib
+    data      = request.get_json() or {}
+    otp_email = data.get('otp_email', '').strip()
+    otp_pass  = data.get('otp_pass', '').strip()
+
+    if not otp_email and not otp_pass:
+        current_user.smtp_email        = None
+        current_user.smtp_app_password = None
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Cleared'})
+
+    if not otp_email or not otp_pass:
+        return jsonify({'success': False, 'message': 'Both email and password required'}), 400
+
+    # Test connection
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as srv:
+            srv.login(otp_email, otp_pass)
+    except smtplib.SMTPAuthenticationError:
+        return jsonify({'success': False,
+                        'message': 'Authentication failed — check your App Password'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+    current_user.smtp_email        = otp_email
+    current_user.smtp_app_password = otp_pass
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'OTP email configured successfully'})
+
+
+# ── Gemini Token Usage — DB backed ───────────────────────────────────────────
+from models.token_usage import TokenUsage
+from sqlalchemy import func
+
+
+@recruiter_bp.route('/api/token-usage', methods=['GET'])
+@login_required
+def get_token_usage():
+    """Return token usage totals and recent log from DB."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    try:
+        # Aggregated totals by call_type
+        rows = db.session.query(
+            TokenUsage.call_type,
+            func.sum(TokenUsage.total_tokens).label('total'),
+            func.sum(TokenUsage.prompt_tokens).label('prompt'),
+            func.sum(TokenUsage.response_tokens).label('response'),
+            func.count(TokenUsage.id).label('calls')
+        ).group_by(TokenUsage.call_type).all()
+
+        totals = {}
+        for r in rows:
+            totals[r.call_type] = {
+                'total': r.total or 0,
+                'prompt': r.prompt or 0,
+                'response': r.response or 0,
+                'calls': r.calls or 0
+            }
+
+        grand_total = sum(v['total'] for v in totals.values())
+
+        # Recent 50 log entries
+        recent = TokenUsage.query.order_by(
+            TokenUsage.called_at.desc()
+        ).limit(50).all()
+
+        return jsonify({
+            'success':     True,
+            'questions':   totals.get('questions',    {}).get('total', 0) + totals.get('mcq_questions', {}).get('total', 0),
+            'evaluations': totals.get('evaluations',  {}).get('total', 0),
+            'final':       totals.get('final',        {}).get('total', 0),
+            'total':       grand_total,
+            'breakdown':   totals,
+            'log': [
+                {
+                    'type':   r.call_type,
+                    'label':  r.label or '',
+                    'tokens': r.total_tokens,
+                    'prompt': r.prompt_tokens,
+                    'response': r.response_tokens,
+                    'time':   r.called_at.strftime('%d %b %H:%M') if r.called_at else '',
+                }
+                for r in recent
+            ]
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_bp.route('/api/token-usage/reset', methods=['POST'])
+@login_required
+def reset_token_usage():
+    """Delete all token usage records from DB."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    try:
+        TokenUsage.query.delete()
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@recruiter_bp.route('/api/token-usage/detail', methods=['GET'])
+@login_required
+def get_token_usage_detail():
+    """Return full per-call breakdown with filters."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    call_type = request.args.get('type')
+    limit     = int(request.args.get('limit', 100))
+    q = TokenUsage.query.order_by(TokenUsage.called_at.desc())
+    if call_type:
+        q = q.filter_by(call_type=call_type)
+    records = q.limit(limit).all()
+    return jsonify({
+        'success': True,
+        'records': [r.to_dict() for r in records],
+        'count':   len(records)
+    })

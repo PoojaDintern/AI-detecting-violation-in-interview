@@ -9,9 +9,11 @@ from .pipeline import pipeline_bp
 from .interviewer import interviewer_bp
 from .recruiter import recruiter_bp
 from .socketio_events import register_socketio_events
+from .plugin_api import plugin_bp
 
 __all__ = [
     'auth_bp', 'pages_bp', 'sessions_bp', 'proctoring_bp',
     'ai_bp', 'jobs_bp', 'results_bp', 'pipeline_bp',
     'interviewer_bp', 'recruiter_bp', 'register_socketio_events',
+    'plugin_bp',
 ]

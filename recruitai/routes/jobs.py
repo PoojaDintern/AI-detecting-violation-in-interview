@@ -27,7 +27,7 @@ def get_job_sections():
 @login_required
 def list_job_postings():
     try:
-        if current_user.is_admin or current_user.role == 'recruiter':
+        if current_user.is_recruiter:
             postings = JobPosting.query.filter_by(recruiter_id=current_user.id, is_active=True).all()
         else:
             postings = JobPosting.query.filter_by(is_active=True).all()
@@ -40,7 +40,7 @@ def list_job_postings():
 @jobs_bp.route('/api/job-postings/all', methods=['GET'])
 @login_required
 def list_all_job_postings():
-    if not (current_user.is_admin or current_user.role == 'recruiter'):
+    if not (current_user.is_recruiter):
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     try:
         postings = JobPosting.query.filter_by(recruiter_id=current_user.id).order_by(JobPosting.created_at.desc()).all()
@@ -53,7 +53,7 @@ def list_all_job_postings():
 @jobs_bp.route('/api/job-postings', methods=['POST'])
 @login_required
 def create_job_posting():
-    if not current_user.is_admin and not current_user.is_recruiter:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data = request.get_json() or {}
     if not all([data.get('job_section'), data.get('job_role'), data.get('company_name')]):
@@ -85,7 +85,7 @@ def create_job_posting():
 @jobs_bp.route('/api/job-postings/<int:posting_id>', methods=['DELETE'])
 @login_required
 def delete_job_posting(posting_id):
-    if not current_user.is_admin and not current_user.is_recruiter:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     p = db.session.get(JobPosting, posting_id)
     if not p or p.recruiter_id != current_user.id:
@@ -98,7 +98,7 @@ def delete_job_posting(posting_id):
 @jobs_bp.route('/api/job-postings/<int:posting_id>/applications', methods=['GET'])
 @login_required
 def get_applications_for_posting(posting_id):
-    if not current_user.is_admin and not current_user.is_recruiter:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     p = db.session.get(JobPosting, posting_id)
     if not p or p.recruiter_id != current_user.id:
@@ -110,7 +110,7 @@ def get_applications_for_posting(posting_id):
 @jobs_bp.route('/api/applicants-by-role', methods=['GET'])
 @login_required
 def get_applicants_by_role():
-    if not current_user.is_admin and not current_user.is_recruiter:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     job_role = request.args.get('job_role', '').strip()
     if not job_role:
@@ -148,7 +148,7 @@ def get_applicants_by_role():
 @jobs_bp.route('/api/apply', methods=['POST'])
 @login_required
 def apply_for_job():
-    if current_user.is_admin:
+    if current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Recruiters cannot apply'}), 400
     data = request.get_json() or {}
     posting_id = data.get('posting_id')
@@ -190,7 +190,7 @@ def my_applications():
 @jobs_bp.route('/api/my-scheduled-interviews')
 @login_required
 def my_scheduled_interviews():
-    if current_user.is_admin:
+    if current_user.is_recruiter:
         scheds = ScheduledInterview.query.filter_by(recruiter_id=current_user.id).order_by(ScheduledInterview.scheduled_at.desc()).all()
     else:
         scheds = ScheduledInterview.query.filter_by(candidate_id=current_user.id).order_by(ScheduledInterview.scheduled_at.desc()).all()
@@ -200,7 +200,7 @@ def my_scheduled_interviews():
 @jobs_bp.route('/api/schedule-interview', methods=['POST'])
 @login_required
 def schedule_interview():
-    if not current_user.is_admin and not current_user.is_recruiter:
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     data = request.get_json() or {}
     application_id    = data.get('application_id')

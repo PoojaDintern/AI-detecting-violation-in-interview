@@ -6,10 +6,12 @@ from .round_config import JobRoundConfig, RoundConfigDetail
 from .submission import TestSubmission
 from .job import JobPosting, JobApplication, ScheduledInterview
 from .interviewer import InterviewerAssignment
+from .token_usage import TokenUsage
 
 __all__ = [
     'User', 'ExamQuestion', 'InterviewSession', 'InterviewPipeline',
     'CandidateCooldown', 'Violation', 'GazeEvent', 'DeviceAlert',
     'JobRoundConfig', 'RoundConfigDetail', 'TestSubmission',
     'JobPosting', 'JobApplication', 'ScheduledInterview', 'InterviewerAssignment',
+    'TokenUsage',
 ]

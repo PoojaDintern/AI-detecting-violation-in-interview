@@ -22,7 +22,7 @@ import models  # noqa: F401 — registers all ORM classes
 # ── Import all route blueprints ────────────────────────────────────────────────
 from routes import (auth_bp, pages_bp, sessions_bp, proctoring_bp, ai_bp,
                     jobs_bp, results_bp, pipeline_bp, interviewer_bp,
-                    recruiter_bp, register_socketio_events)
+                    recruiter_bp, register_socketio_events, plugin_bp)
 
 
 def create_app():
@@ -82,7 +82,8 @@ def create_app():
 
     # ── Register Blueprints ───────────────────────────────────────────────────
     for bp in [auth_bp, pages_bp, sessions_bp, proctoring_bp, ai_bp,
-               jobs_bp, results_bp, pipeline_bp, interviewer_bp, recruiter_bp]:
+               jobs_bp, results_bp, pipeline_bp, interviewer_bp, recruiter_bp,
+               plugin_bp]:
         app.register_blueprint(bp)
 
     # ── Register SocketIO Events ──────────────────────────────────────────────
@@ -99,13 +100,6 @@ def init_database(app):
 
     with app.app_context():
         db.create_all()
-
-        if not User.query.filter_by(username='admin').first():
-            u = User(username='admin', email='admin@proctoring.com',
-                     full_name='Administrator', role='admin')
-            u.set_password('admin123')
-            db.session.add(u)
-            db.session.commit()
 
         if not User.query.filter_by(username='recruiter').first():
             u = User(username='recruiter', email='recruiter@proctoring.com',

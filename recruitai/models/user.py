@@ -29,11 +29,12 @@ class User(UserMixin, db.Model):
 
     @property
     def is_admin(self):
-        return self.role in ('admin', 'recruiter')
+        # Admin = recruiter (no separate admin role)
+        return self.role == 'recruiter'
 
     @property
     def is_recruiter(self):
-        return self.role in ('admin', 'recruiter')
+        return self.role == 'recruiter' 
 
     def set_password(self, pw):
         self.password_hash = generate_password_hash(pw, method='scrypt')

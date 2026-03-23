@@ -8,7 +8,7 @@ from models import (InterviewSession, ExamQuestion, User, InterviewPipeline,
                     JobRoundConfig, RoundConfigDetail, JobApplication,
                     CandidateCooldown, TestSubmission, Violation)
 from utils.helpers import make_room_code
-from utils.ai import get_gemini_client
+from utils.ai import gemini_ask
 
 sessions_bp = Blueprint('sessions', __name__)
 
@@ -204,13 +204,13 @@ def join_session(room_code):
         if not sess:
             return jsonify({'success': False, 'message': 'Session not found'}), 404
 
-        if current_user.is_recruiter or current_user.is_admin:
+        if current_user.is_recruiter:
             return jsonify({'success': True, 'session': sess.to_dict(),
                             'questions': [], 'ice_servers': current_app.config.get('WEBRTC_ICE_SERVERS', [])})
 
-        if sess.candidate_id != current_user.id:
+        if sess.candidate_id and sess.candidate_id != current_user.id:
             return jsonify({'success': False,
-                            'message': 'This session was not assigned to your account.'}), 403
+                            'message': 'This session was not assigned to your account. Make sure you are logged in with the correct candidate account that received the interview invitation.'}), 403
 
         if sess.status in ('completed', 'abandoned'):
             return jsonify({'success': False, 'message': 'already_submitted'}), 400
@@ -243,15 +243,19 @@ def join_session(room_code):
             if sess.mode == 'mcq':
                 if mcq_src == 'ai' and not sess.question_ids:
                     try:
-                        client = get_gemini_client(current_app._get_current_object())
-                        if client:
-                            prompt = (
+                        prompt = (
                                 f"Generate exactly 10 multiple-choice questions for a {sess.job_role} interview. "
                                 "Return ONLY a JSON array of objects with keys: question_text, options (object with a,b,c,d), correct_answer (letter a/b/c/d). "
                                 "No markdown, no explanation, just pure JSON array."
                             )
-                            result = client.generate_content(prompt)
-                            raw = result.text.strip().lstrip('```').lstrip('json').strip()
+                        raw_text = gemini_ask(
+                                current_app._get_current_object(), prompt,
+                                track_type='mcq_questions',
+                                track_label=sess.job_role,
+                                session_id=sess.id
+                            )
+                        if raw_text:
+                            raw = raw_text.strip().lstrip('```').lstrip('json').strip()
                             ai_qs = json.loads(raw)
                             questions = [
                                 {
@@ -264,7 +268,7 @@ def join_session(room_code):
                                 for i, q in enumerate(ai_qs[:10])
                             ]
                         else:
-                            raise Exception('No Gemini key')
+                            raise Exception('Gemini unavailable')
                     except Exception as ae:
                         print(f'[join_session] AI MCQ failed: {ae}. Falling back to DB.')
                         qs = ExamQuestion.query.filter_by(job_role=sess.job_role).all()
@@ -539,7 +543,7 @@ def interview_complete_info(session_id):
     sess = db.session.get(InterviewSession, session_id)
     if not sess:
         return jsonify({'success': False, 'message': 'Session not found'}), 404
-    if sess.candidate_id != current_user.id and not current_user.is_admin:
+    if sess.candidate_id != current_user.id and not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
 
     from models import ScheduledInterview, TestSubmission as TS
@@ -565,10 +569,61 @@ def force_end_session():
     sess = db.session.get(InterviewSession, session_id)
     if not sess:
         return jsonify({'success': False, 'message': 'Session not found'}), 404
-    if sess.recruiter_id != current_user.id and not current_user.is_admin:
+    if sess.recruiter_id != current_user.id and not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     sess.status = 'completed'
     sess.ended_at = datetime.utcnow()
     db.session.commit()
     socketio.emit('session_force_ended', {'session_id': session_id}, room=sess.room_code)
     return jsonify({'success': True})
+
+
+@sessions_bp.route('/api/active-sessions', methods=['GET'])
+@login_required
+def get_active_sessions():
+    """Get all currently active interview sessions for this recruiter."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    active = InterviewSession.query.filter_by(
+        recruiter_id=current_user.id, status='active'
+    ).all()
+    result = []
+    for s in active:
+        from models.user import User
+        candidate = db.session.get(User, s.candidate_id)
+        result.append({
+            'id': s.id,
+            'room_code': s.room_code,
+            'job_role': s.job_role,
+            'mode': s.mode,
+            'candidate_name': candidate.full_name or candidate.username if candidate else 'Unknown',
+            'started_at': s.started_at.isoformat() if s.started_at else None,
+        })
+    return jsonify({'success': True, 'sessions': result, 'count': len(result)})
+
+
+@sessions_bp.route('/api/extend-session', methods=['POST'])
+@login_required
+def extend_session():
+    """Extend an active session by notifying candidate via socket."""
+    if not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data           = request.get_json() or {}
+    session_id     = data.get('session_id')
+    extend_minutes = int(data.get('extend_minutes', 15))
+    if not session_id:
+        return jsonify({'success': False, 'message': 'session_id required'}), 400
+    sess = db.session.get(InterviewSession, session_id)
+    if not sess:
+        return jsonify({'success': False, 'message': 'Session not found'}), 404
+    if sess.recruiter_id != current_user.id and not current_user.is_recruiter:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    if sess.status != 'active':
+        return jsonify({'success': False, 'message': 'Session is not active'}), 400
+    # Notify candidate via socket
+    socketio.emit('session_extended', {
+        'session_id':     session_id,
+        'extend_minutes': extend_minutes,
+        'message':        f'Your interview time has been extended by {extend_minutes} minutes by the recruiter.'
+    }, room=sess.room_code)
+    return jsonify({'success': True, 'message': f'Session extended by {extend_minutes} minutes'})

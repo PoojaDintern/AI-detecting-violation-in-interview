@@ -489,6 +489,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <div class="scan-multiface-banner" id="scan-multiface-banner">
           👥 Multiple faces detected — only you should be in frame!
         </div>
+        <!-- Device warning during scan -->
+        <div id="scan-device-banner" style="display:none;position:absolute;bottom:10px;left:10px;right:10px;background:rgba(220,38,38,0.92);color:white;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;text-align:center;z-index:20;">
+          📱 Device detected in frame — please remove it before continuing
+        </div>
         <!-- Direction arrow overlay -->
         <div class="scan-direction-arrow" id="scan-dir-arrow">
           <span class="arrow-anim" id="scan-arrow-icon">➡️</span>
@@ -1055,6 +1059,8 @@ function startScanFaceMonitor() {
       const badgeText = document.getElementById('scan-face-badge-text');
       const banner = document.getElementById('scan-multiface-banner');
 
+      const deviceBanner = document.getElementById('scan-device-banner');
+
       if (!data.face_detected) {
         badge.className = 'scan-face-badge warn';
         badgeText.textContent = 'No face detected';
@@ -1073,6 +1079,16 @@ function startScanFaceMonitor() {
         badgeText.textContent = '✅ Face detected';
         banner.style.display = 'none';
         scanMultiFaceCount = 0;
+      }
+
+      // Check for devices during scan
+      if (data.phone_detected || data.device_detected) {
+        if (deviceBanner) deviceBanner.style.display = 'block';
+        badgeText.textContent = '📱 Device detected!';
+        badge.className = 'scan-face-badge warn';
+        if (sessionData) logViolation('phone_detected');
+      } else {
+        if (deviceBanner) deviceBanner.style.display = 'none';
       }
     } catch(e) {}
   }, 2000);
@@ -1110,9 +1126,20 @@ function showRulesAndScan() {
     overlay.classList.add('show');
     window._rulesResolve = async () => {
       overlay.classList.remove('show');
+      // Step 1: Face verify FIRST
+      await showFaceVerifyBeforeScan();
+      // Step 2: Then room scan
       await showRoomScan();
       resolve();
     };
+  });
+}
+
+function showFaceVerifyBeforeScan() {
+  return new Promise(resolve => {
+    window._faceVerifyBeforeScanResolve = resolve;
+    _faceVerifyAttempts = 0;
+    showFaceVerify();
   });
 }
 
@@ -1380,14 +1407,13 @@ async function submitScanFrames() {
 
 function completeScan() {
   stopScanFaceMonitor();
-  // Hide arrow and hold bar
   const arrowEl = document.getElementById('scan-dir-arrow');
   if (arrowEl) arrowEl.classList.remove('show');
   const holdBar = document.getElementById('pose-hold-bar');
   if (holdBar) holdBar.classList.remove('show');
   document.getElementById('room-scan-overlay').style.display = 'none';
-  // Show face verification before allowing exam to start
-  showFaceVerify();
+  // Face verify already done before scan — just resolve
+  if (window._scanResolve) { window._scanResolve(); window._scanResolve = null; }
 }
 
 // ── Face Identity Verification ─────────────────────────────────────────────
@@ -1396,32 +1422,83 @@ let _faceVerifyAttempts = 0;
 function showFaceVerify() {
   const overlay = document.getElementById('face-verify-overlay');
   overlay.style.display = 'flex';
-  runFaceVerify();
+  // Mirror the main camera into fv-cam-preview
+  const mainVid = document.getElementById('cam-video');
+  const fvVid   = document.getElementById('fv-cam-preview');
+  if (mainVid && mainVid.srcObject && fvVid) {
+    fvVid.srcObject = mainVid.srcObject;
+  }
+  _fvResetUI();
+  // Short delay so candidate can see the UI before scan starts
+  setTimeout(runFaceVerify, 1800);
+}
+
+function _fvResetUI() {
+  document.getElementById('fv-title').textContent       = 'Face Scanning…';
+  document.getElementById('fv-msg').textContent         = 'Position your face in the circle and stay still';
+  document.getElementById('fv-result-card').style.display  = 'none';
+  document.getElementById('fv-blocked-card').style.display = 'none';
+  document.getElementById('fv-retry-btn').style.display    = 'none';
+  document.getElementById('fv-proceed-btn').style.display  = 'none';
+  document.getElementById('fv-leave-btn').style.display    = 'none';
+  document.getElementById('fv-cam-result').style.display   = 'none';
+  document.getElementById('fv-sweep').style.display        = 'block';
+  // Reset ring to empty
+  const ring = document.getElementById('fv-ring');
+  if (ring) { ring.style.stroke = '#4361ee'; ring.setAttribute('stroke-dashoffset','666'); }
+  // Update attempt dots
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById('fvd'+i);
+    if (!dot) continue;
+    if (i < _faceVerifyAttempts)      dot.className = 'fv-dot fail';
+    else if (i === _faceVerifyAttempts) dot.className = 'fv-dot active';
+    else                               dot.className = 'fv-dot';
+  }
+}
+
+async function _fvAnimateScan() {
+  // Animate the ring filling up over 2 seconds while "scanning"
+  const ring = document.getElementById('fv-ring');
+  if (!ring) return;
+  const total = 666;
+  let elapsed = 0;
+  return new Promise(resolve => {
+    const interval = setInterval(() => {
+      elapsed += 60;
+      const pct = Math.min(elapsed / 2000, 1);
+      ring.setAttribute('stroke-dashoffset', (total * (1 - pct)).toFixed(1));
+      if (elapsed >= 2000) { clearInterval(interval); resolve(); }
+    }, 60);
+  });
 }
 
 async function runFaceVerify() {
   _faceVerifyAttempts++;
-  // Reset UI
-  document.getElementById('fv-spinner').style.display = 'block';
-  document.getElementById('fv-result').style.display  = 'none';
-  document.getElementById('fv-retry-btn').style.display   = 'none';
-  document.getElementById('fv-proceed-btn').style.display = 'none';
-  document.getElementById('fv-icon').textContent  = '🔍';
-  document.getElementById('fv-title').textContent = 'Verifying Identity…';
-  document.getElementById('fv-msg').textContent   = 'Please look directly at the camera.';
+  _fvResetUI();
 
-  // Capture a frame from the live camera
+  document.getElementById('fv-title').textContent = 'Scanning Face…';
+  document.getElementById('fv-msg').textContent   = 'Hold still — scanning your face';
+
+  // Animate ring while capturing
+  await _fvAnimateScan();
+
+  // Capture frame
   let liveFrame = null;
   try {
-    const vid = document.getElementById('cam-video');
+    const vid = document.getElementById('fv-cam-preview') || document.getElementById('cam-video');
     const canvas = document.createElement('canvas');
     canvas.width  = vid.videoWidth  || 320;
     canvas.height = vid.videoHeight || 240;
     canvas.getContext('2d').drawImage(vid, 0, 0, canvas.width, canvas.height);
-    liveFrame = canvas.toDataURL('image/jpeg', 0.7);
-  } catch(e) {
-    console.warn('Could not capture frame:', e);
-  }
+    liveFrame = canvas.toDataURL('image/jpeg', 0.8);
+  } catch(e) { console.warn('Capture failed:', e); }
+
+  // Show checking state
+  document.getElementById('fv-sweep').style.display  = 'none';
+  document.getElementById('fv-title').textContent    = 'Checking Identity…';
+  document.getElementById('fv-msg').textContent      = 'Matching your face with your profile photo…';
+  const ring = document.getElementById('fv-ring');
+  if (ring) ring.style.stroke = '#f59e0b'; // yellow while checking
 
   try {
     const res = await fetch('/api/verify-face', {
@@ -1430,53 +1507,95 @@ async function runFaceVerify() {
       body: JSON.stringify({live_frame: liveFrame})
     }).then(r => r.json());
 
-    document.getElementById('fv-spinner').style.display = 'none';
-
     if (res.match) {
-      // Verified!
-      document.getElementById('fv-icon').textContent  = '✅';
-      document.getElementById('fv-title').textContent = 'Identity Verified';
-      document.getElementById('fv-msg').textContent   = 'Your face matches your profile photo. You may proceed.';
-      const resultEl = document.getElementById('fv-result');
-      resultEl.textContent = 'Face matched successfully';
-      resultEl.style.background = '#dcfce7';
-      resultEl.style.color      = '#166534';
-      resultEl.style.display    = 'block';
+      // ── VERIFIED ──
+      if (ring) ring.style.stroke = '#059669';
+      document.getElementById('fv-title').textContent = '✅ Identity Verified';
+      document.getElementById('fv-msg').textContent   = 'Your face matches your profile photo.';
+      // Green overlay on camera
+      const camResult = document.getElementById('fv-cam-result');
+      camResult.style.background = 'rgba(5,150,105,0.35)';
+      camResult.style.display    = 'flex';
+      document.getElementById('fv-cam-icon').textContent = '✅';
+      // Mark dot as done
+      const dot = document.getElementById('fvd' + (_faceVerifyAttempts - 1));
+      if (dot) dot.className = 'fv-dot done';
+      // Result card
+      const card = document.getElementById('fv-result-card');
+      card.style.borderColor = 'rgba(5,150,105,0.4)';
+      card.style.background  = 'rgba(5,150,105,0.12)';
+      card.style.display     = 'block';
+      document.getElementById('fv-result-text').textContent = '🎉 Face matched successfully';
+      document.getElementById('fv-result-sub').textContent  = 'Identity confirmed — you may proceed to the interview';
       document.getElementById('fv-proceed-btn').style.display = 'block';
-    } else {
-      // No match
-      document.getElementById('fv-icon').textContent  = '❌';
-      document.getElementById('fv-title').textContent = 'Identity Mismatch';
-      document.getElementById('fv-msg').textContent   = res.message || 'Your face does not match your profile photo.';
-      const resultEl = document.getElementById('fv-result');
-      resultEl.textContent = _faceVerifyAttempts >= 3
-        ? 'Maximum attempts reached. Please contact your recruiter.'
-        : `Face did not match. Attempt ${_faceVerifyAttempts}/3.`;
-      resultEl.style.background = '#fee2e2';
-      resultEl.style.color      = '#991b1b';
-      resultEl.style.display    = 'block';
 
-      if (_faceVerifyAttempts < 3) {
-        document.getElementById('fv-retry-btn').style.display = 'block';
-      } else {
-        // 3 failed attempts — log violation and block
+    } else {
+      // ── MISMATCH ──
+      if (ring) ring.style.stroke = '#ef4444';
+      // Red overlay on camera
+      const camResult = document.getElementById('fv-cam-result');
+      camResult.style.background = 'rgba(220,38,38,0.35)';
+      camResult.style.display    = 'flex';
+      document.getElementById('fv-cam-icon').textContent = '❌';
+      // Mark dot as fail
+      const dot = document.getElementById('fvd' + (_faceVerifyAttempts - 1));
+      if (dot) dot.className = 'fv-dot fail';
+
+      if (_faceVerifyAttempts >= 3) {
+        // ── HARD BLOCK after 3 fails ──
         logViolation('identity_mismatch');
+        document.getElementById('fv-title').textContent = '🚫 Access Denied';
+        document.getElementById('fv-msg').textContent   = '';
+        document.getElementById('fv-blocked-card').style.display = 'block';
+        document.getElementById('fv-leave-btn').style.display    = 'block';
+        // Dim the camera ring completely
+        if (ring) { ring.style.stroke = '#ef4444'; ring.setAttribute('stroke-dashoffset','0'); }
+      } else {
+        document.getElementById('fv-title').textContent = '❌ Face Not Matched';
+        document.getElementById('fv-msg').textContent   = `Attempt ${_faceVerifyAttempts}/3 — Make sure your face is clearly visible and try again`;
+        const card = document.getElementById('fv-result-card');
+        card.style.borderColor = 'rgba(220,38,38,0.4)';
+        card.style.background  = 'rgba(220,38,38,0.12)';
+        card.style.display     = 'block';
+        document.getElementById('fv-result-text').textContent = '⚠️ Profile photo did not match';
+        document.getElementById('fv-result-sub').textContent  = 'Ensure good lighting and face the camera directly';
+        // Show retry after 1.5s
+        setTimeout(() => {
+          document.getElementById('fv-sweep').style.display  = 'block';
+          document.getElementById('fv-retry-btn').style.display = 'block';
+          if (ring) ring.style.stroke = '#4361ee';
+        }, 1500);
       }
     }
   } catch(e) {
-    // Network error — allow through with warning
-    console.warn('Face verify network error:', e);
-    document.getElementById('fv-spinner').style.display = 'none';
-    document.getElementById('fv-icon').textContent  = '⚠️';
-    document.getElementById('fv-title').textContent = 'Verification Unavailable';
-    document.getElementById('fv-msg').textContent   = 'Could not connect to verification service. You may proceed.';
+    // Network/server error — allow through with warning
+    console.warn('Face verify error:', e);
+    if (ring) ring.style.stroke = '#f59e0b';
+    document.getElementById('fv-title').textContent = '⚠️ Verification Unavailable';
+    document.getElementById('fv-msg').textContent   = 'Could not connect to verification service.';
+    const card = document.getElementById('fv-result-card');
+    card.style.borderColor = 'rgba(245,158,11,0.4)';
+    card.style.background  = 'rgba(245,158,11,0.1)';
+    card.style.display     = 'block';
+    document.getElementById('fv-result-text').textContent = 'Verification service unavailable';
+    document.getElementById('fv-result-sub').textContent  = 'Proceeding without verification';
     document.getElementById('fv-proceed-btn').style.display = 'block';
   }
 }
 
 function proceedAfterVerify() {
   document.getElementById('face-verify-overlay').style.display = 'none';
-  if (window._scanResolve) { window._scanResolve(); window._scanResolve = null; }
+  // If pre-scan verify, resolve that promise
+  if (window._faceVerifyBeforeScanResolve) {
+    const resolve = window._faceVerifyBeforeScanResolve;
+    window._faceVerifyBeforeScanResolve = null;
+    resolve();
+  }
+  // If post-scan verify (legacy), resolve scan
+  else if (window._scanResolve) {
+    window._scanResolve();
+    window._scanResolve = null;
+  }
 }
 
 // FIX: register browser event listeners only once at page load, but only log
@@ -2398,6 +2517,23 @@ function initSocket() {
     submitInterview('recruiter_ended');
   });
 
+  socket.on('session_force_ended', () => {
+    alert('This interview session has been ended by the recruiter.');
+    submitInterview('recruiter_ended');
+  });
+
+  socket.on('session_extended', data => {
+    const mins = data.extend_minutes || 15;
+    // Show a friendly toast/banner to candidate
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#065f46;color:white;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.2);animation:slideDown .3s ease;';
+    banner.textContent = `⏱ Your interview time has been extended by ${mins} minutes!`;
+    document.body.appendChild(banner);
+    // Also extend the timer
+    if (typeof timerSec !== 'undefined') timerSec += mins * 60;
+    setTimeout(() => banner.remove(), 5000);
+  });
+
   // Recruiter joined → unlock live session and re-signal readiness
   socket.on('recruiter_joined', async () => {
     if (sessionData && sessionData.mode === 'live_recruiter') {
@@ -2501,18 +2637,90 @@ init();
 </script>
 
 <!-- ── Face Verification Overlay ───────────────────────────────────── -->
-<div id="face-verify-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:white;border-radius:20px;padding:32px;width:380px;max-width:95vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-    <div id="fv-icon" style="font-size:52px;margin-bottom:12px;">🔍</div>
-    <h2 id="fv-title" style="margin:0 0 8px;font-size:20px;color:#1e293b;">Verifying Identity</h2>
-    <p id="fv-msg" style="color:#64748b;font-size:13px;margin:0 0 20px;">Please look directly at the camera. We are matching your face with your profile photo.</p>
-    <div id="fv-spinner" style="margin:0 auto 16px;width:40px;height:40px;border:4px solid #e2e8f0;border-top-color:#4361ee;border-radius:50%;animation:fv-spin 0.8s linear infinite;"></div>
-    <div id="fv-result" style="display:none;padding:12px;border-radius:10px;font-weight:700;font-size:14px;margin-bottom:16px;"></div>
-    <button id="fv-retry-btn" onclick="runFaceVerify()" style="display:none;background:#4361ee;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;margin-bottom:8px;width:100%;">Try Again</button>
-    <button id="fv-proceed-btn" onclick="proceedAfterVerify()" style="display:none;background:#059669;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;width:100%;">Continue to Interview →</button>
+<!-- Face Verification Overlay -->
+<div id="face-verify-overlay" style="display:none;position:fixed;inset:0;background:rgba(5,10,20,0.92);z-index:9999;align-items:center;justify-content:center;flex-direction:column;">
+
+  <!-- Top label -->
+  <div style="text-align:center;margin-bottom:20px;">
+    <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">RecruitAI · Identity Verification</div>
+    <div id="fv-title" style="font-size:22px;font-weight:800;color:#fff;font-family:sans-serif;">Face Scanning…</div>
   </div>
+
+  <!-- Camera + scan ring -->
+  <div style="position:relative;width:220px;height:220px;margin-bottom:20px;">
+    <!-- Live camera feed in circle -->
+    <video id="fv-cam-preview" autoplay muted playsinline
+      style="width:220px;height:220px;border-radius:50%;object-fit:cover;display:block;"></video>
+
+    <!-- Scan ring SVG -->
+    <svg id="fv-scan-svg" viewBox="0 0 220 220" style="position:absolute;inset:0;width:220px;height:220px;">
+      <!-- Background ring -->
+      <circle cx="110" cy="110" r="106" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+      <!-- Animated scan ring -->
+      <circle id="fv-ring" cx="110" cy="110" r="106" fill="none"
+        stroke="#4361ee" stroke-width="3"
+        stroke-dasharray="666" stroke-dashoffset="666"
+        stroke-linecap="round"
+        style="transform-origin:center;transform:rotate(-90deg);transition:stroke-dashoffset .1s linear;"/>
+      <!-- Corner brackets -->
+      <path d="M 30 60 L 30 30 L 60 30" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 160 30 L 190 30 L 190 60" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 30 160 L 30 190 L 60 190" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 190 160 L 190 190 L 160 190" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+
+    <!-- Scan sweep line -->
+    <div id="fv-sweep" style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4361ee,transparent);top:50%;animation:fvSweep 2s ease-in-out infinite;display:none;"></div>
+
+    <!-- Result overlay on camera -->
+    <div id="fv-cam-result" style="display:none;position:absolute;inset:0;border-radius:50%;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
+      <div id="fv-cam-icon" style="font-size:52px;"></div>
+    </div>
+  </div>
+
+  <!-- Status message -->
+  <div id="fv-msg" style="font-size:13px;color:rgba(255,255,255,0.65);text-align:center;max-width:280px;line-height:1.6;margin-bottom:16px;">
+    Position your face in the circle and stay still
+  </div>
+
+  <!-- Attempt dots -->
+  <div id="fv-attempts-row" style="display:flex;gap:8px;margin-bottom:20px;">
+    <div class="fv-dot active" id="fvd0"></div>
+    <div class="fv-dot" id="fvd1"></div>
+    <div class="fv-dot" id="fvd2"></div>
+  </div>
+
+  <!-- Result card (shown after verify) -->
+  <div id="fv-result-card" style="display:none;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:16px 24px;text-align:center;max-width:320px;margin-bottom:16px;">
+    <div id="fv-result-text" style="font-size:14px;font-weight:700;color:white;"></div>
+    <div id="fv-result-sub" style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;"></div>
+  </div>
+
+  <!-- Blocked card (shown after 3 fails) -->
+  <div id="fv-blocked-card" style="display:none;background:rgba(220,38,38,0.15);border:1.5px solid rgba(220,38,38,0.4);border-radius:14px;padding:20px 28px;text-align:center;max-width:340px;margin-bottom:16px;">
+    <div style="font-size:40px;margin-bottom:10px;">🚫</div>
+    <div style="font-size:16px;font-weight:800;color:#fca5a5;margin-bottom:6px;">Access Denied</div>
+    <div style="font-size:13px;color:rgba(252,165,165,0.8);line-height:1.6;">Your face does not match the profile photo on file.<br>You are <strong>not allowed to attend this interview</strong>.<br><br>Please contact your recruiter if you believe this is an error.</div>
+  </div>
+
+  <!-- Action buttons -->
+  <div style="display:flex;flex-direction:column;gap:10px;width:280px;">
+    <button id="fv-retry-btn" onclick="runFaceVerify()" style="display:none;background:#4361ee;color:white;border:none;border-radius:11px;padding:13px;font-weight:700;cursor:pointer;font-size:14px;width:100%;">🔄 Try Again</button>
+    <button id="fv-proceed-btn" onclick="proceedAfterVerify()" style="display:none;background:#059669;color:white;border:none;border-radius:11px;padding:13px;font-weight:700;cursor:pointer;font-size:14px;width:100%;">✅ Continue to Interview →</button>
+    <button id="fv-leave-btn" onclick="window.location.href='test.html'" style="display:none;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:11px;padding:11px;font-weight:600;cursor:pointer;font-size:13px;width:100%;">← Leave Interview</button>
+  </div>
+
 </div>
-<style>@keyframes fv-spin{to{transform:rotate(360deg)}}</style>
+
+<style>
+@keyframes fv-spin{to{transform:rotate(360deg)}}
+@keyframes fvSweep{0%{top:0%}50%{top:100%}100%{top:0%}}
+@keyframes fvFadeIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.fv-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all .3s;}
+.fv-dot.active{background:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,0.3);}
+.fv-dot.done{background:#059669;}
+.fv-dot.fail{background:#ef4444;}
+</style>
 
 </body>
 </html>

@@ -2,8 +2,11 @@
 # RecruitAI — .gitignore
 # ================================================================
 
-# ── Secrets — NEVER commit these ─────────────────────────────────
+# ── Environment & Secrets ─────────────────────────────────────────
 .env
+*.env
+.env.local
+.env.production
 
 # ── Python ───────────────────────────────────────────────────────
 __pycache__/
@@ -11,33 +14,50 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
+*.egg
 *.egg-info/
 dist/
 build/
-*.egg
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
 
-# ── Virtual environments ──────────────────────────────────────────
+# ── Virtual Environment ───────────────────────────────────────────
 venv/
 env/
+ENV/
 .venv/
 .env/
 
-# ── IDE / editor ─────────────────────────────────────────────────
+# ── IDE & OS ──────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# ── Logs & local data ─────────────────────────────────────────────
+# ── Logs & Database ───────────────────────────────────────────────
 *.log
 *.sqlite
 *.db
+flask_session/
 
-# ── AI / CV model files (large, download on first run) ────────────
-*.caffemodel
-*.prototxt
-deploy.prototxt
-res10_300x300_ssd_iter_140000.caffemodel
-haarcascade_*.xml
+# ── Uploads & Media ───────────────────────────────────────────────
+static/uploads/
+static/temp/
+
+# ── Testing ───────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Node (if any frontend tooling) ───────────────────────────────
+node_modules/
+npm-debug.log

@@ -3,6 +3,10 @@ from flask_login import login_required
 from models import ExamQuestion
 from utils.ai import gemini_ask
 from utils.helpers import parse_json_response
+try:
+    from routes.recruiter import track_tokens
+except ImportError:
+    def track_tokens(*a, **k): pass
 
 ai_bp = Blueprint('ai', __name__)
 
@@ -32,7 +36,7 @@ Rules:
 - Questions must be specific to {job_role}
 - Return ONLY the JSON array. No explanation, no markdown, no extra text."""
 
-    raw       = gemini_ask(current_app._get_current_object(), prompt)
+    raw       = gemini_ask(current_app._get_current_object(), prompt, track_type='questions', track_label=job_role)
     questions = parse_json_response(raw)
 
     if questions and isinstance(questions, list) and len(questions) > 0:
@@ -70,7 +74,7 @@ Evaluate strictly and fairly. Return ONLY this JSON object (no markdown, no expl
   "missing_points": ["<what was missing>"]
 }}"""
 
-    raw    = gemini_ask(current_app._get_current_object(), prompt)
+    raw    = gemini_ask(current_app._get_current_object(), prompt, track_type='evaluations', track_label=job_role)
     result = parse_json_response(raw)
 
     if result and 'score' in result:
@@ -116,7 +120,7 @@ Based on all answers, provide a final evaluation. Return ONLY this JSON (no mark
   "recommendation": "<exactly one of: Strong Hire | Hire | Maybe | No Hire>"
 }}"""
 
-    raw    = gemini_ask(current_app._get_current_object(), prompt)
+    raw    = gemini_ask(current_app._get_current_object(), prompt, track_type='final', track_label=job_role)
     result = parse_json_response(raw)
 
     if result and 'overall_score' in result:

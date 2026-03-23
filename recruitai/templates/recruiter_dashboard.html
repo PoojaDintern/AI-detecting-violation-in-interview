@@ -130,10 +130,63 @@ tr:hover td{background:rgba(79,142,247,0.03);}
 ::-webkit-scrollbar-track{background:var(--bg2);}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+/* ── Bell notification ── */
+.bell-wrap{position:relative;display:inline-flex;align-items:center;}
+.bell-btn{background:none;border:1.5px solid var(--border);border-radius:9px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;transition:all .2s;position:relative;}
+.bell-btn:hover{border-color:var(--accent);background:var(--accent-light);}
+.bell-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:white;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid white;animation:bellPulse 2s infinite;}
+@keyframes bellPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.bell-dropdown{
+  position:absolute;top:calc(100% + 10px);right:0;
+  background:white;border:1.5px solid var(--border);border-radius:16px;
+  width:340px;box-shadow:0 16px 48px rgba(0,0,0,0.16);
+  z-index:9999;display:none;overflow:hidden;
+  animation:bellDrop .2s cubic-bezier(.22,1,.36,1);
+}
+@keyframes bellDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.bell-dropdown.show{display:block;}
+.bell-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.bell-header-title{font-size:13px;font-weight:800;color:var(--text);}
+.bell-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;}
+.bell-session-item{padding:14px 16px;border-bottom:1px solid var(--border);transition:background .15s;}
+.bell-session-item:last-child{border-bottom:none;}
+.bell-session-item:hover{background:var(--s2);}
+.bell-candidate{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.bell-meta{font-size:11.5px;color:var(--muted);margin-bottom:10px;}
+.bell-duration{display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin-bottom:10px;}
+.bell-actions{display:flex;gap:8px;}
+.bell-end-btn{flex:1;padding:7px 10px;background:#fee2e2;border:1px solid #fca5a5;color:#dc2626;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;}
+.bell-end-btn:hover{background:#fecaca;}
+.bell-extend-btn{flex:1;padding:7px 10px;background:#dcfce7;border:1px solid #86efac;color:#16a34a;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;}
+.bell-extend-btn:hover{background:#bbf7d0;}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
+<!-- Active sessions notification bar -->
+<div id="active-sessions-bar" style="display:none;align-items:center;gap:12px;background:#eff6ff;border-bottom:1.5px solid #93c5fd;padding:10px 24px;font-size:13px;position:sticky;top:0;z-index:8999;">
+  <span style="font-size:18px;">🔴</span>
+  <div style="flex:1;">
+    <strong style="color:#1e40af;" id="active-sessions-title">Active Interview Session</strong>
+    <span style="color:#3b82f6;margin-left:8px;" id="active-sessions-detail"></span>
+  </div>
+  <button onclick="viewActiveSessions()" style="background:#3b82f6;color:white;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;">👁 View Sessions</button>
+  <button onclick="document.getElementById('active-sessions-bar').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#3b82f6;padding:0 4px;">✕</button>
+</div>
+
+<!-- Active sessions modal -->
+<div id="active-sessions-modal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:560px;">
+    <div class="modal-title">
+      🔴 Active Interview Sessions
+      <button onclick="document.getElementById('active-sessions-modal').classList.add('hidden')" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div id="active-sessions-list" style="display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto;"></div>
+  </div>
+</div>
+
 <!-- Email config banner — shown when SMTP not set up -->
 <div id="email-config-topbanner" style="display:none;align-items:center;gap:12px;background:#fffbeb;border-bottom:1.5px solid #fcd34d;padding:10px 24px;font-size:13px;position:sticky;top:0;z-index:9000;">
   <span style="font-size:18px;">⚠️</span>
@@ -157,6 +210,22 @@ tr:hover td{background:rgba(79,142,247,0.03);}
         <div style="font-size:11px;color:var(--muted);" id="company-tagline">Company Account</div>
       </div>
     </div>
+    <!-- Bell notification -->
+    <div class="bell-wrap" id="bell-wrap">
+      <button class="bell-btn" id="bell-btn" onclick="toggleBell()" title="Active Sessions">
+        🔔
+        <span class="bell-badge" id="bell-badge" style="display:none;">0</span>
+      </button>
+      <div class="bell-dropdown" id="bell-dropdown">
+        <div class="bell-header">
+          <span class="bell-header-title">🔴 Active Interview Sessions</span>
+          <span id="bell-count-label" style="font-size:11px;color:var(--muted);"></span>
+        </div>
+        <div id="bell-content">
+          <div class="bell-empty">No active sessions right now</div>
+        </div>
+      </div>
+    </div>
     <button onclick="showPage('profile',document.querySelector('[data-page=profile]'))" style="padding:7px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⚙️ Settings</button>
     <a href="/logout" class="logout-btn">Logout</a>
   </div>
@@ -171,6 +240,7 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <div class="nav-item" data-page="scheduled" onclick="showPage('scheduled',this)"><span class="nav-icon">📅</span>Scheduled</div>
     <div class="nav-item" data-page="interviewers" onclick="showPage('interviewers',this)"><span class="nav-icon">🎙️</span>Interviewers</div>
     <div class="nav-item" data-page="emailsettings" onclick="showPage('emailsettings',this)"><span class="nav-icon">📧</span>Email Settings</div>
+
     <div class="nav-item" data-page="roundconfig" onclick="showPage('roundconfig',this)"><span class="nav-icon">🎯</span>Round Config</div>
     <div class="nav-item" data-page="profile" onclick="showPage('profile',this)"><span class="nav-icon">🏢</span>Company Profile</div>
   </div>
@@ -411,6 +481,49 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <div class="page" id="page-create">
       <div class="page-title">Create Interview Session</div>
       <div class="page-sub">Select a job role to see applicants, then create a session instantly</div>
+
+      <!-- 🤖 Gemini API Token Usage -->
+      <div class="card" style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div class="card-title" style="margin-bottom:2px;">🤖 Gemini API Token Usage</div>
+            <div style="font-size:12px;color:var(--muted);">Tokens consumed by AI interviews — stored permanently in database</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="loadTokenUsage()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;">🔄 Refresh</button>
+            <button onclick="resetTokenUsage()" style="background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;">🗑 Reset</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Questions</div>
+            <div id="tok-questions" style="font-size:22px;font-weight:800;color:var(--accent);">—</div>
+            <div style="font-size:10px;color:var(--muted2);">tokens</div>
+          </div>
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Evaluations</div>
+            <div id="tok-eval" style="font-size:22px;font-weight:800;color:var(--accent);">—</div>
+            <div style="font-size:10px;color:var(--muted2);">tokens</div>
+          </div>
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Final Eval</div>
+            <div id="tok-final" style="font-size:22px;font-weight:800;color:var(--accent);">—</div>
+            <div style="font-size:10px;color:var(--muted2);">tokens</div>
+          </div>
+          <div style="background:linear-gradient(135deg,rgba(67,97,238,.08),rgba(67,97,238,.04));border:1.5px solid rgba(67,97,238,.2);border-radius:10px;padding:12px;text-align:center;">
+            <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Total</div>
+            <div id="tok-total" style="font-size:22px;font-weight:800;color:var(--accent);">—</div>
+            <div style="font-size:10px;color:var(--muted2);">tokens</div>
+          </div>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;">📋 Recent API Calls</div>
+          <div id="tok-log" style="font-size:11.5px;color:var(--muted);max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+            <div style="color:var(--muted2);">No calls recorded yet this session</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">🎯 Interview Mode</div>
         <div class="mode-grid">
@@ -503,13 +616,14 @@ tr:hover td{background:rgba(79,142,247,0.03);}
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- SESSIONS -->
     <div class="page" id="page-sessions">
       <div class="page-title">All Sessions</div>
       <div class="page-sub">History of all interview sessions</div>
-      <div class="card">
+      <div class="card" style="margin-top:20px;">
         <div class="card-title">📋 Sessions</div>
         <div style="max-height:480px;overflow-y:auto;overflow-x:auto;" id="sessions-table"><div class="empty">Loading…</div></div>
       </div>
@@ -1240,7 +1354,7 @@ let _companyName = '';
 
 async function init() {
   const auth = await fetch('/api/check-auth').then(r=>r.json());
-  if (!auth.authenticated || (auth.role !== 'recruiter' && auth.role !== 'admin')) { window.location.href='index.html'; return; }
+  if (!auth.authenticated || auth.role !== 'recruiter') { window.location.href='index.html'; return; }
   // Company-centric display
   _companyName = auth.company_name || auth.full_name || auth.username;
   document.getElementById('admin-name').textContent = _companyName;
@@ -1259,7 +1373,134 @@ async function init() {
   await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadMyPostings()]);
   // Check if email is configured — show persistent top banner if not
   checkEmailConfig();
+  startActiveSessionsPolling();
 }
+
+// ── Bell Notification — Active Sessions ──────────────────────────────────────
+let _activeSessionsInterval = null;
+let _bellOpen = false;
+
+function startActiveSessionsPolling() {
+  checkActiveSessions();
+  _activeSessionsInterval = setInterval(checkActiveSessions, 30000);
+}
+
+function toggleBell() {
+  _bellOpen = !_bellOpen;
+  document.getElementById('bell-dropdown').classList.toggle('show', _bellOpen);
+  if (_bellOpen) {
+    checkActiveSessions(true); // refresh content when opened
+    // close on outside click
+    setTimeout(() => document.addEventListener('click', closeBellOutside), 10);
+  } else {
+    document.removeEventListener('click', closeBellOutside);
+  }
+}
+
+function closeBellOutside(e) {
+  const wrap = document.getElementById('bell-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    _bellOpen = false;
+    document.getElementById('bell-dropdown').classList.remove('show');
+    document.removeEventListener('click', closeBellOutside);
+  }
+}
+
+function formatDuration(startedAt) {
+  if (!startedAt) return 'Just started';
+  const start = new Date(startedAt);
+  const now   = new Date();
+  const mins  = Math.floor((now - start) / 60000);
+  if (mins < 1)  return 'Just started';
+  if (mins < 60) return `${mins} min${mins>1?'s':''} active`;
+  const hrs  = Math.floor(mins / 60);
+  const rem  = mins % 60;
+  return rem > 0 ? `${hrs}h ${rem}m active` : `${hrs} hour${hrs>1?'s':''} active`;
+}
+
+async function checkActiveSessions(updateBell = false) {
+  try {
+    const data = await fetch('/api/active-sessions').then(r=>r.json());
+    if (!data.success) return;
+
+    const badge   = document.getElementById('bell-badge');
+    const bellBtn = document.getElementById('bell-btn');
+    const count   = data.count || 0;
+
+    // Update badge
+    if (count > 0) {
+      badge.style.display = 'flex';
+      badge.textContent   = count;
+      bellBtn.style.borderColor = '#ef4444';
+      bellBtn.style.background  = '#fee2e2';
+    } else {
+      badge.style.display = 'none';
+      bellBtn.style.borderColor = '';
+      bellBtn.style.background  = '';
+    }
+
+    // Update old top bar (hide it — bell replaces it)
+    const bar = document.getElementById('active-sessions-bar');
+    if (bar) bar.style.display = 'none';
+
+    // Update bell dropdown content
+    const countLabel = document.getElementById('bell-count-label');
+    const content    = document.getElementById('bell-content');
+    if (countLabel) countLabel.textContent = count > 0 ? `${count} active` : '';
+
+    if (content) {
+      if (count === 0) {
+        content.innerHTML = '<div class="bell-empty">✅ No active sessions right now</div>';
+      } else {
+        content.innerHTML = data.sessions.map(s => `
+          <div class="bell-session-item">
+            <div class="bell-candidate">👤 ${s.candidate_name}</div>
+            <div class="bell-meta">${s.job_role} · ${(s.mode||'').replace(/_/g,' ')} · Room: <strong>${s.room_code}</strong></div>
+            <div class="bell-duration">⏱ ${formatDuration(s.started_at)}</div>
+            <div class="bell-actions">
+              <button class="bell-end-btn" onclick="bellEndSession(${s.id})">⏹ End Session</button>
+              <button class="bell-extend-btn" onclick="bellExtendSession(${s.id}, '${s.candidate_name}')">⏱ Extend Time</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  } catch(e) {}
+}
+
+async function bellEndSession(sessionId) {
+  if (!confirm('End this interview session? The candidate will be notified and the session will be marked as completed.')) return;
+  const data = await fetch('/api/force-end-session', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({session_id: sessionId})
+  }).then(r=>r.json());
+  if (data.success) {
+    showToast('✅ Session ended successfully');
+    checkActiveSessions();
+  } else {
+    showToast('❌ Error: ' + data.message);
+  }
+}
+
+async function bellExtendSession(sessionId, candidateName) {
+  // Show a quick popup to pick extension time
+  const mins = prompt(`Extend ${candidateName}'s session by how many minutes?`, '15');
+  if (!mins || isNaN(mins) || parseInt(mins) <= 0) return;
+  const data = await fetch('/api/extend-session', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({session_id: sessionId, extend_minutes: parseInt(mins)})
+  }).then(r=>r.json());
+  if (data.success) {
+    showToast(`✅ Session extended by ${mins} minutes`);
+    checkActiveSessions();
+  } else {
+    showToast('❌ ' + (data.message || 'Could not extend session'));
+  }
+}
+
+// Keep old functions for backward compat
+function viewActiveSessions() { toggleBell(); }
+async function forceEndSession(sessionId) { await bellEndSession(sessionId); }
 
 function checkEmailConfig() {
   fetch('/api/recruiter/email-settings').then(r=>r.json()).then(data => {
@@ -2176,6 +2417,7 @@ function showPage(name, el) {
   if (name==='overview'||name==='sessions') loadDashboard();
   if (name==='jobs'||name==='applicants') loadMyPostings();
   if (name==='emailsettings') loadEmailSettings();
+  if (name==='create') loadTokenUsage();
   if (name==='roundconfig') { loadRoundConfigPage(); updateVoicePreview(); }
   if (name==='scheduled') loadScheduled();
   if (name==='interviewers') loadInterviewersPage();
@@ -2818,6 +3060,62 @@ function renderSubmissionsTab() {
 }
 
 init();
+
+// ── Gemini Token Usage ────────────────────────────────────────────────────────
+async function loadTokenUsage() {
+  try {
+    const data = await fetch('/api/token-usage').then(r=>r.json());
+    if (!data.success) return;
+
+    document.getElementById('tok-questions').textContent = (data.questions || 0).toLocaleString();
+    document.getElementById('tok-eval').textContent      = (data.evaluations || 0).toLocaleString();
+    document.getElementById('tok-final').textContent     = (data.final || 0).toLocaleString();
+    document.getElementById('tok-total').textContent     = (data.total || 0).toLocaleString();
+
+    const logEl = document.getElementById('tok-log');
+    if (data.log && data.log.length > 0) {
+      const typeColors = {
+        questions:    'rgba(67,97,238,.15)',
+        mcq_questions:'rgba(124,58,237,.15)',
+        evaluations:  'rgba(5,150,105,.15)',
+        final:        'rgba(245,158,11,.15)',
+      };
+      const typeLabels = {
+        questions:    'AI Questions',
+        mcq_questions:'MCQ Questions',
+        evaluations:  'Evaluation',
+        final:        'Final Eval',
+      };
+      logEl.innerHTML = data.log.map(entry => `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--s);border-radius:7px;border:1px solid var(--border);">
+          <span style="font-size:10px;background:${typeColors[entry.type]||'rgba(67,97,238,.1)'};color:var(--accent);padding:2px 8px;border-radius:4px;font-weight:700;white-space:nowrap;min-width:80px;text-align:center;">
+            ${typeLabels[entry.type] || entry.type}
+          </span>
+          <span style="flex:1;font-size:12px;color:var(--text);font-weight:600;">${entry.label || '—'}</span>
+          <div style="text-align:right;">
+            <div style="font-size:12px;font-weight:800;color:var(--accent);">${(entry.tokens||0).toLocaleString()} total</div>
+            <div style="font-size:10px;color:var(--muted2);">↑${(entry.prompt||0).toLocaleString()} ↓${(entry.response||0).toLocaleString()}</div>
+          </div>
+          <span style="font-size:10px;color:var(--muted2);white-space:nowrap;">${entry.time || ''}</span>
+        </div>
+      `).join('');
+    } else {
+      logEl.innerHTML = '<div style="color:var(--muted2);font-size:12px;padding:8px 0;">No AI calls recorded yet — run an AI interview to see token usage here</div>';
+    }
+  } catch(e) { console.error('loadTokenUsage error', e); }
+}
+
+async function resetTokenUsage() {
+  if (!confirm('This will permanently delete all token usage records from the database. Continue?')) return;
+  const data = await fetch('/api/token-usage/reset', {method:'POST'}).then(r=>r.json());
+  if (data.success) {
+    showToast('✅ Token records cleared');
+    loadTokenUsage();
+  } else {
+    showToast('❌ ' + (data.message || 'Failed to reset'));
+  }
+}
+
 </script>
 
 

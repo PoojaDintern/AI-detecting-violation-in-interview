@@ -130,7 +130,7 @@ def unlock_next_round():
 @pipeline_bp.route('/api/pipeline/reset-round', methods=['POST'])
 @login_required
 def reset_round():
-    if current_user.role != 'admin':
+    if not current_user.is_recruiter:
         return jsonify({'success': False, 'message': 'Admin only'}), 403
     data         = request.get_json() or {}
     candidate_id = data.get('candidate_id')

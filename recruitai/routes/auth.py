@@ -60,7 +60,7 @@ def signup():
                           'fakeinbox.com', 'sharklasers.com', 'trashmail.com', 'yopmail.com'}
     if domain_part.lower() in disposable_domains:
         return jsonify({'success': False, 'message': 'Disposable email addresses are not allowed.'}), 400
-    if role in ('recruiter', 'admin'):
+    if role == 'recruiter':
         if not company_name:
             return jsonify({'success': False, 'message': 'Company name is required for company accounts'}), 400
         if phone:
@@ -98,7 +98,7 @@ def check_auth():
     if current_user.is_authenticated:
         return jsonify({'authenticated': True, 'username': current_user.username,
                         'full_name': current_user.full_name, 'role': current_user.role,
-                        'is_admin': current_user.is_admin,
+                        'is_admin': current_user.is_recruiter,
                         'is_recruiter': current_user.is_recruiter,
                         'company_name': current_user.company_name or current_user.full_name or current_user.username,
                         'photo_url': current_user.photo_url or ''})
@@ -108,16 +108,23 @@ def check_auth():
 @auth_bp.route('/api/upload-photo', methods=['POST'])
 @login_required
 def upload_photo():
-    data     = request.get_json() or {}
+    data      = request.get_json() or {}
     photo_b64 = data.get('photo_url', '').strip()
     if not photo_b64:
         return jsonify({'success': False, 'message': 'No photo provided'}), 400
-    # Accept base64 data URLs (max ~2MB)
     if len(photo_b64) > 3_000_000:
         return jsonify({'success': False, 'message': 'Photo too large. Please use a smaller image.'}), 400
-    current_user.photo_url = photo_b64
-    db.session.commit()
-    return jsonify({'success': True, 'message': 'Profile photo saved'})
+    try:
+        current_user.photo_url = photo_b64
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Profile photo saved'})
+    except Exception as e:
+        db.session.rollback()
+        err = str(e).lower()
+        if 'column' in err and 'photo_url' in err:
+            return jsonify({'success': False,
+                'message': 'Database not ready — run this SQL in Supabase: ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;'}), 500
+        return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
 
 
 @auth_bp.route('/api/verify-face', methods=['POST'])
