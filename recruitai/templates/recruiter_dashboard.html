@@ -594,6 +594,23 @@ tr:hover td{background:rgba(79,142,247,0.03);}
         <!-- Hidden field for username (used by createSession) -->
         <input type="hidden" id="c-candidate">
 
+        <!-- 360° Scan toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--s2);border:1px solid var(--border);border-radius:11px;margin-bottom:14px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">🔍 360° Room Security Scan</div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">Candidate must complete room scan before interview</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <div style="position:relative;">
+              <input type="checkbox" id="c-require-scan" checked style="opacity:0;width:0;height:0;position:absolute;">
+              <div id="scan-toggle-track" onclick="toggleScanRequirement()" style="width:44px;height:24px;background:#4361ee;border-radius:12px;cursor:pointer;transition:background .2s;position:relative;">
+                <div id="scan-toggle-thumb" style="position:absolute;top:2px;left:22px;width:20px;height:20px;background:white;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+              </div>
+            </div>
+            <span id="scan-toggle-label" style="font-size:12px;font-weight:700;color:#4361ee;">ON</span>
+          </label>
+        </div>
+
         <button class="btn-primary" id="create-session-btn" onclick="createSession()" style="padding:12px 28px;font-size:15px;" disabled>
           🚀 Create Session
         </button>
@@ -2172,6 +2189,25 @@ function onCandidateSelect() {
   createBtn.disabled     = false;
 }
 
+function toggleScanRequirement() {
+  const cb    = document.getElementById('c-require-scan');
+  const track = document.getElementById('scan-toggle-track');
+  const thumb = document.getElementById('scan-toggle-thumb');
+  const label = document.getElementById('scan-toggle-label');
+  cb.checked  = !cb.checked;
+  if (cb.checked) {
+    track.style.background   = '#4361ee';
+    thumb.style.left         = '22px';
+    label.textContent        = 'ON';
+    label.style.color        = '#4361ee';
+  } else {
+    track.style.background   = '#94a3b8';
+    thumb.style.left         = '2px';
+    label.textContent        = 'OFF';
+    label.style.color        = '#94a3b8';
+  }
+}
+
 async function createSession() {
   const candidate = document.getElementById('c-candidate').value.trim();
   const jobRole   = document.getElementById('c-role').value;
@@ -2186,7 +2222,7 @@ async function createSession() {
     const data = await fetch('/api/create-session', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode, mcq_source: currentMcqSource})
+      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode, mcq_source: currentMcqSource, skip_scan: !document.getElementById('c-require-scan').checked})
     }).then(r=>r.json());
 
     if (!data.success) { showToast('❌ '+(data.message||'Failed')); return; }

@@ -476,6 +476,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
         <span id="scan-face-badge-text">Camera ready</span>
       </div>
       <button class="scan-btn-top" id="scan-btn" onclick="startRoomScan()">▶ Start Scan</button>
+      <button class="scan-btn-top" id="skip-scan-btn" onclick="skipRoomScan()" style="background:rgba(100,116,139,0.15);color:#64748b;border:1px solid rgba(100,116,139,0.3);display:none;">⏭ Skip Scan</button>
     </div>
   </div>
 
@@ -826,6 +827,10 @@ async function init() {
     sessionData = data.session;
     sessionData.ice_servers = data.ice_servers || [];
     questions   = data.questions || [];
+    window._sessionSkipScan = data.skip_scan || false;
+    if (window._sessionSkipScan) {
+      console.log('[Session] 360° scan disabled by recruiter for this session');
+    }
     document.getElementById('si-role').textContent = sessionData.job_role;
     document.getElementById('si-mode').textContent = (sessionData.mode||'mcq').replace('_',' ');
     document.getElementById('si-room').textContent = ROOM_CODE;
@@ -1153,6 +1158,13 @@ function proceedToScan() {
 
 function showRoomScan() {
   return new Promise(resolve => {
+    // If recruiter disabled scan for this session — skip immediately
+    if (window._sessionSkipScan) {
+      console.log('[Scan] Skipped — disabled by recruiter');
+      resolve();
+      return;
+    }
+
     const overlay = document.getElementById('room-scan-overlay');
     overlay.style.display = 'flex';
     const scanVid = document.getElementById('scan-video');
@@ -1160,7 +1172,24 @@ function showRoomScan() {
     if (camVid.srcObject) scanVid.srcObject = camVid.srcObject;
     startScanFaceMonitor();
     window._scanResolve = resolve;
+
+    // Show skip button for demo mode
+    const skipBtn = document.getElementById('skip-scan-btn');
+    if (skipBtn) skipBtn.style.display = 'inline-flex';
   });
+}
+
+function skipRoomScan() {
+  if (!confirm('Skip the 360° room scan? This will be recorded.')) return;
+  stopScanFaceMonitor();
+  const arrowEl = document.getElementById('scan-dir-arrow');
+  if (arrowEl) arrowEl.classList.remove('show');
+  const holdBar = document.getElementById('pose-hold-bar');
+  if (holdBar) holdBar.classList.remove('show');
+  const skipBtn = document.getElementById('skip-scan-btn');
+  if (skipBtn) skipBtn.style.display = 'none';
+  document.getElementById('room-scan-overlay').style.display = 'none';
+  if (window._scanResolve) { window._scanResolve(); window._scanResolve = null; }
 }
 
 async function startRoomScan() {
@@ -1460,7 +1489,7 @@ async function _fvAnimateScan() {
   // Animate the ring filling up over 2 seconds while "scanning"
   const ring = document.getElementById('fv-ring');
   if (!ring) return;
-  const total = 666;
+  const total = 603;
   let elapsed = 0;
   return new Promise(resolve => {
     const interval = setInterval(() => {
@@ -1514,19 +1543,20 @@ async function runFaceVerify() {
       document.getElementById('fv-msg').textContent   = 'Your face matches your profile photo.';
       // Green overlay on camera
       const camResult = document.getElementById('fv-cam-result');
-      camResult.style.background = 'rgba(5,150,105,0.35)';
+      camResult.style.background = 'rgba(5,150,105,0.3)';
       camResult.style.display    = 'flex';
       document.getElementById('fv-cam-icon').textContent = '✅';
       // Mark dot as done
       const dot = document.getElementById('fvd' + (_faceVerifyAttempts - 1));
       if (dot) dot.className = 'fv-dot done';
-      // Result card
+      // Result card - light green
       const card = document.getElementById('fv-result-card');
-      card.style.borderColor = 'rgba(5,150,105,0.4)';
-      card.style.background  = 'rgba(5,150,105,0.12)';
+      card.style.background  = '#f0fdf4';
+      card.style.border      = '1.5px solid #86efac';
       card.style.display     = 'block';
+      document.getElementById('fv-result-text').style.color = '#166534';
       document.getElementById('fv-result-text').textContent = '🎉 Face matched successfully';
-      document.getElementById('fv-result-sub').textContent  = 'Identity confirmed — you may proceed to the interview';
+      document.getElementById('fv-result-sub').textContent  = 'Identity confirmed — you may proceed';
       document.getElementById('fv-proceed-btn').style.display = 'block';
 
     } else {
@@ -1881,7 +1911,7 @@ async function loadAI() {
       const data = await fetch('/api/ai-generate-questions', {
         method:'POST', signal: controller.signal,
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({job_role: sessionData.job_role})
+        body:JSON.stringify({job_role: sessionData.job_role, session_id: sessionData.id})
       }).then(r => r.json());
       clearTimeout(timeout);
 
@@ -2302,6 +2332,7 @@ async function aiNextQuestion() {
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({question:q.question||q.question_text, answer, job_role:sessionData.job_role,
         expected_keywords:q.expected_keywords||[],
+        session_id: sessionData ? sessionData.id : null,
         comm_analysis: commAnalysis})}).then(r=>r.json());
     aiTranscript.push({
       question: q.question||q.question_text,
@@ -2415,6 +2446,7 @@ async function submitInterview(reason='manual') {
       const finalEval = await fetch('/api/ai-final-evaluation', {method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({transcript:transcriptToSend, job_role:sessionData.job_role,
+          session_id: sessionData ? sessionData.id : null,
           confidence_score: payload.confidence_score,
           communication_score: payload.communication_score,
           ai_prompt_likelihood: payload.ai_prompt_likelihood})}).then(r=>r.json());
@@ -2637,89 +2669,95 @@ init();
 </script>
 
 <!-- ── Face Verification Overlay ───────────────────────────────────── -->
-<!-- Face Verification Overlay -->
-<div id="face-verify-overlay" style="display:none;position:fixed;inset:0;background:rgba(5,10,20,0.92);z-index:9999;align-items:center;justify-content:center;flex-direction:column;">
+<!-- Face Verification Overlay — Light theme matching app -->
+<div id="face-verify-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;">
 
-  <!-- Top label -->
-  <div style="text-align:center;margin-bottom:20px;">
-    <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">RecruitAI · Identity Verification</div>
-    <div id="fv-title" style="font-size:22px;font-weight:800;color:#fff;font-family:sans-serif;">Face Scanning…</div>
-  </div>
+  <div style="background:#fff;border-radius:24px;width:420px;max-width:95vw;box-shadow:0 32px 80px rgba(0,0,0,0.25);overflow:hidden;animation:fvSlideUp .3s cubic-bezier(.22,1,.36,1);">
 
-  <!-- Camera + scan ring -->
-  <div style="position:relative;width:220px;height:220px;margin-bottom:20px;">
-    <!-- Live camera feed in circle -->
-    <video id="fv-cam-preview" autoplay muted playsinline
-      style="width:220px;height:220px;border-radius:50%;object-fit:cover;display:block;"></video>
+    <!-- Header bar -->
+    <div style="background:linear-gradient(135deg,#0d1f3c,#1e3a65);padding:20px 24px 16px;text-align:center;position:relative;">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;">Identity Verification</div>
+      <div id="fv-title" style="font-size:18px;font-weight:800;color:#fff;">Face Scanning…</div>
+    </div>
 
-    <!-- Scan ring SVG -->
-    <svg id="fv-scan-svg" viewBox="0 0 220 220" style="position:absolute;inset:0;width:220px;height:220px;">
-      <!-- Background ring -->
-      <circle cx="110" cy="110" r="106" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
-      <!-- Animated scan ring -->
-      <circle id="fv-ring" cx="110" cy="110" r="106" fill="none"
-        stroke="#4361ee" stroke-width="3"
-        stroke-dasharray="666" stroke-dashoffset="666"
-        stroke-linecap="round"
-        style="transform-origin:center;transform:rotate(-90deg);transition:stroke-dashoffset .1s linear;"/>
-      <!-- Corner brackets -->
-      <path d="M 30 60 L 30 30 L 60 30" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
-      <path d="M 160 30 L 190 30 L 190 60" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
-      <path d="M 30 160 L 30 190 L 60 190" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
-      <path d="M 190 160 L 190 190 L 160 190" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
-    </svg>
+    <!-- Camera circle -->
+    <div style="display:flex;justify-content:center;padding:24px 24px 16px;background:#f8faff;">
+      <div style="position:relative;width:200px;height:200px;">
+        <video id="fv-cam-preview" autoplay muted playsinline
+          style="width:200px;height:200px;border-radius:50%;object-fit:cover;display:block;border:3px solid #e2e8f0;"></video>
 
-    <!-- Scan sweep line -->
-    <div id="fv-sweep" style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4361ee,transparent);top:50%;animation:fvSweep 2s ease-in-out infinite;display:none;"></div>
+        <!-- Scan ring -->
+        <svg viewBox="0 0 200 200" style="position:absolute;inset:0;width:200px;height:200px;pointer-events:none;">
+          <circle cx="100" cy="100" r="96" fill="none" stroke="#e2e8f0" stroke-width="3"/>
+          <circle id="fv-ring" cx="100" cy="100" r="96" fill="none"
+            stroke="#4361ee" stroke-width="3"
+            stroke-dasharray="603" stroke-dashoffset="603"
+            stroke-linecap="round"
+            style="transform-origin:center;transform:rotate(-90deg);transition:stroke-dashoffset .08s linear;"/>
+          <!-- Corner brackets -->
+          <path d="M 22 52 L 22 22 L 52 22" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+          <path d="M 148 22 L 178 22 L 178 52" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+          <path d="M 22 148 L 22 178 L 52 178" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+          <path d="M 178 148 L 178 178 L 148 178" fill="none" stroke="#4361ee" stroke-width="3" stroke-linecap="round"/>
+        </svg>
 
-    <!-- Result overlay on camera -->
-    <div id="fv-cam-result" style="display:none;position:absolute;inset:0;border-radius:50%;align-items:center;justify-content:center;flex-direction:column;gap:6px;">
-      <div id="fv-cam-icon" style="font-size:52px;"></div>
+        <!-- Sweep line -->
+        <div id="fv-sweep" style="position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(67,97,238,0.8),transparent);top:50%;border-radius:2px;display:none;animation:fvSweep 1.8s ease-in-out infinite;"></div>
+
+        <!-- Result overlay -->
+        <div id="fv-cam-result" style="display:none;position:absolute;inset:0;border-radius:50%;align-items:center;justify-content:center;">
+          <div id="fv-cam-icon" style="font-size:48px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:0 24px 24px;">
+
+      <!-- Attempt dots -->
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px;">
+        <div class="fv-dot active" id="fvd0"></div>
+        <div class="fv-dot" id="fvd1"></div>
+        <div class="fv-dot" id="fvd2"></div>
+      </div>
+
+      <!-- Status message -->
+      <div id="fv-msg" style="font-size:13px;color:#64748b;text-align:center;line-height:1.6;margin-bottom:14px;min-height:38px;">
+        Position your face in the circle and stay still
+      </div>
+
+      <!-- Result card -->
+      <div id="fv-result-card" style="display:none;border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:14px;">
+        <div id="fv-result-text" style="font-size:14px;font-weight:700;"></div>
+        <div id="fv-result-sub" style="font-size:12px;color:#64748b;margin-top:4px;line-height:1.5;"></div>
+      </div>
+
+      <!-- Blocked card -->
+      <div id="fv-blocked-card" style="display:none;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:14px;padding:20px;text-align:center;margin-bottom:14px;">
+        <div style="font-size:36px;margin-bottom:8px;">🚫</div>
+        <div style="font-size:15px;font-weight:800;color:#dc2626;margin-bottom:8px;">Access Denied</div>
+        <div style="font-size:12.5px;color:#7f1d1d;line-height:1.7;">Your face does not match the profile photo on file.<br><strong>You are not allowed to attend this interview.</strong><br><br>Please contact your recruiter if this is an error.</div>
+      </div>
+
+      <!-- Buttons -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button id="fv-retry-btn" onclick="runFaceVerify()" style="display:none;background:#4361ee;color:white;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;font-size:14px;width:100%;box-shadow:0 4px 12px rgba(67,97,238,0.3);">🔄 Try Again</button>
+        <button id="fv-proceed-btn" onclick="proceedAfterVerify()" style="display:none;background:#059669;color:white;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;font-size:14px;width:100%;box-shadow:0 4px 12px rgba(5,150,105,0.3);">✅ Continue to Interview →</button>
+        <button id="fv-leave-btn" onclick="window.location.href='test.html'" style="display:none;background:#f1f5f9;color:#64748b;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px;font-weight:600;cursor:pointer;font-size:13px;width:100%;">← Leave Interview</button>
+      </div>
+
     </div>
   </div>
-
-  <!-- Status message -->
-  <div id="fv-msg" style="font-size:13px;color:rgba(255,255,255,0.65);text-align:center;max-width:280px;line-height:1.6;margin-bottom:16px;">
-    Position your face in the circle and stay still
-  </div>
-
-  <!-- Attempt dots -->
-  <div id="fv-attempts-row" style="display:flex;gap:8px;margin-bottom:20px;">
-    <div class="fv-dot active" id="fvd0"></div>
-    <div class="fv-dot" id="fvd1"></div>
-    <div class="fv-dot" id="fvd2"></div>
-  </div>
-
-  <!-- Result card (shown after verify) -->
-  <div id="fv-result-card" style="display:none;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:16px 24px;text-align:center;max-width:320px;margin-bottom:16px;">
-    <div id="fv-result-text" style="font-size:14px;font-weight:700;color:white;"></div>
-    <div id="fv-result-sub" style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;"></div>
-  </div>
-
-  <!-- Blocked card (shown after 3 fails) -->
-  <div id="fv-blocked-card" style="display:none;background:rgba(220,38,38,0.15);border:1.5px solid rgba(220,38,38,0.4);border-radius:14px;padding:20px 28px;text-align:center;max-width:340px;margin-bottom:16px;">
-    <div style="font-size:40px;margin-bottom:10px;">🚫</div>
-    <div style="font-size:16px;font-weight:800;color:#fca5a5;margin-bottom:6px;">Access Denied</div>
-    <div style="font-size:13px;color:rgba(252,165,165,0.8);line-height:1.6;">Your face does not match the profile photo on file.<br>You are <strong>not allowed to attend this interview</strong>.<br><br>Please contact your recruiter if you believe this is an error.</div>
-  </div>
-
-  <!-- Action buttons -->
-  <div style="display:flex;flex-direction:column;gap:10px;width:280px;">
-    <button id="fv-retry-btn" onclick="runFaceVerify()" style="display:none;background:#4361ee;color:white;border:none;border-radius:11px;padding:13px;font-weight:700;cursor:pointer;font-size:14px;width:100%;">🔄 Try Again</button>
-    <button id="fv-proceed-btn" onclick="proceedAfterVerify()" style="display:none;background:#059669;color:white;border:none;border-radius:11px;padding:13px;font-weight:700;cursor:pointer;font-size:14px;width:100%;">✅ Continue to Interview →</button>
-    <button id="fv-leave-btn" onclick="window.location.href='test.html'" style="display:none;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);border-radius:11px;padding:11px;font-weight:600;cursor:pointer;font-size:13px;width:100%;">← Leave Interview</button>
-  </div>
-
 </div>
 
 <style>
 @keyframes fv-spin{to{transform:rotate(360deg)}}
-@keyframes fvSweep{0%{top:0%}50%{top:100%}100%{top:0%}}
-@keyframes fvFadeIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
-.fv-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all .3s;}
-.fv-dot.active{background:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,0.3);}
-.fv-dot.done{background:#059669;}
-.fv-dot.fail{background:#ef4444;}
+@keyframes fvSweep{0%{top:5%}50%{top:95%}100%{top:5%}}
+@keyframes fvSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fv-dot{width:10px;height:10px;border-radius:50%;background:#e2e8f0;transition:all .3s;}
+.fv-dot.active{background:#4361ee;box-shadow:0 0 0 3px rgba(67,97,238,0.2);}
+.fv-dot.done{background:#059669;box-shadow:0 0 0 3px rgba(5,150,105,0.2);}
+.fv-dot.fail{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,0.2);}
 </style>
 
 </body>

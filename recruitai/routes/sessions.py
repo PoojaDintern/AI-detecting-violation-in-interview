@@ -166,6 +166,7 @@ def create_session():
                 mode       = detail.interview_mode
                 round_name = detail.round_name
 
+    skip_scan  = bool(data.get('skip_scan', False))  # recruiter can disable 360 scan
     mcq_source = data.get('mcq_source', 'hardcoded')
     question_ids = []
     if mode == 'mcq' and mcq_source != 'ai':
@@ -183,6 +184,7 @@ def create_session():
         mcq_source=mcq_source if mode == 'mcq' else None,
         round_number=round_number, round_name=round_name,
         posting_id=posting_id,
+        recruiter_notes=json.dumps({'skip_scan': skip_scan}) if skip_scan else None,
     )
     db.session.add(sess)
     db.session.commit()
@@ -191,6 +193,17 @@ def create_session():
         _ensure_pipeline(candidate.id, posting_id, round_number, round_name, mode, sess.id)
 
     return jsonify({'success': True, 'session': sess.to_dict(), 'room_code': sess.room_code})
+
+
+def _get_skip_scan(sess):
+    """Check if 360 scan is disabled for this session."""
+    try:
+        if sess.recruiter_notes:
+            notes = json.loads(sess.recruiter_notes)
+            return bool(notes.get('skip_scan', False))
+    except Exception:
+        pass
+    return False
 
 
 @sessions_bp.route('/api/join-session/<room_code>')
@@ -206,6 +219,7 @@ def join_session(room_code):
 
         if current_user.is_recruiter:
             return jsonify({'success': True, 'session': sess.to_dict(),
+                            'skip_scan': _get_skip_scan(sess),
                             'questions': [], 'ice_servers': current_app.config.get('WEBRTC_ICE_SERVERS', [])})
 
         if sess.candidate_id and sess.candidate_id != current_user.id:
