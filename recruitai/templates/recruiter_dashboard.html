@@ -595,20 +595,35 @@ tr:hover td{background:rgba(79,142,247,0.03);}
         <input type="hidden" id="c-candidate">
 
         <!-- 360° Scan toggle -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--s2);border:1px solid var(--border);border-radius:11px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--s2);border:1px solid var(--border);border-radius:11px;margin-bottom:10px;">
           <div>
             <div style="font-size:13px;font-weight:700;color:var(--text);">🔍 360° Room Security Scan</div>
-            <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">Candidate must complete room scan before interview</div>
+            <div id="scan-toggle-desc" style="font-size:11.5px;color:var(--muted);margin-top:2px;">Candidate must complete room scan before interview</div>
           </div>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <div style="position:relative;">
-              <input type="checkbox" id="c-require-scan" checked style="opacity:0;width:0;height:0;position:absolute;">
-              <div id="scan-toggle-track" onclick="toggleScanRequirement()" style="width:44px;height:24px;background:#4361ee;border-radius:12px;cursor:pointer;transition:background .2s;position:relative;">
-                <div id="scan-toggle-thumb" style="position:absolute;top:2px;left:22px;width:20px;height:20px;background:white;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+          <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleScanRequirement()">
+            <div style="position:relative;width:44px;height:24px;">
+              <div id="scan-toggle-track" style="width:44px;height:24px;background:#4361ee;border-radius:12px;transition:background .25s;">
+                <div id="scan-toggle-thumb" style="position:absolute;top:2px;left:22px;width:20px;height:20px;background:white;border-radius:50%;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,0.25);"></div>
               </div>
             </div>
-            <span id="scan-toggle-label" style="font-size:12px;font-weight:700;color:#4361ee;">ON</span>
-          </label>
+            <span id="scan-toggle-label" style="font-size:12px;font-weight:700;color:#4361ee;min-width:24px;">ON</span>
+          </div>
+        </div>
+
+        <!-- Device Detection toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--s2);border:1px solid var(--border);border-radius:11px;margin-bottom:14px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">📱 Device Detection</div>
+            <div id="device-toggle-desc" style="font-size:11.5px;color:var(--muted);margin-top:2px;">Detect phones/tablets during interview and pause candidate</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleDeviceDetection()">
+            <div style="position:relative;width:44px;height:24px;">
+              <div id="device-toggle-track" style="width:44px;height:24px;background:#4361ee;border-radius:12px;transition:background .25s;">
+                <div id="device-toggle-thumb" style="position:absolute;top:2px;left:22px;width:20px;height:20px;background:white;border-radius:50%;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,0.25);"></div>
+              </div>
+            </div>
+            <span id="device-toggle-label" style="font-size:12px;font-weight:700;color:#4361ee;min-width:24px;">ON</span>
+          </div>
         </div>
 
         <button class="btn-primary" id="create-session-btn" onclick="createSession()" style="padding:12px 28px;font-size:15px;" disabled>
@@ -2189,22 +2204,51 @@ function onCandidateSelect() {
   createBtn.disabled     = false;
 }
 
+// 360° scan toggle state — true = scan ON (required), false = scan OFF (skipped)
+let _scanRequired = true;
+// Device detection toggle state
+let _deviceDetectionEnabled = true;
+
+function toggleDeviceDetection() {
+  _deviceDetectionEnabled = !_deviceDetectionEnabled;
+  const track = document.getElementById('device-toggle-track');
+  const thumb = document.getElementById('device-toggle-thumb');
+  const label = document.getElementById('device-toggle-label');
+  const desc  = document.getElementById('device-toggle-desc');
+  if (_deviceDetectionEnabled) {
+    track.style.background = '#4361ee';
+    thumb.style.left       = '22px';
+    label.textContent      = 'ON';
+    label.style.color      = '#4361ee';
+    desc.textContent       = 'Detect phones/tablets during interview and pause candidate';
+  } else {
+    track.style.background = '#94a3b8';
+    thumb.style.left       = '2px';
+    label.textContent      = 'OFF';
+    label.style.color      = '#94a3b8';
+    desc.textContent       = 'Device detection disabled — no interruptions (demo mode)';
+  }
+}
+
 function toggleScanRequirement() {
-  const cb    = document.getElementById('c-require-scan');
+  _scanRequired = !_scanRequired;
   const track = document.getElementById('scan-toggle-track');
   const thumb = document.getElementById('scan-toggle-thumb');
   const label = document.getElementById('scan-toggle-label');
-  cb.checked  = !cb.checked;
-  if (cb.checked) {
-    track.style.background   = '#4361ee';
-    thumb.style.left         = '22px';
-    label.textContent        = 'ON';
-    label.style.color        = '#4361ee';
+  const desc  = document.getElementById('scan-toggle-desc');
+
+  if (_scanRequired) {
+    track.style.background = '#4361ee';
+    thumb.style.left       = '22px';
+    label.textContent      = 'ON';
+    label.style.color      = '#4361ee';
+    desc.textContent       = 'Candidate must complete room scan before interview';
   } else {
-    track.style.background   = '#94a3b8';
-    thumb.style.left         = '2px';
-    label.textContent        = 'OFF';
-    label.style.color        = '#94a3b8';
+    track.style.background = '#94a3b8';
+    thumb.style.left       = '2px';
+    label.textContent      = 'OFF';
+    label.style.color      = '#94a3b8';
+    desc.textContent       = 'Room scan disabled — candidate will skip scan (demo mode)';
   }
 }
 
@@ -2222,7 +2266,7 @@ async function createSession() {
     const data = await fetch('/api/create-session', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode, mcq_source: currentMcqSource, skip_scan: !document.getElementById('c-require-scan').checked})
+      body: JSON.stringify({candidate_username: candidate, job_role: jobRole, mode: selectedMode, mcq_source: currentMcqSource, skip_scan: !_scanRequired, skip_device_detection: !_deviceDetectionEnabled})
     }).then(r=>r.json());
 
     if (!data.success) { showToast('❌ '+(data.message||'Failed')); return; }
@@ -2268,6 +2312,17 @@ function resetCreateForm() {
   document.getElementById('candidate-section').style.display = 'none';
   document.getElementById('candidate-info-card').style.display = 'none';
   document.getElementById('create-session-btn').disabled = true;
+  // Reset scan toggle to ON
+  _scanRequired = true;
+  const track = document.getElementById('scan-toggle-track');
+  const thumb  = document.getElementById('scan-toggle-thumb');
+  const label  = document.getElementById('scan-toggle-label');
+  const desc   = document.getElementById('scan-toggle-desc');
+  if(track){track.style.background='#4361ee'; thumb.style.left='22px'; label.textContent='ON'; label.style.color='#4361ee'; if(desc) desc.textContent='Candidate must complete room scan before interview';}
+  // Reset device toggle to ON
+  _deviceDetectionEnabled = true;
+  const dtrack=document.getElementById('device-toggle-track'); const dthumb=document.getElementById('device-toggle-thumb'); const dlabel=document.getElementById('device-toggle-label'); const ddesc=document.getElementById('device-toggle-desc');
+  if(dtrack){dtrack.style.background='#4361ee'; dthumb.style.left='22px'; dlabel.textContent='ON'; dlabel.style.color='#4361ee'; if(ddesc) ddesc.textContent='Detect phones/tablets during interview and pause candidate';}
   lastCreatedSession = null;
 }
 

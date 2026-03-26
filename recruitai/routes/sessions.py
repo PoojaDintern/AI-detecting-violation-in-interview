@@ -166,7 +166,8 @@ def create_session():
                 mode       = detail.interview_mode
                 round_name = detail.round_name
 
-    skip_scan  = bool(data.get('skip_scan', False))  # recruiter can disable 360 scan
+    skip_scan             = bool(data.get('skip_scan', False))
+    skip_device_detection = bool(data.get('skip_device_detection', False))
     mcq_source = data.get('mcq_source', 'hardcoded')
     question_ids = []
     if mode == 'mcq' and mcq_source != 'ai':
@@ -184,7 +185,7 @@ def create_session():
         mcq_source=mcq_source if mode == 'mcq' else None,
         round_number=round_number, round_name=round_name,
         posting_id=posting_id,
-        recruiter_notes=json.dumps({'skip_scan': skip_scan}) if skip_scan else None,
+        recruiter_notes=json.dumps({'skip_scan': skip_scan, 'skip_device': skip_device_detection}) if (skip_scan or skip_device_detection) else None,
     )
     db.session.add(sess)
     db.session.commit()
@@ -206,6 +207,17 @@ def _get_skip_scan(sess):
     return False
 
 
+def _get_skip_device(sess):
+    """Check if device detection is disabled for this session."""
+    try:
+        if sess.recruiter_notes:
+            notes = json.loads(sess.recruiter_notes)
+            return bool(notes.get('skip_device', False))
+    except Exception:
+        pass
+    return False
+
+
 @sessions_bp.route('/api/join-session/<room_code>')
 def join_session(room_code):
     try:
@@ -220,6 +232,7 @@ def join_session(room_code):
         if current_user.is_recruiter:
             return jsonify({'success': True, 'session': sess.to_dict(),
                             'skip_scan': _get_skip_scan(sess),
+                            'skip_device_detection': _get_skip_device(sess),
                             'questions': [], 'ice_servers': current_app.config.get('WEBRTC_ICE_SERVERS', [])})
 
         if sess.candidate_id and sess.candidate_id != current_user.id:
@@ -309,6 +322,8 @@ def join_session(room_code):
             questions = []
 
         return jsonify({'success': True, 'session': sess.to_dict(),
+                        'skip_scan': _get_skip_scan(sess),
+                        'skip_device_detection': _get_skip_device(sess),
                         'questions': questions,
                         'ice_servers': current_app.config.get('WEBRTC_ICE_SERVERS', [])})
 

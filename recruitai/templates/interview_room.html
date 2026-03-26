@@ -827,10 +827,10 @@ async function init() {
     sessionData = data.session;
     sessionData.ice_servers = data.ice_servers || [];
     questions   = data.questions || [];
-    window._sessionSkipScan = data.skip_scan || false;
-    if (window._sessionSkipScan) {
-      console.log('[Session] 360° scan disabled by recruiter for this session');
-    }
+    window._sessionSkipScan   = data.skip_scan || false;
+    window._sessionSkipDevice = data.skip_device_detection || false;
+    if (window._sessionSkipScan)   console.log('[Session] 360° scan disabled by recruiter');
+    if (window._sessionSkipDevice) console.log('[Session] Device detection disabled by recruiter');
     document.getElementById('si-role').textContent = sessionData.job_role;
     document.getElementById('si-mode').textContent = (sessionData.mode||'mcq').replace('_',' ');
     document.getElementById('si-room').textContent = ROOM_CODE;
@@ -1087,7 +1087,7 @@ function startScanFaceMonitor() {
       }
 
       // Check for devices during scan
-      if (data.phone_detected || data.device_detected) {
+      if (!window._sessionSkipDevice && (data.phone_detected || data.device_detected)) {
         if (deviceBanner) deviceBanner.style.display = 'block';
         badgeText.textContent = '📱 Device detected!';
         badge.className = 'scan-face-badge warn';
@@ -1158,9 +1158,9 @@ function proceedToScan() {
 
 function showRoomScan() {
   return new Promise(resolve => {
-    // If recruiter disabled scan for this session — skip immediately
+    // If recruiter disabled scan — skip entirely, no UI shown
     if (window._sessionSkipScan) {
-      console.log('[Scan] Skipped — disabled by recruiter');
+      console.log('[Scan] Disabled by recruiter — skipping automatically');
       resolve();
       return;
     }
@@ -1173,9 +1173,9 @@ function showRoomScan() {
     startScanFaceMonitor();
     window._scanResolve = resolve;
 
-    // Show skip button for demo mode
+    // Skip button is NEVER shown when scan is required (toggle ON)
     const skipBtn = document.getElementById('skip-scan-btn');
-    if (skipBtn) skipBtn.style.display = 'inline-flex';
+    if (skipBtn) skipBtn.style.display = 'none';
   });
 }
 
@@ -1723,13 +1723,13 @@ async function checkFace() {
 
 async function checkDevice() {
   if (!proctoringActive || deviceKicked) return;  // FIX: don't check during rules/scan
+  if (window._sessionSkipDevice) return;          // Device detection disabled by recruiter
   const img = await captureFrame();
   if (!img) return;
   try {
     const data = await fetch('/detect-device', {method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({image:img, session_id:sessionData.id})}).then(r=>r.json());
     if (data.phone_detected) {
-      // Show the specific device type detected
       const dtype = data.device_type || 'phone';
       kickCandidateOut(dtype, data.confidence);
     }
