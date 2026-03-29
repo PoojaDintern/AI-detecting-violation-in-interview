@@ -65,9 +65,11 @@ def _save_token_usage(app, call_type, label, prompt, response_text,
 
     # Fallback estimate if metadata not available (~4 chars per token)
     if not total_tokens:
-        prompt_tokens   = len(prompt) // 4
-        response_tokens = len(response_text) // 4
+        prompt_tokens   = max(1, len(prompt) // 4)
+        response_tokens = max(1, len(response_text) // 4)
         total_tokens    = prompt_tokens + response_tokens
+
+    print(f'[TokenUsage] Saving: type={call_type} label={label} total={total_tokens} tokens')
 
     record = TokenUsage(
         recruiter_id    = recruiter_id,
@@ -80,6 +82,19 @@ def _save_token_usage(app, call_type, label, prompt, response_text,
         prompt_preview  = str(prompt)[:300],
     )
 
-    with app.app_context():
+    # Use existing app context if inside a request, otherwise create new one
+    try:
+        # Try using current request context first (most common case)
         db.session.add(record)
         db.session.commit()
+        print(f'[TokenUsage] Saved successfully — id={record.id}')
+    except Exception as e1:
+        print(f'[TokenUsage] Direct save failed ({e1}), trying app context...')
+        try:
+            db.session.rollback()
+            with app.app_context():
+                db.session.add(record)
+                db.session.commit()
+            print(f'[TokenUsage] Saved via app context')
+        except Exception as e2:
+            print(f'[TokenUsage] Both save methods failed: {e2}')
