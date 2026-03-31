@@ -32,7 +32,10 @@ def create_app():
     Config.init_app(app)
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    _allowed_origins = ["http://localhost:5000", "http://127.0.0.1:5000"]
+    _allowed_origins = [
+        "http://localhost:5000", "http://127.0.0.1:5000",
+        "http://localhost:3000", "http://127.0.0.1:3000",  # frontend server
+    ]
     _base_url = os.environ.get("BASE_URL", "")
     if _base_url and _base_url not in _allowed_origins:
         _allowed_origins.append(_base_url)
@@ -46,7 +49,7 @@ def create_app():
     # ── Login Manager ─────────────────────────────────────────────────────────
     login_manager.init_app(app)
     login_manager.login_view = 'pages.serve_index'
-    login_manager.session_protection = 'strong'
+    login_manager.session_protection = 'basic'
 
     from models.user import User
 

@@ -375,6 +375,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .pose-hold-label.show { display:block; }
 
 </style>
+<script>
+// ── API Base URL — auto-detects backend port ──────────────────────
+window.API_BASE = (location.port === '3000') ? 'http://localhost:5000' : '';
+
+// Override fetch to prepend API_BASE for API calls
+const _origFetch = window.fetch;
+window.fetch = function(url, opts = {}) {
+  if (typeof url === 'string' && url.startsWith('/') && window.API_BASE) {
+    url = window.API_BASE + url;
+  }
+  opts.credentials = opts.credentials || 'include';
+  opts.headers = {...(opts.headers || {}), 'ngrok-skip-browser-warning': 'true'};
+  return _origFetch(url, opts);
+};
+</script>
 </head>
 <body>
 
@@ -2524,7 +2539,7 @@ let pendingIceCandidates = [];
 let peerConn = null;
 
 function initSocket() {
-  socket = io(window.location.origin, {
+  socket = io(window.API_BASE || window.location.origin, {
     transports: ['polling', 'websocket'],
     withCredentials: true,
     extraHeaders: { 'ngrok-skip-browser-warning': 'true' },

@@ -147,8 +147,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;displ
 #pass-strength-bar{height:4px;background:var(--border);border-radius:99px;margin-top:5px;overflow:hidden;}
 #pass-strength-fill{height:100%;border-radius:99px;width:0%;transition:all .3s;}
 @media(max-width:768px){.wrapper{grid-template-columns:1fr;}.left{padding:36px 28px;}.right{padding:28px 22px;max-height:none;}.left h1{font-size:26px;}.deco1,.deco2{display:none;}.social-row{grid-template-columns:1fr;}}
-
-  .hint-text{font-size:11px;color:var(--muted2);margin-top:3px;line-height:1.4;}
+.hint-text{font-size:11px;color:var(--muted2);margin-top:3px;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -300,7 +299,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;displ
       <div id="otp-no-email-warn" style="display:none;background:#fef3c7;border:1.5px solid #fbbf24;border-radius:10px;padding:11px 14px;margin-bottom:16px;font-size:12px;color:#92400e;text-align:left;line-height:1.6;">
         <strong>⚠️ Email not configured</strong><br>
         The code was NOT sent by email. Check the <strong>Flask terminal</strong> — it's printed as:<br>
-        <code style="background:#fde68a;padding:2px 6px;border-radius:4px;font-size:11px;">[OTP] Sent 123456 to your@email.com</code>
+        <code style="background:#fde68a;padding:2px 6px;border-radius:4px;font-size:11px;">[OTP] Sent 123456 to test@example.com</code>
       </div>
 
       <!-- OTP input boxes -->
@@ -334,8 +333,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;displ
 </div>
 
 <script>
+// ── API Base URL — auto-detects backend port ──────────────────────
+window.API_BASE = (location.port === '3000') ? 'http://localhost:5000' : '';
+
 const _origFetch = window.fetch;
 window.fetch = (url, opts={}) => {
+  if (typeof url === 'string' && url.startsWith('/') && window.API_BASE) {
+    url = window.API_BASE + url;
+  }
   opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
   opts.credentials = opts.credentials || 'same-origin';
   return _origFetch(url, opts);
@@ -394,7 +399,6 @@ function updatePassStrength(val) {
 
 // OAuth — redirect to backend with loading state
 function oauthLogin(provider) {
-  // Show loading on the clicked button
   const btns = document.querySelectorAll(`.btn-${provider}`);
   btns.forEach(btn => {
     btn.disabled = true;
@@ -483,7 +487,6 @@ document.getElementById('signup-btn').addEventListener('click', async () => {
 // ── OTP UI ─────────────────────────────────────────────────────────────────────
 function openOtp(email, emailConfigured) {
   document.getElementById('otp-email-display').textContent=email;
-  // Show warning if email not configured
   const warn = document.getElementById('otp-no-email-warn');
   if (warn) warn.style.display = (emailConfigured === false) ? 'block' : 'none';
   document.getElementById('otp-overlay').classList.add('show');
@@ -493,6 +496,7 @@ function openOtp(email, emailConfigured) {
   document.getElementById('otp-verify-btn').disabled=true;
   setTimeout(()=>document.querySelectorAll('.otp-box')[0].focus(),100);
 }
+
 function closeOtp(){document.getElementById('otp-overlay').classList.remove('show');}
 
 document.querySelectorAll('.otp-box').forEach((box,idx,boxes)=>{
@@ -503,7 +507,6 @@ document.querySelectorAll('.otp-box').forEach((box,idx,boxes)=>{
     if(val&&idx<boxes.length-1)boxes[idx+1].focus();
     const filled=[...boxes].filter(b=>b.value).length;
     document.getElementById('otp-verify-btn').disabled=filled<6;
-    // Animate step dots based on progress
     const steps=document.querySelectorAll('.otp-step');
     if(steps.length===3){
       steps[2].className='otp-step'+(filled===6?' done':' active');
@@ -562,8 +565,10 @@ function setOtpMsg(type,text){const el=document.getElementById('otp-msg');el.cla
 document.querySelectorAll('input').forEach(inp=>inp.addEventListener('keypress',e=>{
   if(e.key==='Enter'){const af=document.querySelector('.form.active').id;document.getElementById(af==='login-form'?'login-btn':'signup-btn').click();}
 }));
+
 document.getElementById('s-email')?.addEventListener('blur',()=>{const v=document.getElementById('s-email').value.trim();if(v&&!isValidEmail(v)){setErr('err-email','Invalid email');markInvalid('s-email');}else{setErr('err-email','');document.getElementById('s-email').classList.remove('invalid');}});
-document.getElementById('s-phone')?.addEventListener('blur',()=>{const v=document.getElementById('s-phone').value.trim();if(v&&!isValidPhone(v)){setErr('err-phone','Must be 10 digits');markInvalid('s-phone');}else{setErr('err-phone','');document.getElementById('s-phone').classList.remove('invalid');}});
+
+document.getElementById('s-phone')?.addEventListener('blur',()=>{const v=document.getElementById('s-phone').value.trim();if(v&&!isValidPhone(v)){setErr('err-phone','Invalid phone');markInvalid('s-phone');}else{setErr('err-phone','');document.getElementById('s-phone').classList.remove('invalid');}});
 </script>
 </body>
 </html>

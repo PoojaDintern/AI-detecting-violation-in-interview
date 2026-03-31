@@ -850,8 +850,14 @@
 <script>
 
 // Auto-inject ngrok header for all fetch calls through tunnel
+// ── API Base URL — auto-detects backend port ──────────────────────
+window.API_BASE = (location.port === '3000') ? 'http://localhost:5000' : '';
+
 const _origFetch = window.fetch;
 window.fetch = (url, opts={}) => {
+  if (typeof url === 'string' && url.startsWith('/') && window.API_BASE) {
+    url = window.API_BASE + url;
+  }
   opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
   opts.credentials = opts.credentials || 'same-origin';
   return _origFetch(url, opts);

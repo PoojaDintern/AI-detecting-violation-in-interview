@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+/* RecruitAI — force credentials:include on ALL fetch() calls */
+(function(){
+  var _f = window.fetch;
+  window.fetch = function(url, opts){
+    opts = opts || {};
+    opts.credentials = 'include';  // force always, overrides same-origin
+    return _f.call(this, url, opts);
+  };
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Company Dashboard — RecruitAI</title>
@@ -1373,8 +1384,14 @@ async function saveRoundConfig() {
 }
 
 // Auto-inject ngrok header for all fetch calls through tunnel
+// ── API Base URL — auto-detects backend port ──────────────────────
+window.API_BASE = (location.port === '3000') ? 'http://localhost:5000' : '';
+
 const _origFetch = window.fetch;
 window.fetch = (url, opts={}) => {
+  if (typeof url === 'string' && url.startsWith('/') && window.API_BASE) {
+    url = window.API_BASE + url;
+  }
   opts.headers = {...(opts.headers||{}), 'ngrok-skip-browser-warning': 'true'};
   opts.credentials = opts.credentials || 'same-origin';
   return _origFetch(url, opts);
@@ -3225,3 +3242,35 @@ async function resetTokenUsage() {
     </div>
   </div>
 </div>
+<script>
+// ── Stale Session Handler ────────────────────────────────────────
+function checkStaleSession() {
+  const lastActivity = parseInt(localStorage.getItem('ra_last_activity') || '0');
+  const now = Date.now();
+  const idleMs = now - lastActivity;
+  if (lastActivity > 0 && idleMs > 30 * 60 * 1000) {
+    document.getElementById('stale-session-modal').style.display = 'flex';
+  }
+}
+
+function handleStaleSession(action) {
+  document.getElementById('stale-session-modal').style.display = 'none';
+  if (action === 'logout') {
+    window.location.href = '/logout';
+  } else {
+    localStorage.setItem('ra_last_activity', Date.now().toString());
+  }
+}
+
+// Track activity
+['click','keypress','scroll'].forEach(evt =>
+  document.addEventListener(evt, () => localStorage.setItem('ra_last_activity', Date.now().toString()))
+);
+
+setInterval(checkStaleSession, 5 * 60 * 1000);
+localStorage.setItem('ra_last_activity', Date.now().toString());
+
+init();
+</script>
+</body>
+</html>
