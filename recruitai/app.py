@@ -34,12 +34,18 @@ def create_app():
     # ── CORS ──────────────────────────────────────────────────────────────────
     _allowed_origins = [
         "http://localhost:5000", "http://127.0.0.1:5000",
-        "http://localhost:3000", "http://127.0.0.1:3000",  # frontend server
+        "http://localhost:3000", "http://127.0.0.1:3000",
     ]
     _base_url = os.environ.get("BASE_URL", "")
     if _base_url and _base_url not in _allowed_origins:
         _allowed_origins.append(_base_url)
-    cors.init_app(app, supports_credentials=True, origins=_allowed_origins)
+    cors.init_app(app,
+        supports_credentials=True,
+        origins=_allowed_origins,
+        allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+        expose_headers=["Set-Cookie"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    )
 
     # ── Extensions ────────────────────────────────────────────────────────────
     db.init_app(app)
@@ -49,7 +55,7 @@ def create_app():
     # ── Login Manager ─────────────────────────────────────────────────────────
     login_manager.init_app(app)
     login_manager.login_view = 'pages.serve_index'
-    login_manager.session_protection = 'basic'
+    login_manager.session_protection = 'basic'  # 'strong' breaks cross-origin sessions
 
     from models.user import User
 
@@ -62,6 +68,12 @@ def create_app():
         if request.is_json or request.path.startswith('/api/'):
             return jsonify({'success': False, 'message': 'Login required', 'code': 'not_authenticated'}), 401
         return redirect('/')
+
+    # Make all sessions permanent by default
+    @app.before_request
+    def make_session_permanent():
+        from flask import session
+        session.permanent = True
 
     # ── Error Handlers ────────────────────────────────────────────────────────
     @app.errorhandler(500)

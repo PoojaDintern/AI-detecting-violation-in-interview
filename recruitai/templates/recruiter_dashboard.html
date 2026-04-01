@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-/* RecruitAI — force credentials:include on ALL fetch() calls */
-(function(){
-  var _f = window.fetch;
-  window.fetch = function(url, opts){
-    opts = opts || {};
-    opts.credentials = 'include';  // force always, overrides same-origin
-    return _f.call(this, url, opts);
-  };
-})();
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Company Dashboard — RecruitAI</title>
@@ -184,6 +173,14 @@ tr:hover td{background:rgba(79,142,247,0.03);}
     <span style="color:#3b82f6;margin-left:8px;" id="active-sessions-detail"></span>
   </div>
   <button onclick="viewActiveSessions()" style="background:#3b82f6;color:white;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;">👁 View Sessions</button>
+  <button id="rec-btn-bar" onclick="toggleRecording()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">
+    ⏺ Record Interview
+  </button>
+  <div id="rec-indicator-bar" style="display:none;align-items:center;gap:6px;font-size:12px;color:#dc2626;font-weight:600;">
+    <span style="width:8px;height:8px;border-radius:50%;background:#dc2626;animation:blink 1s infinite;display:inline-block;"></span>
+    Recording…
+    <span id="rec-timer-bar">0:00</span>
+  </div>
   <button onclick="document.getElementById('active-sessions-bar').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:#3b82f6;padding:0 4px;">✕</button>
 </div>
 
@@ -1385,7 +1382,6 @@ async function saveRoundConfig() {
 
 // Auto-inject ngrok header for all fetch calls through tunnel
 // ── API Base URL — auto-detects backend port ──────────────────────
-window.API_BASE = (location.port === '3000') ? 'http://localhost:5000' : '';
 
 const _origFetch = window.fetch;
 window.fetch = (url, opts={}) => {
@@ -1402,13 +1398,14 @@ let currentApplicationId=null, allSubmissionsData=[];
 let _companyName = '';
 
 async function init() {
+  // Fast auth check first
   const auth = await fetch('/api/check-auth').then(r=>r.json());
   if (!auth.authenticated || auth.role !== 'recruiter') { window.location.href='index.html'; return; }
-  // Company-centric display
+
+  // Set UI immediately — no waiting
   _companyName = auth.company_name || auth.full_name || auth.username;
   document.getElementById('admin-name').textContent = _companyName;
   document.getElementById('company-tagline').textContent = auth.full_name ? auth.full_name + ' · Company Account' : 'Company Account';
-  // Logo initials
   const initials = _companyName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('company-logo-initials').textContent = initials;
   if (auth.logo_url) {
@@ -1416,12 +1413,17 @@ async function init() {
     document.getElementById('company-logo-img').style.display = 'block';
     document.getElementById('company-logo-initials').style.display = 'none';
   }
-  // Lock company name in job posting form
   const jpComp = document.getElementById('jp-company');
   if (jpComp) jpComp.value = _companyName;
-  await Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadMyPostings()]);
-  // Check if email is configured — show persistent top banner if not
-  checkEmailConfig();
+
+  // Load all data in parallel — don't await, let UI show immediately
+  Promise.all([loadRoles(), loadJobSections(), loadDashboard(), loadMyPostings()])
+    .then(() => {
+      checkEmailConfig();
+    })
+    .catch(e => console.warn('[Init] Data load error:', e));
+
+  // Start session polling right away
   startActiveSessionsPolling();
 }
 
@@ -2473,14 +2475,19 @@ function renderSessionsTable(subs, containerId) {
   const el=document.getElementById(containerId);
   if (!el) return;
   if (!subs?.length) { el.innerHTML='<div class="empty">No sessions found</div>'; return; }
-  el.innerHTML=`<div style="overflow-x:auto;"><table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Score</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody>
+  el.innerHTML=`<div style="overflow-x:auto;"><table><thead><tr><th>Candidate</th><th>Role</th><th>Mode</th><th>Credibility</th><th>Score</th><th>Status</th><th>Date</th><th>Action</th></tr></thead><tbody>
     ${subs.map(s=>`<tr><td><strong>${s.full_name||s.username}</strong></td><td>${s.job_role||'—'}</td>
     <td><span class="badge badge-blue">${(s.mode||'mcq').replace('_',' ')}</span></td>
     <td><strong style="color:${scoreColor(s.credibility_score)}">${s.credibility_score}</strong></td>
     <td><strong>${s.interview_score||0}</strong></td>
     <td>${s.passed?'<span class="badge badge-green">PASSED</span>':'<span class="badge badge-red">FAILED</span>'}</td>
     <td style="color:var(--muted);font-size:12px;">${s.submitted_at}</td>
-
+    <td>
+      <button onclick="openRatingModal(${s.session_id||0}, '${(s.full_name||s.username||'').replace(/'/g,"\\'")}', ${s.interview_score||0}, ${s.credibility_score||100})"
+        style="padding:5px 12px;background:rgba(67,97,238,.1);border:1px solid rgba(67,97,238,.25);border-radius:6px;color:var(--accent);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        ⭐ Rate
+      </button>
+    </td>
     </tr>`).join('')}
   </tbody></table></div>`;
 }
@@ -3243,7 +3250,7 @@ async function resetTokenUsage() {
   </div>
 </div>
 <script>
-// ── Stale Session Handler ────────────────────────────────────────
+// ── Stale Session Handler ─────────────────────────────────────────
 function checkStaleSession() {
   const lastActivity = parseInt(localStorage.getItem('ra_last_activity') || '0');
   const now = Date.now();
@@ -3270,7 +3277,276 @@ function handleStaleSession(action) {
 setInterval(checkStaleSession, 5 * 60 * 1000);
 localStorage.setItem('ra_last_activity', Date.now().toString());
 
+// ── Candidate Rating ──────────────────────────────────────────────────────────
+let _ratingSessionId = null;
+let _ratingStars     = 0;
+let _ratingDecision  = null;
+
+const starLabels = ['', 'Poor', 'Below Average', 'Average', 'Good', 'Excellent'];
+const decisionColors = {
+  selected: { bg: 'rgba(5,150,105,.12)', border: '#059669', color: '#059669' },
+  hold:      { bg: 'rgba(245,158,11,.12)', border: '#d97706', color: '#d97706' },
+  rejected:  { bg: 'rgba(220,38,38,.12)', border: '#dc2626', color: '#dc2626' },
+};
+
+function openRatingModal(sessionId, candidateName, interviewScore, credScore) {
+  _ratingSessionId = sessionId;
+  _ratingStars     = 0;
+  _ratingDecision  = null;
+
+  document.getElementById('rating-candidate-info').innerHTML =
+    `<strong>👤 ${candidateName}</strong><br>
+     <span style="color:var(--muted);font-size:12px;">
+       Interview Score: <strong>${interviewScore}</strong> &nbsp;|&nbsp;
+       Credibility: <strong>${credScore}</strong>
+     </span>`;
+
+  document.getElementById('rating-marks').value    = '';
+  document.getElementById('rating-feedback').value = '';
+  document.getElementById('rating-msg').style.display = 'none';
+  setStarRating(0);
+  ['selected','hold','rejected'].forEach(d => {
+    const btn = document.getElementById(`decision-${d}`);
+    if (btn) { btn.style.background='var(--s2)'; btn.style.borderColor='var(--border)'; btn.style.color='var(--muted)'; }
+  });
+  document.getElementById('rating-modal').classList.remove('hidden');
+}
+
+function setStarRating(val) {
+  _ratingStars = val;
+  document.querySelectorAll('.star-btn').forEach(s => {
+    s.style.opacity = parseInt(s.dataset.v) <= val ? '1' : '0.25';
+    s.style.transform = parseInt(s.dataset.v) <= val ? 'scale(1.1)' : 'scale(1)';
+  });
+  document.getElementById('star-label').textContent = val > 0 ? starLabels[val] : 'Click to rate';
+}
+
+function setDecision(decision) {
+  _ratingDecision = decision;
+  ['selected','hold','rejected'].forEach(d => {
+    const btn = document.getElementById(`decision-${d}`);
+    if (!btn) return;
+    if (d === decision) {
+      const c = decisionColors[d];
+      btn.style.background   = c.bg;
+      btn.style.borderColor  = c.border;
+      btn.style.color        = c.color;
+    } else {
+      btn.style.background   = 'var(--s2)';
+      btn.style.borderColor  = 'var(--border)';
+      btn.style.color        = 'var(--muted)';
+    }
+  });
+}
+
+async function saveRating() {
+  if (!_ratingSessionId) return;
+  const marks    = parseInt(document.getElementById('rating-marks').value) || 0;
+  const feedback = document.getElementById('rating-feedback').value.trim();
+  const msgEl    = document.getElementById('rating-msg');
+
+  if (!_ratingDecision) {
+    msgEl.style.display     = 'block';
+    msgEl.style.background  = 'rgba(220,38,38,.08)';
+    msgEl.style.border      = '1px solid rgba(220,38,38,.2)';
+    msgEl.style.color       = '#991b1b';
+    msgEl.textContent       = '❌ Please select a decision (Select / On Hold / Reject)';
+    return;
+  }
+
+  try {
+    const data = await fetch('/api/rate-candidate', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        session_id:  _ratingSessionId,
+        stars:       _ratingStars,
+        marks:       marks,
+        decision:    _ratingDecision,
+        feedback:    feedback,
+      })
+    }).then(r => r.json());
+
+    if (data.success) {
+      msgEl.style.display    = 'block';
+      msgEl.style.background = 'rgba(5,150,105,.08)';
+      msgEl.style.border     = '1px solid rgba(5,150,105,.2)';
+      msgEl.style.color      = '#065f46';
+      msgEl.textContent      = '✅ Rating saved successfully!';
+      showToast(`✅ Candidate rated — ${_ratingDecision}`);
+      setTimeout(() => {
+        document.getElementById('rating-modal').classList.add('hidden');
+        loadDashboard();
+      }, 1200);
+    } else {
+      msgEl.style.display = 'block'; msgEl.style.background='rgba(220,38,38,.08)'; msgEl.style.border='1px solid rgba(220,38,38,.2)'; msgEl.style.color='#991b1b';
+      msgEl.textContent = '❌ ' + (data.message || 'Failed to save');
+    }
+  } catch(e) {
+    msgEl.style.display = 'block'; msgEl.textContent = '❌ Network error. Try again.';
+  }
+}
+
 init();
+
+// ── Interview Recording (Recruiter) ──────────────────────────────
+let _mediaRecorder   = null;
+let _recordedChunks  = [];
+let _recordingActive = false;
+let _recTimerInterval = null;
+let _recSeconds      = 0;
+
+async function toggleRecording() {
+  if (_recordingActive) {
+    stopRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    // Capture screen + microphone
+    const screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { mediaSource: 'screen', width: 1920, height: 1080 },
+      audio: true
+    });
+    let micStream = null;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch(e) { console.warn('Mic not available:', e); }
+
+    // Combine screen + mic audio tracks
+    const tracks = [...screenStream.getTracks()];
+    if (micStream) tracks.push(...micStream.getAudioTracks());
+    const combined = new MediaStream(tracks);
+
+    _recordedChunks  = [];
+    _mediaRecorder   = new MediaRecorder(combined, { mimeType: 'video/webm;codecs=vp9' });
+    _mediaRecorder.ondataavailable = e => { if (e.data.size > 0) _recordedChunks.push(e.data); };
+    _mediaRecorder.onstop = () => saveRecording();
+    _mediaRecorder.start(1000);
+    _recordingActive = true;
+
+    // Update UI
+    const btn = document.getElementById('rec-btn-bar');
+    const ind = document.getElementById('rec-indicator-bar');
+    if (btn) { btn.textContent = '⏹ Stop Recording'; btn.style.background = '#374151'; }
+    if (ind) ind.style.display = 'flex';
+
+    // Timer
+    _recSeconds = 0;
+    _recTimerInterval = setInterval(() => {
+      _recSeconds++;
+      const m = Math.floor(_recSeconds / 60);
+      const s = _recSeconds % 60;
+      const el = document.getElementById('rec-timer-bar');
+      if (el) el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }, 1000);
+
+    // Auto-stop if screen share ends
+    screenStream.getVideoTracks()[0].onended = () => stopRecording();
+    showToast('🔴 Recording started');
+
+  } catch(e) {
+    console.error('Recording error:', e);
+    showToast('❌ Could not start recording. Allow screen share permission.');
+  }
+}
+
+function stopRecording() {
+  if (!_mediaRecorder || !_recordingActive) return;
+  _mediaRecorder.stop();
+  _mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  _recordingActive = false;
+  clearInterval(_recTimerInterval);
+
+  const btn = document.getElementById('rec-btn-bar');
+  const ind = document.getElementById('rec-indicator-bar');
+  if (btn) { btn.innerHTML = '⏺ Record Interview'; btn.style.background = '#dc2626'; }
+  if (ind) ind.style.display = 'none';
+  showToast('⏹ Recording stopped — saving file…');
+}
+
+function saveRecording() {
+  if (!_recordedChunks.length) return;
+  const blob = new Blob(_recordedChunks, { type: 'video/webm' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const now  = new Date();
+  const ts   = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}-${now.getMinutes().toString().padStart(2,'0')}`;
+  a.href     = url;
+  a.download = `RecruitAI_Interview_${ts}.webm`;
+  a.click();
+  URL.revokeObjectURL(url);
+  _recordedChunks = [];
+  showToast('✅ Recording saved!');
+}
+
 </script>
+<!-- ── Candidate Rating Modal ──────────────────────────────────────── -->
+<div id="rating-modal" class="modal-overlay hidden">
+  <div class="modal-card" style="max-width:500px;">
+    <div class="modal-title">
+      ⭐ Rate Candidate
+      <button onclick="document.getElementById('rating-modal').classList.add('hidden')" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+
+    <div id="rating-candidate-info" style="background:var(--s2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;border:1px solid var(--border);"></div>
+
+    <!-- Star Rating -->
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px;">Overall Rating</label>
+      <div style="display:flex;gap:8px;" id="star-row">
+        <span class="star-btn" data-v="1" onclick="setStarRating(1)" style="font-size:32px;cursor:pointer;opacity:0.3;transition:all .15s;">⭐</span>
+        <span class="star-btn" data-v="2" onclick="setStarRating(2)" style="font-size:32px;cursor:pointer;opacity:0.3;transition:all .15s;">⭐</span>
+        <span class="star-btn" data-v="3" onclick="setStarRating(3)" style="font-size:32px;cursor:pointer;opacity:0.3;transition:all .15s;">⭐</span>
+        <span class="star-btn" data-v="4" onclick="setStarRating(4)" style="font-size:32px;cursor:pointer;opacity:0.3;transition:all .15s;">⭐</span>
+        <span class="star-btn" data-v="5" onclick="setStarRating(5)" style="font-size:32px;cursor:pointer;opacity:0.3;transition:all .15s;">⭐</span>
+      </div>
+      <div id="star-label" style="font-size:12px;color:var(--muted);margin-top:4px;"></div>
+    </div>
+
+    <!-- Marks out of 100 -->
+    <div class="fg" style="margin-bottom:14px;">
+      <label>Marks Given (out of 100)</label>
+      <input type="number" id="rating-marks" min="0" max="100" placeholder="e.g. 78"
+        style="width:100%;padding:10px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;font-size:14px;color:var(--text);outline:none;">
+    </div>
+
+    <!-- Decision -->
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px;">Decision</label>
+      <div style="display:flex;gap:10px;">
+        <button id="decision-select" onclick="setDecision('selected')"
+          style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:14px;font-weight:700;color:var(--muted);transition:all .2s;">
+          ✅ Select
+        </button>
+        <button id="decision-hold" onclick="setDecision('hold')"
+          style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:14px;font-weight:700;color:var(--muted);transition:all .2s;">
+          ⏸ On Hold
+        </button>
+        <button id="decision-reject" onclick="setDecision('rejected')"
+          style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--s2);cursor:pointer;font-size:14px;font-weight:700;color:var(--muted);transition:all .2s;">
+          ❌ Reject
+        </button>
+      </div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="fg" style="margin-bottom:18px;">
+      <label>Recruiter Feedback / Notes</label>
+      <textarea id="rating-feedback" rows="3" placeholder="Add your comments, strengths, areas to improve..."
+        style="width:100%;padding:10px 14px;background:var(--s2);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;resize:vertical;font-family:inherit;"></textarea>
+    </div>
+
+    <div id="rating-msg" style="display:none;padding:10px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+
+    <div style="display:flex;gap:10px;">
+      <button onclick="saveRating()" style="flex:1;background:var(--accent);color:white;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;font-size:14px;">💾 Save Rating</button>
+      <button onclick="document.getElementById('rating-modal').classList.add('hidden')" style="padding:12px 20px;background:var(--s2);border:1.5px solid var(--border);border-radius:10px;color:var(--muted);font-weight:600;cursor:pointer;font-size:13px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

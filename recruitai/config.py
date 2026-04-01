@@ -11,8 +11,9 @@ if not SECRET_KEY:
 
 SESSION_COOKIE_HTTPONLY  = True
 SESSION_COOKIE_SAMESITE  = 'Lax'
-SESSION_COOKIE_SECURE    = os.environ.get('FLASK_ENV') == 'production'
-PERMANENT_SESSION_LIFETIME = 7200  # 2 hours
+SESSION_COOKIE_SECURE    = False  # Must be False for localhost HTTP development
+SESSION_PERMANENT = True
+PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
 
 # ── Supabase PostgreSQL ────────────────────────────────────────────────────────
 SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
@@ -21,8 +22,6 @@ if not SQLALCHEMY_DATABASE_URI:
 
 SQLALCHEMY_ECHO                = False
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-PLUGIN_API_KEY = os.environ.get('PLUGIN_API_KEY', '')
 
 # ── Gemini AI ──────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
@@ -74,16 +73,20 @@ WEBRTC_ICE_SERVERS = [
 ]
 
 
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload
+
 class Config:
     SECRET_KEY                     = SECRET_KEY
     SESSION_COOKIE_HTTPONLY        = SESSION_COOKIE_HTTPONLY
     SESSION_COOKIE_SAMESITE        = SESSION_COOKIE_SAMESITE
     SESSION_COOKIE_SECURE          = SESSION_COOKIE_SECURE
     PERMANENT_SESSION_LIFETIME     = PERMANENT_SESSION_LIFETIME
+    MAX_CONTENT_LENGTH             = MAX_CONTENT_LENGTH
     SQLALCHEMY_DATABASE_URI        = SQLALCHEMY_DATABASE_URI
     SQLALCHEMY_ECHO                = SQLALCHEMY_ECHO
     SQLALCHEMY_TRACK_MODIFICATIONS = SQLALCHEMY_TRACK_MODIFICATIONS
     GEMINI_API_KEY                 = GEMINI_API_KEY
+    PLUGIN_API_KEYS                = [os.environ.get('PLUGIN_API_KEY', '2f1ea8d9d0ce7e64eb6ac5a5890e16e2583a11db5a1e2e5e57dfa18c57f681cb')]
     AI_MODEL                       = AI_MODEL
     BASE_URL                       = BASE_URL
     CREDIBILITY_PASS_THRESHOLD     = CREDIBILITY_PASS_THRESHOLD

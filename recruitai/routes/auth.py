@@ -21,10 +21,13 @@ def login():
         return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
     logout_user()
     session.clear()
-    login_user(user, remember=False)
+    session.permanent = True   # persist across requests
+    login_user(user, remember=True)
     redirect_url = 'test.html' if user.role == 'candidate' else 'recruiter_dashboard.html'
-    return jsonify({'success': True, 'redirect': redirect_url,
+    resp = jsonify({'success': True, 'redirect': redirect_url,
                     'role': user.role, 'full_name': user.full_name})
+    resp.headers['Access-Control-Allow-Credentials'] = 'true'
+    return resp
 
 
 @auth_bp.route('/signup', methods=['POST'])
@@ -106,8 +109,9 @@ def check_auth():
 
 
 @auth_bp.route('/api/upload-photo', methods=['POST'])
-@login_required
 def upload_photo():
+    if not current_user.is_authenticated:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
     data      = request.get_json() or {}
     photo_b64 = data.get('photo_url', '').strip()
     if not photo_b64:
@@ -115,21 +119,24 @@ def upload_photo():
     if len(photo_b64) > 3_000_000:
         return jsonify({'success': False, 'message': 'Photo too large. Please use a smaller image.'}), 400
     try:
+        from extensions import db as _db
         current_user.photo_url = photo_b64
-        db.session.commit()
+        _db.session.commit()
         return jsonify({'success': True, 'message': 'Profile photo saved'})
     except Exception as e:
-        db.session.rollback()
+        from extensions import db as _db
+        _db.session.rollback()
         err = str(e).lower()
         if 'column' in err and 'photo_url' in err:
             return jsonify({'success': False,
-                'message': 'Database not ready — run this SQL in Supabase: ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;'}), 500
+                'message': 'Database not ready — run: ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url TEXT;'}), 500
         return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
 
 
 @auth_bp.route('/api/verify-face', methods=['POST'])
-@login_required
 def verify_face():
+    if not current_user.is_authenticated:
+        return jsonify({'success': False, 'match': False, 'message': 'Login required'}), 401
     """
     Biometric face verification using deep learning facial embeddings.
     Uses face_recognition library (dlib 128-point face descriptor).
@@ -174,22 +181,34 @@ def verify_face():
         import cv2
 
         def preprocess(rgb_img):
-            """Upscale small images and normalize for better encoding accuracy."""
+            """Upscale small images, enhance contrast for better face encoding."""
             h, w = rgb_img.shape[:2]
-            # Upscale if too small — face_recognition needs at least 200px face
-            if h < 400 or w < 400:
-                scale = max(400/h, 400/w)
+            # Ensure minimum size for face_recognition accuracy
+            if h < 500 or w < 500:
+                scale = max(500/h, 500/w)
                 rgb_img = cv2.resize(rgb_img,
                     (int(w*scale), int(h*scale)),
                     interpolation=cv2.INTER_CUBIC)
+            # Enhance contrast using CLAHE on luminance channel
+            lab   = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2LAB)
+            l, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+            l     = clahe.apply(l)
+            lab   = cv2.merge([l, a, b])
+            rgb_img = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
             return rgb_img
 
         stored_rgb_p = preprocess(stored_rgb)
         live_rgb_p   = preprocess(live_rgb)
 
-        # Detect face locations
+        # Try HOG model first, fallback to more attempts if face not found
         stored_locations = face_recognition.face_locations(stored_rgb_p, model='hog', number_of_times_to_upsample=2)
-        live_locations   = face_recognition.face_locations(live_rgb_p,   model='hog', number_of_times_to_upsample=2)
+        if not stored_locations:
+            stored_locations = face_recognition.face_locations(stored_rgb_p, model='hog', number_of_times_to_upsample=3)
+
+        live_locations = face_recognition.face_locations(live_rgb_p, model='hog', number_of_times_to_upsample=2)
+        if not live_locations:
+            live_locations = face_recognition.face_locations(live_rgb_p, model='hog', number_of_times_to_upsample=3)
 
         if not stored_locations:
             return jsonify({'success': False, 'match': False,
@@ -199,27 +218,25 @@ def verify_face():
             return jsonify({'success': False, 'match': False,
                             'message': 'No face detected in camera. Face the camera directly in good lighting.'})
 
-        # num_jitters=5 — average 5 slightly varied encodings for stability
-        stored_enc = face_recognition.face_encodings(stored_rgb_p, stored_locations, num_jitters=5)[0]
-        live_enc   = face_recognition.face_encodings(live_rgb_p,   live_locations,   num_jitters=5)[0]
+        # Generate multiple encodings and take best match
+        # num_jitters=10 — more stable encoding across lighting/glasses variations
+        stored_enc = face_recognition.face_encodings(stored_rgb_p, stored_locations, num_jitters=10)[0]
+        live_enc   = face_recognition.face_encodings(live_rgb_p,   live_locations,   num_jitters=10)[0]
 
-        # Euclidean distance between 128-point face descriptors
-        # Same person (same+diff lighting): typically 0.30 - 0.55
-        # Different person:                typically 0.60 - 0.90
-        # Industry standard thresholds:
-        #   0.4 = very strict (passport control)
-        #   0.5 = strict (office access)
-        #   0.6 = normal (phone unlock)
         distance   = float(np.linalg.norm(stored_enc - live_enc))
         confidence = round(max(0.0, 1.0 - distance), 3)
 
-        # Use 0.55 — allows same person in slightly different lighting/angle
-        # but still reliably rejects different people (distance usually > 0.65)
-        THRESHOLD  = 0.55
+        # Threshold guide:
+        #   0.45 = very strict (rejects even same person with glasses/lighting change)
+        #   0.55 = moderate (good for same person across sessions)
+        #   0.60 = relaxed (phone unlock level — allows more variation)
+        #   0.65 = loose (only rejects very different people)
+        # Using 0.60 — real-world sessions have lighting + glasses differences
+        THRESHOLD = 0.60
 
         is_match = distance < THRESHOLD
 
-        print(f'[FaceVerify-DL] distance={distance:.4f} threshold={THRESHOLD} match={is_match} confidence={confidence}')
+        print(f'[FaceVerify-DL] distance={distance:.4f} threshold={THRESHOLD} match={is_match}')
 
         return jsonify({
             'success':    True,
@@ -228,8 +245,8 @@ def verify_face():
             'distance':   round(distance, 4),
             'method':     'deep_learning',
             'message':    'Identity verified — biometric match confirmed' if is_match else
-                          'Face does not match your profile photo. '
-                          'Try better lighting, remove glasses, and face the camera directly.'
+                          f'Face does not match profile photo (distance: {distance:.2f}). '
+                          'Ensure good lighting, face camera directly, and try removing glasses.'
         })
 
     except ImportError:

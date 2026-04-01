@@ -377,7 +377,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </style>
 <script>
 // ── API Base URL — auto-detects backend port ──────────────────────
-window.API_BASE = (location.port === '3000') ? 'http://localhost:5000' : '';
 
 // Override fetch to prepend API_BASE for API calls
 const _origFetch = window.fetch;
@@ -653,8 +652,8 @@ window.fetch = function(url, opts = {}) {
 
       <!-- AI Interview Mode -->
       <div id="ai-area" style="display:none;">
-        <!-- Voice Configuration Bar -->
-        <div id="ai-voice-config" style="background:var(--s);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <!-- Voice Configuration Bar — hidden from candidate, recruiter controls this -->
+        <div id="ai-voice-config" style="display:none;">
           <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">🎙️ AI Voice Settings</span>
           <div style="display:flex;align-items:center;gap:8px;">
             <label style="font-size:12px;color:var(--muted);">Tone:</label>
@@ -720,8 +719,8 @@ window.fetch = function(url, opts = {}) {
 
           <textarea class="ai-answer-textarea" id="ai-answer-input" placeholder="Type your answer here, or use voice recording above — both are supported…" oninput="updateLiveConfidence(this.value)"></textarea>
           
-          <!-- Live analysis indicators -->
-          <div id="live-analysis-bar" style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;align-items:center;">
+          <!-- Live analysis indicators — hidden from candidate -->
+          <div id="live-analysis-bar" style="display:none;gap:10px;margin-top:8px;flex-wrap:wrap;align-items:center;">
             <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">
               <span>💬 Words:</span>
               <span id="live-word-count" style="font-weight:700;color:var(--text);">0</span>
@@ -736,7 +735,7 @@ window.fetch = function(url, opts = {}) {
               <span id="live-ai-indicator" style="font-weight:700;font-size:11px;color:var(--green);">Low</span>
             </div>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:2px;">💡 Voice recordings are appended to your typed answer. You can edit the combined text before submitting.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:2px;">💡 Use voice recording or type your answer — both work together.</div>
 
           <div class="ai-action-row">
             <span id="ai-q-counter" style="font-size:13px;color:var(--muted);align-self:center;"></span>
@@ -850,6 +849,8 @@ async function init() {
     document.getElementById('si-mode').textContent = (sessionData.mode||'mcq').replace('_',' ');
     document.getElementById('si-room').textContent = ROOM_CODE;
     await startCamera();
+    // Small delay to ensure camera stream is fully ready before WebRTC
+    await new Promise(r => setTimeout(r, 500));
     document.getElementById('loading-screen').style.display = 'none';
     await showRulesAndScan();
     document.getElementById('interview-ui').style.display = 'block';
@@ -2317,8 +2318,9 @@ function showSpeechAnalysisFeedback(analysis) {
     ${analysis.filler_count>3?`<div style="margin-top:8px;font-size:11px;color:#92400e;background:#fef3c7;padding:7px 10px;border-radius:6px;">💡 Tip: Reduce filler words like "um", "like", "you know" to sound more confident.</div>`:''}
     ${!analysis.voice_used?`<div style="margin-top:8px;font-size:11px;color:#1e40af;background:#dbeafe;padding:7px 10px;border-radius:6px;">🎙️ Tip: Speaking your answers shows better communication skills.</div>`:''}
   `;
-  panel.style.display = 'block';
-  setTimeout(() => { if (panel) panel.style.display='none'; }, 8000);
+  // Analysis hidden from candidate — only stored internally for recruiter
+  // panel.style.display = 'block';
+  // setTimeout(() => { if (panel) panel.style.display='none'; }, 8000);
 }
 
 async function aiNextQuestion() {
@@ -2333,13 +2335,7 @@ async function aiNextQuestion() {
   const commAnalysis = analyzeAnswerConfidence(answer, q.question||q.question_text, _voiceWasUsed, durationMs);
   _answerFeatures.push({ qIndex: aiCurrentQ, question: q.question||q.question_text, ...commAnalysis });
 
-  // Show speech analysis feedback to candidate
-  showSpeechAnalysisFeedback(commAnalysis);
-
-  // Show mini-feedback badge if AI-prompted likelihood is high
-  if (commAnalysis.ai_prompt_score >= 60) {
-    showToast(`⚠️ Response pattern may indicate AI assistance (${commAnalysis.ai_prompt_score}%)`, 'warn');
-  }
+  // AI-assist risk hidden from candidate — only tracked internally
 
   // Evaluate in background
   try {
@@ -2539,7 +2535,7 @@ let pendingIceCandidates = [];
 let peerConn = null;
 
 function initSocket() {
-  socket = io(window.API_BASE || window.location.origin, {
+  socket = io(window.location.origin, {
     transports: ['polling', 'websocket'],
     withCredentials: true,
     extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
@@ -2637,12 +2633,16 @@ async function setupCandidatePeerConn() {
   const iceServers = sessionData?.ice_servers || [];
   peerConn = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all', bundlePolicy: 'max-bundle' });
 
-  // CRITICAL: add camera tracks NOW so they're in the answer SDP
+  // CRITICAL: add ALL camera tracks (video + audio) so they appear in answer SDP
   const camVideo = document.getElementById('cam-video');
   if (camVideo && camVideo.srcObject) {
-    camVideo.srcObject.getTracks().forEach(track => {
-      peerConn.addTrack(track, camVideo.srcObject);
+    const stream = camVideo.srcObject;
+    console.log('[WebRTC] adding tracks to peer:', stream.getTracks().map(t=>t.kind));
+    stream.getTracks().forEach(track => {
+      peerConn.addTrack(track, stream);
     });
+  } else {
+    console.warn('[WebRTC] no camera stream available when setting up peer connection');
   }
 
   peerConn.onicecandidate = e => {

@@ -851,7 +851,6 @@
 
 // Auto-inject ngrok header for all fetch calls through tunnel
 // ── API Base URL — auto-detects backend port ──────────────────────
-window.API_BASE = (location.port === '3000') ? 'http://localhost:5000' : '';
 
 const _origFetch = window.fetch;
 window.fetch = (url, opts={}) => {
@@ -924,7 +923,11 @@ function switchPhotoTab(mode) {
 async function startPhotoCam() {
   try {
     document.getElementById('cam-preview-wrap').classList.add('show');
-    _photoCamStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:320,height:240},audio:false});
+    // Request max 640x480 — enough for face recognition, keeps file small
+    _photoCamStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:640,max:640}, height:{ideal:480,max:480} },
+      audio: false
+    });
     document.getElementById('photo-cam-video').srcObject = _photoCamStream;
     document.getElementById('cam-capture-btn').style.display = 'block';
     document.getElementById('cam-retake-btn').style.display  = 'none';
@@ -952,7 +955,7 @@ function captureCamPhoto() {
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.7);  // lower quality = smaller file
   _selectedPhotoB64 = dataUrl;
   // Show captured preview in circle
   const img = document.getElementById('photo-preview-img');
@@ -997,21 +1000,54 @@ function onPhotoSelected(e) {
   reader.readAsDataURL(file);
 }
 
+async function compressPhoto(b64, maxW=480, quality=0.72) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = b64;
+  });
+}
+
 async function saveProfilePhoto() {
   if (!_selectedPhotoB64) return;
   const btn = document.getElementById('photo-save-btn');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const res = await fetch('/api/upload-photo', {
+    // Compress before upload — reduces from ~1MB to ~50KB
+    const compressed = await compressPhoto(_selectedPhotoB64, 640, 0.75);
+    const rawResp = await fetch('/api/upload-photo', {
       method: 'POST', credentials: 'include',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({photo_url: _selectedPhotoB64})
-    }).then(r => r.json());
+      body: JSON.stringify({photo_url: compressed})
+    });
+    // Check if server returned non-JSON (e.g. login redirect page)
+    if (!rawResp.ok && rawResp.status === 401) {
+      document.getElementById('photo-upload-error').textContent = 'Session expired. Please refresh and login again.';
+      document.getElementById('photo-upload-error').style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Save Photo';
+      return;
+    }
+    let res;
+    try { res = await rawResp.json(); }
+    catch(jsonErr) {
+      console.error('Server returned non-JSON:', rawResp.status, jsonErr);
+      document.getElementById('photo-upload-error').textContent = `Server error (${rawResp.status}). Make sure Flask is running on port 5000.`;
+      document.getElementById('photo-upload-error').style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Save Photo';
+      return;
+    }
 
     if (res.success) {
-      currentUser.photo_url = _selectedPhotoB64;
+      currentUser.photo_url = compressed;
       // Update avatar in header to show photo
-      updateAvatarWithPhoto(_selectedPhotoB64);
+      updateAvatarWithPhoto(compressed);
       document.getElementById('photo-banner').style.display = 'none';
       closePhotoModal();
       showToast('Profile photo saved!', 'success');
@@ -1020,7 +1056,12 @@ async function saveProfilePhoto() {
       document.getElementById('photo-upload-error').style.display = 'block';
     }
   } catch(e) {
-    document.getElementById('photo-upload-error').textContent = 'Network error. Try again.';
+    console.error('[Photo Upload Error]', e);
+    const errMsg = e?.message || 'Network error';
+    document.getElementById('photo-upload-error').textContent = 
+      errMsg.includes('Failed to fetch') 
+        ? 'Connection error. Make sure Flask server (port 5000) is running.' 
+        : `Error: ${errMsg}. Try again.`;
     document.getElementById('photo-upload-error').style.display = 'block';
   }
   btn.disabled = false; btn.textContent = 'Save Photo';
